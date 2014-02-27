@@ -17,6 +17,7 @@
       color-theme-is-global t
       sentence-end-double-space nil
       shift-select-mode nil
+      use-dialog-box nil
       mouse-yank-at-point t
       whitespace-style '(face trailing lines-tail tabs)
       whitespace-line-column 80
@@ -46,7 +47,17 @@
       ido-auto-merge-work-directories-length nil
       ido-create-new-buffer 'always
       ido-use-filename-at-point 'guess
+      ido-use-virtual-buffers t
+      ido-handle-duplicate-virtual-buffers 2
       ido-max-prospects 10)
+
+(defun clear-ido-buffers ()
+  "Clear ido virtual buffers list."
+  (interactive)
+  (setq ido-virtual-buffers '())
+  (setq recentf-list '()))
+(setq ido-ignore-buffers
+      (append ido-ignore-buffers '("^\*Helm")))
 
 (setq smex-save-file (concat user-emacs-directory ".smex-items"))
 (smex-initialize)
