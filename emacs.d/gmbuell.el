@@ -107,7 +107,15 @@ comment as a filename."
 (setq-default save-place t)
 
 (global-set-key (kbd "M-/") 'hippie-expand)
-(global-set-key (kbd "C-x C-b") 'ibuffer)
+
+(require 'helm-config)
+(require 'helm-ls-git)
+(global-set-key (kbd "C-c h") 'helm-ls-git-ls)
+;;(global-set-key (kbd "C-x C-b") 'ibuffer)
+(global-set-key (kbd "C-x C-b") 'helm-buffers-list)
+;; Use helm for finding files
+(global-set-key (kbd "C-x C-f") 'helm-find-files)
+(global-set-key (kbd "C-x f") (lambda() (interactive) (helm-find-files 0)))
 
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
@@ -124,6 +132,16 @@ comment as a filename."
 
 ;; So good!
 (global-set-key (kbd "C-c g") 'magit-status)
+
+;; Cleanup compiled lisp files
+(defun esk-remove-elc-on-save ()
+  "If you're saving an elisp file, likely the .elc is no longer valid."
+  (make-local-variable 'after-save-hook)
+  (add-hook 'after-save-hook
+            (lambda ()
+              (if (file-exists-p (concat buffer-file-name "c"))
+                  (delete-file (concat buffer-file-name "c"))))))
+(add-hook 'emacs-lisp-mode-hook 'esk-remove-elc-on-save)
 
 ;; Activate occur easily inside isearch
 (define-key isearch-mode-map (kbd "C-o")
@@ -142,8 +160,16 @@ comment as a filename."
       backup-directory-alist `(("." . ,(concat user-emacs-directory
                                                "backups"))))
 
+(defalias 'yes-or-no-p 'y-or-n-p)
+(defalias 'auto-tail-revert-mode 'tail-mode)
+
 (load-theme 'solarized-dark t)
 (set-default-font "DejaVu Sans Mono-11")
+
+(font-lock-add-keywords
+   nil `(("(?\\(lambda\\>\\)"
+          (0 (progn (compose-region (match-beginning 1) (match-end 1)
+                                    ,(make-char 'greek-iso8859-7 107)
 
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
 ;;(setq comint-scroll-to-bottom-on-input t)
@@ -264,10 +290,6 @@ that uses 'font-lock-warning-face'."
 
 (global-unset-key (kbd "<f1>"))
 (define-key global-map (kbd "<f1>") 'multi-term-dedicated-toggle)
-
-(require 'helm-config)
-(require 'helm-ls-git)
-(global-set-key (kbd "C-c h") 'helm-ls-git-ls)
 
 (require 'ace-jump-mode)
 (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
