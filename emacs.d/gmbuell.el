@@ -85,14 +85,6 @@ comment as a filename."
      ;; Add this back in at the end of the list.
      (add-to-list 'hippie-expand-try-functions-list 'try-complete-file-name-partially t)))
 
-;; Code health
-(column-number-mode t)
-(defun esk-add-watchwords ()
-  (font-lock-add-keywords
-   nil '(("\\<\\(FIX\\(ME\\)?\\|TODO\\|HACK\\|REFACTOR\\|NOCOMMIT\\)"
-          1 font-lock-warning-face t))))
-(add-hook 'prog-mode-hook 'esk-add-watchwords)
-
 ;; Better Defaults
 (menu-bar-mode -1)
 (when (fboundp 'tool-bar-mode)
@@ -166,11 +158,6 @@ comment as a filename."
 (load-theme 'solarized-dark t)
 (set-default-font "DejaVu Sans Mono-11")
 
-(font-lock-add-keywords
-   nil `(("(?\\(lambda\\>\\)"
-          (0 (progn (compose-region (match-beginning 1) (match-end 1)
-                                    ,(make-char 'greek-iso8859-7 107)
-
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
 ;;(setq comint-scroll-to-bottom-on-input t)
 (setq comint-prompt-read-only t)
@@ -232,6 +219,20 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'lisp-interaction-mode '((fontify-hex-colors)))
 (font-lock-add-keywords 'emacs-lisp-mode '((fontify-hex-colors)))
 (font-lock-add-keywords 'ess-mode '((fontify-hex-colors)))
+
+(font-lock-add-keywords
+   nil `(("(?\\(lambda\\>\\)"
+          (0 (progn (compose-region (match-beginning 1) (match-end 1)
+                                    ,(make-char 'greek-iso8859-7 107))
+                    nil)))))
+
+;; Code health
+(column-number-mode t)
+(defun esk-add-watchwords ()
+  (font-lock-add-keywords
+   nil '(("\\<\\(FIX\\(ME\\)?\\|TODO\\|HACK\\|REFACTOR\\|NOCOMMIT\\)"
+          1 font-lock-warning-face t))))
+(add-hook 'prog-mode-hook 'esk-add-watchwords)
 
 (require 'git-gutter)
 (global-git-gutter-mode t)
