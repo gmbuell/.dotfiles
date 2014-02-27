@@ -1,5 +1,145 @@
 (setq gc-cons-threshold 20000000)
 
+;; Turn off mouse interface early in startup to avoid momentary display
+(dolist (mode '(menu-bar-mode tool-bar-mode scroll-bar-mode))
+  (when (fboundp mode) (funcall mode -1)))
+(when window-system
+  (setq frame-title-format '(buffer-file-name "%f" ("%b")))
+  (tooltip-mode -1)
+  (mouse-wheel-mode t)
+  (blink-cursor-mode -1))
+;; can't do it at launch or emacsclient won't always honor it
+(add-hook 'before-make-frame-hook 'esk-turn-off-tool-bar)
+(setq visible-bell t
+      inhibit-startup-message t
+      color-theme-is-global t
+      sentence-end-double-space nil
+      shift-select-mode nil
+      mouse-yank-at-point t
+      whitespace-style '(face trailing lines-tail tabs)
+      whitespace-line-column 80
+      ediff-window-setup-function 'ediff-setup-windows-plain
+      oddmuse-directory (concat user-emacs-directory "oddmuse")
+      save-place-file (concat user-emacs-directory "places")
+      backup-directory-alist `(("." . ,(concat user-emacs-directory "backups")))
+      diff-switches "-u")
+
+(add-to-list 'safe-local-variable-values '(lexical-binding . t))
+(add-to-list 'safe-local-variable-values '(whitespace-line-column . 80))
+
+;; Highlight matching parentheses when the point is on them.
+(show-paren-mode 1)
+
+;; ido
+(ido-mode t)
+(ido-ubiquitous-mode)
+(require 'ido-hacks)
+(ido-hacks-mode)
+(setq ido-enable-prefix nil
+      ido-enable-flex-matching t
+      ido-auto-merge-work-directories-length nil
+      ido-create-new-buffer 'always
+      ido-use-filename-at-point 'guess
+      ido-max-prospects 10)
+
+(setq smex-save-file (concat user-emacs-directory ".smex-items"))
+(smex-initialize)
+(global-set-key (kbd "M-x") 'smex)
+(global-set-key (kbd "M-X") 'smex-major-mode-commands)
+
+(require 'ffap)
+(defvar ffap-c-commment-regexp "^/\\*+"
+  "Matches an opening C-style comment, like \"/***\".")
+
+(defadvice ffap-file-at-point (after avoid-c-comments activate)
+  "Don't return paths like \"/******\" unless they actually exist.
+
+This fixes the bug where ido would try to suggest a C-style
+comment as a filename."
+  (ignore-errors
+    (when (and ad-return-value
+               (string-match-p ffap-c-commment-regexp
+                               ad-return-value)
+               (not (ffap-file-exists-string ad-return-value)))
+      (setq ad-return-value nil))))
+
+(set-default 'indent-tabs-mode nil)
+(set-default 'indicate-empty-lines t)
+(set-default 'imenu-auto-rescan t)
+
+(add-hook 'text-mode-hook 'turn-on-auto-fill)
+(eval-after-load "ispell"
+  '(when (executable-find ispell-program-name)
+     (add-hook 'text-mode-hook 'turn-on-flyspell)))
+
+(random t)  ;; Seed the random-number generator
+
+;; Hippie expand: at times perhaps too hip
+(eval-after-load 'hippie-exp
+  '(progn
+     (dolist (f '(try-expand-line try-expand-list try-complete-file-name-partially))
+       (delete f hippie-expand-try-functions-list))
+
+     ;; Add this back in at the end of the list.
+     (add-to-list 'hippie-expand-try-functions-list 'try-complete-file-name-partially t)))
+
+;; Code health
+(column-number-mode t)
+(defun esk-add-watchwords ()
+  (font-lock-add-keywords
+   nil '(("\\<\\(FIX\\(ME\\)?\\|TODO\\|HACK\\|REFACTOR\\|NOCOMMIT\\)"
+          1 font-lock-warning-face t))))
+(add-hook 'prog-mode-hook 'esk-add-watchwords)
+
+;; Better Defaults
+(menu-bar-mode -1)
+(when (fboundp 'tool-bar-mode)
+  (tool-bar-mode -1))
+(when (fboundp 'scroll-bar-mode)
+  (scroll-bar-mode -1))
+
+(require 'uniquify)
+(setq uniquify-buffer-name-style 'forward)
+
+(require 'saveplace)
+(setq-default save-place t)
+
+(global-set-key (kbd "M-/") 'hippie-expand)
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+
+(global-set-key (kbd "C-s") 'isearch-forward-regexp)
+(global-set-key (kbd "C-r") 'isearch-backward-regexp)
+(global-set-key (kbd "C-M-s") 'isearch-forward)
+(global-set-key (kbd "C-M-r") 'isearch-backward)
+
+;; Jump to a definition in the current file. (Protip: this is awesome.)
+(global-set-key (kbd "C-x C-i") 'imenu)
+;; File finding
+(global-set-key (kbd "C-x M-f") 'ido-find-file-other-window)
+
+;; Help should search more than just commands
+(define-key 'help-command "a" 'apropos)
+
+;; So good!
+(global-set-key (kbd "C-c g") 'magit-status)
+
+;; Activate occur easily inside isearch
+(define-key isearch-mode-map (kbd "C-o")
+  (lambda () (interactive)
+    (let ((case-fold-search isearch-case-fold-search))
+      (occur (if isearch-regexp isearch-string (regexp-quote isearch-string))))))
+
+(show-paren-mode 1)
+(setq-default indent-tabs-mode nil)
+(setq x-select-enable-clipboard t
+      x-select-enable-primary t
+      save-interprogram-paste-before-kill t
+      apropos-do-all t
+      mouse-yank-at-point t
+      save-place-file (concat user-emacs-directory "places")
+      backup-directory-alist `(("." . ,(concat user-emacs-directory
+                                               "backups"))))
+
 (load-theme 'solarized-dark t)
 (set-default-font "DejaVu Sans Mono-11")
 
@@ -65,26 +205,6 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'emacs-lisp-mode '((fontify-hex-colors)))
 (font-lock-add-keywords 'ess-mode '((fontify-hex-colors)))
 
-(defun flatten-assoc-tree (tree pred)
-  "Returns an alist of only (key . leaf) pairs in TREE. PRED
- determines whether a value is a sub-alist or a leaf."
-  (flet ((inner (lst)
-                (mapcan (lambda (elt)
-                          (cond ((atom elt) nil)
-                                ((funcall pred elt) (inner elt))
-                                (t (list elt))))
-                        lst)))
-    (inner tree)))
-
-(defun ido-imenu ()
-  "Queries with `ido-completing-read' a symbol in the buffer's
- imenu index, then jumps to that symbol's location."
-  (interactive)
-  (goto-char
-   (let ((lst (nreverse (flatten-assoc-tree (imenu--make-index-alist) 'imenu--subalist-p))))
-     (cdr (assoc (ido-completing-read "Symbol: " (mapcar 'car lst)) lst)))))
-(global-set-key (kbd "C-x C-i") 'ido-imenu)
-
 (require 'git-gutter)
 (global-git-gutter-mode t)
 
@@ -118,13 +238,6 @@ that uses 'font-lock-warning-face'."
 (global-auto-revert-mode)
 (setq auto-revert-check-vc-info t)
 
-;;(require 'sr-speedbar)
-(require 'flx-ido)
-(ido-mode 1)
-(ido-everywhere 1)
-(flx-ido-mode 1)
-(setq ido-use-faces nil)
-
 ;; For dired-jump
 (require 'dired-x)
 
@@ -135,45 +248,12 @@ that uses 'font-lock-warning-face'."
          (:network-server . "talk.google.com")
          (:connection-type . ssl))))
 
-(defun ido-goto-symbol ()
-  "Will update the imenu index and then use ido to select a
-   symbol to navigate to"
-  (interactive)
-  (imenu--make-index-alist)
-  (let ((name-and-pos '())
-        (symbol-names '()))
-    (flet ((addsymbols (symbol-list)
-                       (when (listp symbol-list)
-                         (dolist (symbol symbol-list)
-                           (let ((name nil) (position nil))
-                             (cond
-                              ((and (listp symbol) (imenu--subalist-p symbol))
-                               (addsymbols symbol))
-
-                              ((listp symbol)
-                               (setq name (car symbol))
-                               (setq position (cdr symbol)))
-
-                              ((stringp symbol)
-                               (setq name symbol)
-                               (setq position (get-text-property 1 'org-imenu-marker symbol))))
-
-                             (unless (or (null position) (null name))
-                               (add-to-list 'symbol-names name)
-                               (add-to-list 'name-and-pos (cons name position))))))))
-      (addsymbols imenu--index-alist))
-    (let* ((selected-symbol (ido-completing-read "Symbol? " symbol-names))
-           (position (cdr (assoc selected-symbol name-and-pos))))
-      (goto-char position))))
-
-(global-set-key (kbd "C-c t") 'ido-goto-symbol)
-
 (require 'coffee-mode)
 (setq coffee-tab-width 2)
 (define-key coffee-mode-map (kbd "C-c C-c") 'coffee-compile-file)
 
-;;(require 'smartparens)
-;;(require 'smartparens-config)
+(require 'smartparens)
+(require 'smartparens-config)
 ;;(smartparens-global-mode t)
 ;;(show-smartparens-global-mode +1)
 
@@ -195,5 +275,62 @@ that uses 'font-lock-warning-face'."
 (require 'rainbow-delimiters)
 (add-hook 'text-mode-hook 'rainbow-delimiters-mode)
 (add-hook 'fundamental-mode-hook 'rainbow-delimiters-mode)
+
+(add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
+
+;; (defun flatten-assoc-tree (tree pred)
+;;   "Returns an alist of only (key . leaf) pairs in TREE. PRED
+;;  determines whether a value is a sub-alist or a leaf."
+;;   (flet ((inner (lst)
+;;                 (mapcan (lambda (elt)
+;;                           (cond ((atom elt) nil)
+;;                                 ((funcall pred elt) (inner elt))
+;;                                 (t (list elt))))
+;;                         lst)))
+;;     (inner tree)))
+;; (defun ido-imenu ()
+;;   "Queries with `ido-completing-read' a symbol in the buffer's
+;;  imenu index, then jumps to that symbol's location."
+;;   (interactive)
+;;   (goto-char
+;;    (let ((lst (nreverse (flatten-assoc-tree (imenu--make-index-alist) 'imenu--subalist-p))))
+;;      (cdr (assoc (ido-completing-read "Symbol: " (mapcar 'car lst)) lst)))))
+;; (global-set-key (kbd "C-x C-i") 'ido-imenu)
+                                        ;(require 'flx-ido)
+                                        ;(ido-mode 1)
+                                        ;(ido-everywhere 1)
+                                        ;(flx-ido-mode 1)
+;;(setq ido-use-faces nil)
+;; (defun ido-goto-symbol ()
+;;   "Will update the imenu index and then use ido to select a
+;;    symbol to navigate to"
+;;   (interactive)
+;;   (imenu--make-index-alist)
+;;   (let ((name-and-pos '())
+;;         (symbol-names '()))
+;;     (flet ((addsymbols (symbol-list)
+;;                        (when (listp symbol-list)
+;;                          (dolist (symbol symbol-list)
+;;                            (let ((name nil) (position nil))
+;;                              (cond
+;;                               ((and (listp symbol) (imenu--subalist-p symbol))
+;;                                (addsymbols symbol))
+
+;;                               ((listp symbol)
+;;                                (setq name (car symbol))
+;;                                (setq position (cdr symbol)))
+
+;;                               ((stringp symbol)
+;;                                (setq name symbol)
+;;                                (setq position (get-text-property 1 'org-imenu-marker symbol))))
+
+;;                              (unless (or (null position) (null name))
+;;                                (add-to-list 'symbol-names name)
+;;                                (add-to-list 'name-and-pos (cons name position))))))))
+;;       (addsymbols imenu--index-alist))
+;;     (let* ((selected-symbol (ido-completing-read "Symbol? " symbol-names))
+;;            (position (cdr (assoc selected-symbol name-and-pos))))
+;;       (goto-char position))))
+;; (global-set-key (kbd "C-c t") 'ido-goto-symbol)
 
 (server-start)

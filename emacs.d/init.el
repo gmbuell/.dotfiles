@@ -9,7 +9,7 @@
   (package-refresh-contents))
 
 ;; Add in your own as you wish:
-(defvar my-packages '(auto-complete color-theme-solarized color-theme deft flx-ido flx framemove fuzzy git-gutter helm-R ess helm-ack helm-ag helm-c-yasnippet helm-projectile helm hexrgb ido-hacks markdown-mode melpa mew minimap popup projectile pkg-info dash s sr-speedbar starter-kit-bindings starter-kit-eshell starter-kit-js starter-kit-lisp elisp-slime-nav starter-kit-ruby starter-kit magit mustache-mode git-rebase-mode git-commit-mode cl-lib ido-ubiquitous smex find-file-in-project idle-highlight-mode paredit inf-ruby sunrise-x-checkpoints sunrise-commander unbound w3m yasnippet coffee-mode noflet smartparens browse-kill-ring shell-pop rainbow-mode ace-jump-mode ace-jump-buffer)
+(defvar my-packages '(ace-jump-buffer ace-jump-mode auto-complete browse-kill-ring coffee-mode color-theme color-theme-solarized dash deft elisp-slime-nav ess flx flx-ido framemove fuzzy git-commit-mode git-gutter git-rebase-mode gitconfig-mode gitignore-mode helm helm-R helm-ack helm-ag helm-c-yasnippet hexrgb idle-highlight-mode ido-hacks ido-ubiquitous inf-ruby magit markdown-mode melpa mew mustache-mode noflet paredit pkg-info popup rainbow-mode s smartparens smex unbound w3m yaml-mode yasnippet)
   "A list of packages to ensure are installed at launch.")
 
 (dolist (p my-packages)
@@ -34,7 +34,28 @@
               (setq path (format "%s/%s-%s" package-dir stem version))
               (add-to-list 'load-path path)))
           package-alist)))
-(put 'set-goal-column 'disabled nil)
+
+(defun esk-eval-after-init (form)
+  "Add `(lambda () FORM)' to `after-init-hook'.
+
+    If Emacs has already finished initialization, also eval FORM immediately."
+  (let ((func (list 'lambda nil form)))
+    (add-hook 'after-init-hook func)
+    (when after-init-time
+      (eval form))))
+
+;; You can keep system- or user-specific customizations here
+(setq esk-system-config (concat user-emacs-directory system-name ".el")
+      esk-user-config (concat user-emacs-directory user-login-name ".el")
+      esk-user-dir (concat user-emacs-directory user-login-name))
+
+(esk-eval-after-init
+ '(progn
+    (when (file-exists-p esk-system-config) (load esk-system-config))
+    (when (file-exists-p esk-user-config) (load esk-user-config))
+    (when (file-exists-p esk-user-dir)
+      (mapc 'load (directory-files esk-user-dir t "^[^#].*el$")))))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
