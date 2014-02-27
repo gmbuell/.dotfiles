@@ -303,6 +303,15 @@ that uses 'font-lock-warning-face'."
 
 (add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
 
+(defun switch-to-minibuffer ()
+  "Switch to minibuffer window."
+  (interactive)
+  (if (active-minibuffer-window)
+      (select-window (active-minibuffer-window))
+    (error "Minibuffer is not active")))
+
+(global-set-key "\C-co" 'switch-to-minibuffer)
+
 ;; (defun flatten-assoc-tree (tree pred)
 ;;   "Returns an alist of only (key . leaf) pairs in TREE. PRED
 ;;  determines whether a value is a sub-alist or a leaf."
