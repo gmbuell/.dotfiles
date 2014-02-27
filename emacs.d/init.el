@@ -48,7 +48,7 @@
 (setq esk-system-config (concat user-emacs-directory system-name ".el")
       esk-user-config (concat user-emacs-directory user-login-name ".el")
       esk-user-dir (concat user-emacs-directory user-login-name))
-
+(add-to-list 'load-path esk-user-dir)
 (esk-eval-after-init
  '(progn
     (when (file-exists-p esk-system-config) (load esk-system-config))
@@ -64,7 +64,6 @@
  '(jabber-chat-buffer-show-avatar nil)
  '(jabber-vcard-avatars-publish nil)
  '(jabber-vcard-avatars-retrieve nil)
- '(minimap-window-location (quote right))
  '(multi-term-dedicated-select-after-open-p t)
  '(multi-term-program "/usr/local/bin/zsh")
  '(multi-term-program-switches "--login"))

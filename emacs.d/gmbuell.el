@@ -37,18 +37,23 @@
 ;; Highlight matching parentheses when the point is on them.
 (show-paren-mode 1)
 
+;; Associate modes with file extensions
+(add-to-list 'auto-mode-alist '("COMMIT_EDITMSG$" . diff-mode))
+
 ;; ido
+(recentf-mode t)
+;; Ignore ephemeral git commit message files
+;;(add-to-list 'recentf-exclude "/COMMIT_EDITMSG$")
 (ido-mode t)
-(ido-ubiquitous-mode)
 (require 'ido-hacks)
 (ido-hacks-mode)
+(ido-ubiquitous-mode)
 (setq ido-enable-prefix nil
       ido-enable-flex-matching t
       ido-auto-merge-work-directories-length nil
       ido-create-new-buffer 'always
       ido-use-filename-at-point 'guess
       ido-use-virtual-buffers t
-      ido-handle-duplicate-virtual-buffers 2
       ido-max-prospects 10)
 
 (defun clear-ido-buffers ()
@@ -124,9 +129,6 @@ comment as a filename."
 (global-set-key (kbd "C-c h") 'helm-ls-git-ls)
 ;;(global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key (kbd "C-x C-b") 'helm-buffers-list)
-;; Use helm for finding files
-(global-set-key (kbd "C-x C-f") 'helm-find-files)
-(global-set-key (kbd "C-x f") (lambda() (interactive) (helm-find-files 0)))
 
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
@@ -175,14 +177,16 @@ comment as a filename."
 (defalias 'auto-tail-revert-mode 'tail-mode)
 
 (load-theme 'solarized-dark t)
+;; Nice fonts:
+;; Inconsolata-11
+;; Droid Sans Mono-11
+;; DejaVu Sans Mono-11
+;; Note, these require: apt-get install ttf-droid ttfinconsolata ttf-dejavu
 (set-default-font "DejaVu Sans Mono-11")
 
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
 ;;(setq comint-scroll-to-bottom-on-input t)
 (setq comint-prompt-read-only t)
-
-(add-to-list 'load-path "~/.emacs.d/gmbuell")
-(require 'google)
 
 (require 'auto-complete-autoloads)
 (require 'auto-complete-config)
@@ -330,6 +334,8 @@ that uses 'font-lock-warning-face'."
     (error "Minibuffer is not active")))
 
 (global-set-key "\C-co" 'switch-to-minibuffer)
+
+(eval-after-load "dash" '(dash-enable-font-lock))
 
 ;; (defun flatten-assoc-tree (tree pred)
 ;;   "Returns an alist of only (key . leaf) pairs in TREE. PRED
