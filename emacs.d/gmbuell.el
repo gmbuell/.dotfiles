@@ -29,6 +29,10 @@
 (add-to-list 'safe-local-variable-values '(lexical-binding . t))
 (add-to-list 'safe-local-variable-values '(whitespace-line-column . 80))
 
+(require 'auto-compile)
+(auto-compile-on-load-mode 1)
+(auto-compile-on-save-mode 1)
+
 ;; Highlight matching parentheses when the point is on them.
 (show-paren-mode 1)
 
@@ -85,6 +89,9 @@ comment as a filename."
      ;; Add this back in at the end of the list.
      (add-to-list 'hippie-expand-try-functions-list 'try-complete-file-name-partially t)))
 
+(require 'expand-region)
+(global-set-key (kbd "C-=") 'er/expand-region)
+
 ;; Better Defaults
 (menu-bar-mode -1)
 (when (fboundp 'tool-bar-mode)
@@ -102,6 +109,7 @@ comment as a filename."
 
 (require 'helm-config)
 (require 'helm-ls-git)
+;;(global-set-key (kbd "C-c h") 'helm-browse-project)
 (global-set-key (kbd "C-c h") 'helm-ls-git-ls)
 ;;(global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key (kbd "C-x C-b") 'helm-buffers-list)

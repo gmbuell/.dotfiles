@@ -9,31 +9,31 @@
   (package-refresh-contents))
 
 ;; Add in your own as you wish:
-(defvar my-packages '(ace-jump-buffer ace-jump-mode auto-complete browse-kill-ring coffee-mode color-theme color-theme-solarized dash deft elisp-slime-nav ess flx flx-ido framemove fuzzy git-commit-mode git-gutter git-rebase-mode gitconfig-mode gitignore-mode helm helm-R helm-ack helm-ag helm-c-yasnippet hexrgb idle-highlight-mode ido-hacks ido-ubiquitous inf-ruby magit markdown-mode melpa mew mustache-mode noflet paredit pkg-info popup rainbow-mode s smartparens smex unbound w3m yaml-mode yasnippet)
+(defvar my-packages '(ace-jump-buffer ace-jump-mode auto-complete auto-compile browse-kill-ring coffee-mode color-theme color-theme-solarized dash deft elisp-slime-nav ess expand-region flx flx-ido framemove fuzzy git-commit-mode git-gutter git-rebase-mode gitconfig-mode gitignore-mode helm helm-c-yasnippet helm-ls-git hexrgb ido-hacks ido-ubiquitous inf-ruby magit markdown-mode mustache-mode noflet pkg-info rainbow-delimiters rainbow-mode s smartparens smex unbound w3m yaml-mode yasnippet)
   "A list of packages to ensure are installed at launch.")
 
 (dolist (p my-packages)
   (when (not (package-installed-p p))
         (package-install p)))
 
-(defun package-update-load-path ()
-  "Update the load path for newly installed packages."
-  (interactive)
-  (let ((package-dir (expand-file-name package-user-dir)))
-    (mapc (lambda (pkg)
-            (let ((stem (symbol-name (car pkg)))
-                  (version "")
-                  (first t)
-                  path)
-              (mapc (lambda (num)
-                      (if first
-                          (setq first nil)
-                          (setq version (format "%s." version)))
-                      (setq version (format "%s%s" version num)))
-                    (aref (cdr pkg) 0))
-              (setq path (format "%s/%s-%s" package-dir stem version))
-              (add-to-list 'load-path path)))
-          package-alist)))
+;; (defun package-update-load-path ()
+;;   "Update the load path for newly installed packages."
+;;   (interactive)
+;;   (let ((package-dir (expand-file-name package-user-dir)))
+;;     (mapc (lambda (pkg)
+;;             (let ((stem (symbol-name (car pkg)))
+;;                   (version "")
+;;                   (first t)
+;;                   path)
+;;               (mapc (lambda (num)
+;;                       (if first
+;;                           (setq first nil)
+;;                           (setq version (format "%s." version)))
+;;                       (setq version (format "%s%s" version num)))
+;;                     (aref (cdr pkg) 0))
+;;               (setq path (format "%s/%s-%s" package-dir stem version))
+;;               (add-to-list 'load-path path)))
+;;           package-alist)))
 
 (defun esk-eval-after-init (form)
   "Add `(lambda () FORM)' to `after-init-hook'.
