@@ -1,5 +1,3 @@
-(setq gc-cons-threshold 20000000)
-
 ;; Turn off mouse interface early in startup to avoid momentary display
 (dolist (mode '(menu-bar-mode tool-bar-mode scroll-bar-mode))
   (when (fboundp mode) (funcall mode -1)))
@@ -59,7 +57,12 @@
       ido-create-new-buffer 'always
       ido-use-filename-at-point 'guess
       ido-use-virtual-buffers t
-      ido-max-prospects 10)
+      ido-max-prospects 10
+      ido-use-faces nil  ;; Disabled to see flx highlights
+      )
+(require 'flx-ido)
+(flx-ido-mode t)
+(setq gc-cons-threshold 20000000)  ;; For flx
 
 ;; Ignore some buffers
 (add-to-list 'recentf-exclude "/COMMIT_EDITMSG$")
@@ -134,6 +137,11 @@ comment as a filename."
 ;;(global-set-key (kbd "C-c h") 'helm-browse-project)
 (global-set-key (kbd "C-c h") 'helm-ls-git-ls)
 (global-set-key (kbd "C-x C-b") 'helm-buffers-list)
+(global-set-key (kbd "C-c C-o") 'helm-occur)
+(global-set-key (kbd "C-c M-o") 'helm-multi-occur)
+(global-set-key (kbd "C-c c-b") 'helm-bookmarks)
+(global-set-key (kbd "M-y") 'helm-show-kill-ring)
+;; Consider giving helm-adaptative-mode a try
 
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
@@ -141,7 +149,7 @@ comment as a filename."
 (global-set-key (kbd "C-M-r") 'isearch-backward)
 
 ;; Jump to a definition in the current file. (Protip: this is awesome.)
-(global-set-key (kbd "C-x C-i") 'imenu)
+(global-set-key (kbd "C-x C-i") 'helm-imenu)
 ;; File finding
 (global-set-key (kbd "C-x M-f") 'ido-find-file-other-window)
 
@@ -337,8 +345,9 @@ that uses 'font-lock-warning-face'."
 ;;(smartparens-global-mode t)
 ;;(show-smartparens-global-mode +1)
 
-(require 'browse-kill-ring)
-(browse-kill-ring-default-keybindings)
+;;(require 'browse-kill-ring)
+;;(browse-kill-ring-default-keybindings)
+;; Using helm for this instead
 
 (global-unset-key (kbd "<f1>"))
 
@@ -359,7 +368,6 @@ that uses 'font-lock-warning-face'."
   (if (active-minibuffer-window)
       (select-window (active-minibuffer-window))
     (error "Minibuffer is not active")))
-(global-set-key "\C-co" 'switch-to-minibuffer)
 
 (eval-after-load "dash" '(dash-enable-font-lock))
 
