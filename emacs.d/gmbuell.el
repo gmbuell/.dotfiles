@@ -284,13 +284,15 @@ that uses 'font-lock-warning-face'."
 
 (eval-after-load 'diff-mode
   '(progn
-     (set-face-foreground 'diff-added "green4")
-     (set-face-foreground 'diff-removed "red3")))
+     (set-face-foreground 'diff-added "#5f8700")
+     (set-face-foreground 'diff-removed "#dc322f")))
 
 (eval-after-load 'magit
   '(progn
-     (set-face-foreground 'magit-diff-add "green4")
-     (set-face-foreground 'magit-diff-del "red3")))
+     (set-face-foreground 'magit-diff-add "#5f8700")
+     (set-face-foreground 'magit-diff-del "#dc322f")
+     (when (not window-system)
+       (set-face-background 'magit-item-highlight "black"))))
 
 ;; From http://www.emacswiki.org/emacs/OccurMode
 (defun occur-mode-clean-buffer ()

@@ -9,7 +9,7 @@
   (package-refresh-contents))
 
 ;; Add in your own as you wish:
-(defvar my-packages '(ace-jump-buffer ace-jump-mode auto-complete auto-compile browse-kill-ring coffee-mode color-theme-solarized dash deft elisp-slime-nav ess expand-region flx flx-ido framemove fuzzy git-commit-mode git-gutter git-rebase-mode gitconfig-mode gitignore-mode helm helm-c-yasnippet helm-ls-git hexrgb ido-hacks ido-ubiquitous inf-ruby magit markdown-mode mustache-mode noflet pkg-info rainbow-delimiters rainbow-mode s smartparens smex unbound w3m yaml-mode yasnippet)
+(defvar my-packages '(ace-jump-buffer ace-jump-mode auto-complete auto-compile browse-kill-ring coffee-mode color-theme color-theme-solarized dash deft elisp-slime-nav ess expand-region flx flx-ido framemove fuzzy git-commit-mode git-gutter git-rebase-mode gitconfig-mode gitignore-mode helm helm-c-yasnippet helm-ls-git hexrgb ido-hacks ido-ubiquitous inf-ruby magit markdown-mode mustache-mode noflet pkg-info rainbow-delimiters rainbow-mode s smartparens smex unbound w3m yaml-mode yasnippet)
   "A list of packages to ensure are installed at launch.")
 
 (dolist (p my-packages)
