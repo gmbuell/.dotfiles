@@ -29,6 +29,13 @@
 (add-to-list 'safe-local-variable-values '(lexical-binding . t))
 (add-to-list 'safe-local-variable-values '(whitespace-line-column . 80))
 
+;; Ubiquitous Packages which should be loaded on startup rather than
+;; autoloaded on demand since they are likely to be used in every
+;; session.
+(require 'cl)
+(require 'ansi-color)
+
+;; Auto-compile emacs lisp files.
 (require 'auto-compile)
 (auto-compile-on-load-mode 1)
 (auto-compile-on-save-mode 1)
@@ -40,6 +47,7 @@
 (setq uniquify-buffer-name-style 'forward)
 
 ;; ido
+(require 'recentf)
 (recentf-mode t)
 (ido-mode t)
 (require 'ido-hacks)
@@ -125,7 +133,6 @@ comment as a filename."
 (require 'helm-ls-git)
 ;;(global-set-key (kbd "C-c h") 'helm-browse-project)
 (global-set-key (kbd "C-c h") 'helm-ls-git-ls)
-;;(global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key (kbd "C-x C-b") 'helm-buffers-list)
 
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
@@ -143,16 +150,6 @@ comment as a filename."
 
 ;; So good!
 (global-set-key (kbd "C-c g") 'magit-status)
-
-;; Cleanup compiled lisp files
-(defun esk-remove-elc-on-save ()
-  "If you're saving an elisp file, likely the .elc is no longer valid."
-  (make-local-variable 'after-save-hook)
-  (add-hook 'after-save-hook
-            (lambda ()
-              (if (file-exists-p (concat buffer-file-name "c"))
-                  (delete-file (concat buffer-file-name "c"))))))
-(add-hook 'emacs-lisp-mode-hook 'esk-remove-elc-on-save)
 
 ;; Activate occur easily inside isearch
 (define-key isearch-mode-map (kbd "C-o")
@@ -179,8 +176,9 @@ comment as a filename."
 ;; Inconsolata-11
 ;; Droid Sans Mono-11
 ;; DejaVu Sans Mono-11
-;; Note, these require: apt-get install ttf-droid ttfinconsolata ttf-dejavu
-(set-default-font "DejaVu Sans Mono-11")
+;; Note, these require: apt-get install ttf-droid ttfinconsolata
+;; ttf-dejavu
+(add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-11"))
 
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
 ;;(setq comint-scroll-to-bottom-on-input t)
@@ -196,8 +194,6 @@ comment as a filename."
 (windmove-default-keybindings)
 (setq framemove-hook-into-windmove t)
 
-(require 'mustache-mode)
-(require 'markdown-mode)
 (require 'deft)
 ;;(setq deft-text-mode 'gfm-mode)
 
@@ -278,10 +274,10 @@ that uses 'font-lock-warning-face'."
 ;; w3m
 (setq browse-url-browser-function 'w3m-browse-url)
 (autoload 'w3m-browse-url "w3m" "Ask a WWW browser to show a URL." t)
-(setq w3m-use-cookies t)
+(eval-after-load 'w3m
+  '(setq w3m-use-cookies t))
 
 (require 'magit)
-
 (eval-after-load 'diff-mode
   '(progn
      (set-face-foreground 'diff-added "#5f8700")
@@ -300,10 +296,9 @@ that uses 'font-lock-warning-face'."
  unadorned lines."
   (interactive)
   (if (get-buffer "*Occur*")
-      (save-excursion
-        (set-buffer (get-buffer "*Occur*"))
+      (with-current-buffer "*Occur*"
         (goto-char (point-min))
-        (toggle-read-only 0)
+        (read-only-mode)
         (if (looking-at "^[0-9]+ lines matching \"")
             (kill-line 1))
         (while (re-search-forward "^[ \t]*[0-9]+:"
@@ -317,19 +312,25 @@ that uses 'font-lock-warning-face'."
 (global-auto-revert-mode)
 (setq auto-revert-check-vc-info t)
 
-;; For dired-jump
+;; Enhancements to dired including dired-jump
 (require 'dired-x)
 
 (require 'jabber-autoloads)
-(require 'jabber)
-(setq jabber-account-list
-      '(("gmbuell@gmail.com"
-         (:network-server . "talk.google.com")
-         (:connection-type . ssl))))
+(eval-after-load 'jabber
+  '(setq jabber-account-list
+         '(("gmbuell@gmail.com"
+            (:network-server . "talk.google.com")
+            (:connection-type . ssl)))
+         ;; Disable jabber images
+         jabber-chat-buffer-show-avatar nil
+         jabber-vcard-avatars-publish nil
+         jabber-vcard-avatars-retrieve nil))
 
 (require 'coffee-mode)
-(setq coffee-tab-width 2)
-(define-key coffee-mode-map (kbd "C-c C-c") 'coffee-compile-file)
+(eval-after-load 'coffee-mode
+  '(progn
+     (setq coffee-tab-width 2)
+     (define-key coffee-mode-map (kbd "C-c C-c") 'coffee-compile-file)))
 
 (require 'smartparens)
 (require 'smartparens-config)
@@ -340,7 +341,6 @@ that uses 'font-lock-warning-face'."
 (browse-kill-ring-default-keybindings)
 
 (global-unset-key (kbd "<f1>"))
-(define-key global-map (kbd "<f1>") 'multi-term-dedicated-toggle)
 
 (require 'ace-jump-mode)
 (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
@@ -359,64 +359,17 @@ that uses 'font-lock-warning-face'."
   (if (active-minibuffer-window)
       (select-window (active-minibuffer-window))
     (error "Minibuffer is not active")))
-
 (global-set-key "\C-co" 'switch-to-minibuffer)
 
 (eval-after-load "dash" '(dash-enable-font-lock))
 
-;; (defun flatten-assoc-tree (tree pred)
-;;   "Returns an alist of only (key . leaf) pairs in TREE. PRED
-;;  determines whether a value is a sub-alist or a leaf."
-;;   (flet ((inner (lst)
-;;                 (mapcan (lambda (elt)
-;;                           (cond ((atom elt) nil)
-;;                                 ((funcall pred elt) (inner elt))
-;;                                 (t (list elt))))
-;;                         lst)))
-;;     (inner tree)))
-;; (defun ido-imenu ()
-;;   "Queries with `ido-completing-read' a symbol in the buffer's
-;;  imenu index, then jumps to that symbol's location."
-;;   (interactive)
-;;   (goto-char
-;;    (let ((lst (nreverse (flatten-assoc-tree (imenu--make-index-alist) 'imenu--subalist-p))))
-;;      (cdr (assoc (ido-completing-read "Symbol: " (mapcar 'car lst)) lst)))))
-;; (global-set-key (kbd "C-x C-i") 'ido-imenu)
-                                        ;(require 'flx-ido)
-                                        ;(ido-mode 1)
-                                        ;(ido-everywhere 1)
-                                        ;(flx-ido-mode 1)
-;;(setq ido-use-faces nil)
-;; (defun ido-goto-symbol ()
-;;   "Will update the imenu index and then use ido to select a
-;;    symbol to navigate to"
-;;   (interactive)
-;;   (imenu--make-index-alist)
-;;   (let ((name-and-pos '())
-;;         (symbol-names '()))
-;;     (flet ((addsymbols (symbol-list)
-;;                        (when (listp symbol-list)
-;;                          (dolist (symbol symbol-list)
-;;                            (let ((name nil) (position nil))
-;;                              (cond
-;;                               ((and (listp symbol) (imenu--subalist-p symbol))
-;;                                (addsymbols symbol))
-
-;;                               ((listp symbol)
-;;                                (setq name (car symbol))
-;;                                (setq position (cdr symbol)))
-
-;;                               ((stringp symbol)
-;;                                (setq name symbol)
-;;                                (setq position (get-text-property 1 'org-imenu-marker symbol))))
-
-;;                              (unless (or (null position) (null name))
-;;                                (add-to-list 'symbol-names name)
-;;                                (add-to-list 'name-and-pos (cons name position))))))))
-;;       (addsymbols imenu--index-alist))
-;;     (let* ((selected-symbol (ido-completing-read "Symbol? " symbol-names))
-;;            (position (cdr (assoc selected-symbol name-and-pos))))
-;;       (goto-char position))))
-;; (global-set-key (kbd "C-c t") 'ido-goto-symbol)
+(require 'multi-term)
+(define-key global-map (kbd "<f1>") 'multi-term-dedicated-toggle)
+(eval-after-load 'multi-term
+  '(setq
+    multi-term-dedicated-select-after-open-p t
+     ;; Use zsh for multi-term
+    multi-term-program "/usr/local/bin/zsh"
+    multi-term-program-switches "--login"))
 
 (server-start)
