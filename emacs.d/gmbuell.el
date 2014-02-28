@@ -22,7 +22,6 @@
       whitespace-style '(face trailing lines-tail tabs)
       whitespace-line-column 80
       ediff-window-setup-function 'ediff-setup-windows-plain
-      oddmuse-directory (concat user-emacs-directory "oddmuse")
       save-place-file (concat user-emacs-directory "places")
       backup-directory-alist `(("." . ,(concat user-emacs-directory "backups")))
       diff-switches "-u")
@@ -37,13 +36,11 @@
 ;; Highlight matching parentheses when the point is on them.
 (show-paren-mode 1)
 
-;; Associate modes with file extensions
-(add-to-list 'auto-mode-alist '("COMMIT_EDITMSG$" . diff-mode))
+(require 'uniquify)
+(setq uniquify-buffer-name-style 'forward)
 
 ;; ido
 (recentf-mode t)
-;; Ignore ephemeral git commit message files
-;;(add-to-list 'recentf-exclude "/COMMIT_EDITMSG$")
 (ido-mode t)
 (require 'ido-hacks)
 (ido-hacks-mode)
@@ -56,7 +53,11 @@
       ido-use-virtual-buffers t
       ido-max-prospects 10)
 
-(defun clear-ido-buffers ()
+;; Ignore some buffers
+(add-to-list 'recentf-exclude "/COMMIT_EDITMSG$")
+(add-to-list 'recentf-exclude "/.ido.last$")
+
+(defun ido-clear-history ()
   "Clear ido virtual buffers list."
   (interactive)
   (setq ido-virtual-buffers '())
@@ -114,9 +115,6 @@ comment as a filename."
   (tool-bar-mode -1))
 (when (fboundp 'scroll-bar-mode)
   (scroll-bar-mode -1))
-
-(require 'uniquify)
-(setq uniquify-buffer-name-style 'forward)
 
 (require 'saveplace)
 (setq-default save-place t)
@@ -243,11 +241,12 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'emacs-lisp-mode '((fontify-hex-colors)))
 (font-lock-add-keywords 'ess-mode '((fontify-hex-colors)))
 
-(font-lock-add-keywords
+(defun esk-pretty-lambdas ()
+  (font-lock-add-keywords
    nil `(("(?\\(lambda\\>\\)"
           (0 (progn (compose-region (match-beginning 1) (match-end 1)
                                     ,(make-char 'greek-iso8859-7 107))
-                    nil)))))
+                    nil))))))
 
 ;; Code health
 (column-number-mode t)
@@ -255,7 +254,23 @@ that uses 'font-lock-warning-face'."
   (font-lock-add-keywords
    nil '(("\\<\\(FIX\\(ME\\)?\\|TODO\\|HACK\\|REFACTOR\\|NOCOMMIT\\)"
           1 font-lock-warning-face t))))
+(defun esk-local-comment-auto-fill ()
+  (set (make-local-variable 'comment-auto-fill-only-comments) t)
+  (auto-fill-mode t))
+
 (add-hook 'prog-mode-hook 'esk-add-watchwords)
+(add-hook 'prog-mode-hook 'esk-pretty-lambdas)
+(add-hook 'prog-mode-hook 'esk-local-comment-auto-fill)
+
+(defun esk-eval-and-replace ()
+  "Replace the preceding sexp with its value."
+  (interactive)
+  (backward-kill-sexp)
+  (condition-case nil
+      (prin1 (eval (read (current-kill 0)))
+             (current-buffer))
+    (error (message "Invalid expression")
+           (insert (current-kill 0)))))
 
 (require 'git-gutter)
 (global-git-gutter-mode t)
@@ -266,6 +281,16 @@ that uses 'font-lock-warning-face'."
 (setq w3m-use-cookies t)
 
 (require 'magit)
+
+(eval-after-load 'diff-mode
+  '(progn
+     (set-face-foreground 'diff-added "green4")
+     (set-face-foreground 'diff-removed "red3")))
+
+(eval-after-load 'magit
+  '(progn
+     (set-face-foreground 'magit-diff-add "green4")
+     (set-face-foreground 'magit-diff-del "red3")))
 
 ;; From http://www.emacswiki.org/emacs/OccurMode
 (defun occur-mode-clean-buffer ()
