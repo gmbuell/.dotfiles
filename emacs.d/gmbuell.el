@@ -221,7 +221,16 @@ comment as a filename."
 (setq framemove-hook-into-windmove t)
 
 (require 'deft)
-;;(setq deft-text-mode 'gfm-mode)
+(eval-after-load 'deft
+  '(progn
+     ;; Set the deft directory to Dropbox/notes if it exists.
+     (when (file-exists-p "~/Dropbox")
+       (setq deft-directory "~/Dropbox/notes")
+       (when (not (file-exists-p deft-directory))
+         (make-directory deft-directory t)))
+     ;;(setq deft-text-mode 'gfm-mode)  ;; Use Github flavored Markdown
+     ;;(setq deft-use-filename-as-title t)
+     ))
 
 ;; Turn on red highlighting for characters outside of the 80/100 char limit
 (defun font-lock-width-keyword (width)
@@ -337,6 +346,7 @@ that uses 'font-lock-warning-face'."
 
 (global-auto-revert-mode)
 (setq auto-revert-check-vc-info t)
+(setq vc-follow-symlinks t)
 
 ;; Enhancements to dired including dired-jump
 (require 'dired-x)
