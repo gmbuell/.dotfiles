@@ -101,10 +101,28 @@ comment as a filename."
 (set-default 'indicate-empty-lines t)
 (set-default 'imenu-auto-rescan t)
 
+;; Plain text settings
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
-(eval-after-load "ispell"
-  '(when (executable-find ispell-program-name)
-     (add-hook 'text-mode-hook 'turn-on-flyspell)))
+;; Try and use aspell but fall back to ispell
+'(if (executable-find "aspell")
+     '(progn
+        (setq ispell-program-name "aspell")
+        (setq ispell-list-command "list")
+        (require 'ispell)
+        (require 'flyspell)
+   (when (executable-find "ispell")
+     (setq ispell-program-name "aspell")
+     (setq ispell-list-command "list")
+     (require 'ispell)
+     (require 'flyspell))))
+
+(eval-after-load 'ispell
+  '(progn
+     (add-hook 'text-mode-hook 'turn-on-flyspell)
+     (add-hook 'prog-mode-hook 'flyspell-prog-mode)
+     (ac-flyspell-workaround)
+     (setq flyspell-issue-message-flag nil
+           flyspell-issue-welcome-flag nil)))
 
 (random t)  ;; Seed the random-number generator
 
@@ -332,7 +350,13 @@ that uses 'font-lock-warning-face'."
          ;; Disable jabber images
          jabber-chat-buffer-show-avatar nil
          jabber-vcard-avatars-publish nil
-         jabber-vcard-avatars-retrieve nil))
+         jabber-vcard-avatars-retrieve nil
+         jabber-history-enabled t
+         jabber-use-global-history nil
+         ;; Don't show presense notifications.
+         jabber-alert-presence-message-function (lambda (who oldstatus newstatus statustext) nil)
+         ;; Don't show alerts if I'm already in the chat buffer.
+         jabber-message-alert-same-buffer nil))
 
 (require 'coffee-mode)
 (eval-after-load 'coffee-mode
@@ -340,10 +364,9 @@ that uses 'font-lock-warning-face'."
      (setq coffee-tab-width 2)
      (define-key coffee-mode-map (kbd "C-c C-c") 'coffee-compile-file)))
 
-(require 'smartparens)
 (require 'smartparens-config)
 ;;(smartparens-global-mode t)
-;;(show-smartparens-global-mode +1)
+(global-flycheck-mode)
 
 ;;(require 'browse-kill-ring)
 ;;(browse-kill-ring-default-keybindings)
