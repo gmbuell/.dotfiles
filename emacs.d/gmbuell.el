@@ -1,3 +1,8 @@
+;;; gmbuell --- User specific configuration.
+;;; Commentary:
+;; Requires the setup performed in init.el.
+
+;;; Code:
 ;; Turn off mouse interface early in startup to avoid momentary display
 (dolist (mode '(menu-bar-mode tool-bar-mode scroll-bar-mode))
   (when (fboundp mode) (funcall mode -1)))
@@ -210,9 +215,10 @@ comment as a filename."
 ;;(setq comint-scroll-to-bottom-on-input t)
 (setq comint-prompt-read-only t)
 
-(require 'auto-complete-autoloads)
-(require 'auto-complete-config)
-(ac-config-default)
+;; auto-complete has been disabled in favor of company mode.
+;;(require 'auto-complete-autoloads)
+;;(require 'auto-complete-config)
+;;(ac-config-default)
 
 (require 'ess-site)
 
@@ -376,7 +382,42 @@ that uses 'font-lock-warning-face'."
 
 (require 'smartparens-config)
 ;;(smartparens-global-mode t)
+
+;; Flycheck for linting
 (global-flycheck-mode)
+(require 'google-c-style)
+(add-hook 'c-mode-common-hook 'google-set-c-style)
+(add-hook 'c-mode-common-hook 'google-make-newline-indent)
+(require 'flycheck-google-cpplint)
+;; Add Google C++ Style checker.
+;; In default, syntax checked by Clang and Cppcheck.
+(flycheck-add-next-checker 'c/c++-cppcheck
+                           '(warnings-only . c/c++-googlelint))
+
+;; Company mode for completions: http://company-mode.github.io/
+(require 'company)
+(add-hook 'after-init-hook 'global-company-mode)
+
+;; Give visual feedback on some commands
+(require 'volatile-highlights)
+(volatile-highlights-mode t)
+;; Set highlight faces for solarized.
+(set-face-attribute 'vhl/default-face nil
+                    :background "#586e75"
+                    :foreground "#93a1a1")
+;; Disable modeline for volatile highlights
+(setcar (cdr (assq 'volatile-highlights-mode minor-mode-alist)) nil)
+
+;; Show search progress
+(require 'anzu)
+(global-anzu-mode +1)
+(set-face-attribute 'anzu-mode-line nil
+                    :foreground "#b58900" :weight 'bold)
+(custom-set-variables
+ '(anzu-mode-lighter nil)
+ '(anzu-deactivate-region t)
+ '(anzu-search-threshold 1000)
+ '(anzu-replace-to-string-separator " => "))
 
 ;;(require 'browse-kill-ring)
 ;;(browse-kill-ring-default-keybindings)
@@ -413,4 +454,11 @@ that uses 'font-lock-warning-face'."
     multi-term-program "/usr/local/bin/zsh"
     multi-term-program-switches "--login"))
 
+;; Emacs expects sentences to end with double spaces. This is crazy.
+(setq sentence-end-double-space nil)
+
 (server-start)
+
+(provide 'gmbuell)
+
+;;; gmbuell.el ends here
