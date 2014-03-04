@@ -92,10 +92,11 @@
 (define-key 'help-command "a" 'apropos)
 
 ;; Activate occur easily inside isearch
-(define-key isearch-mode-map (kbd "C-o")
-  (lambda () (interactive)
-    (let ((case-fold-search isearch-case-fold-search))
-      (occur (if isearch-regexp isearch-string (regexp-quote isearch-string))))))
+;; Note: this might already be enabled in emacs 24
+;; (define-key isearch-mode-map (kbd "C-o")
+;;   (lambda () (interactive)
+;;     (let ((case-fold-search isearch-case-fold-search))
+;;       (occur (if isearch-regexp isearch-string (regexp-quote isearch-string))))))
 
 (show-paren-mode 1)
 (setq-default indent-tabs-mode nil)
@@ -110,6 +111,9 @@
 
 (defalias 'yes-or-no-p 'y-or-n-p)
 (defalias 'auto-tail-revert-mode 'tail-mode)
+
+;; We need nested minibuffers mostly due to helm replacing "M-y"
+(setq enable-recursive-minibuffers t)
 
 ;; Ubiquitous Packages which should be loaded on startup rather than
 ;; autoloaded on demand since they are likely to be used in every
@@ -308,7 +312,8 @@ that uses 'font-lock-warning-face'."
 
 ;; Company mode for completions: http://company-mode.github.io/
 (require 'company)
-(add-hook 'after-init-hook 'global-company-mode)
+(add-to-list 'company-backends 'company-capf)
+(global-company-mode)
 
 ;; auto-complete has been disabled in favor of company mode.
 ;;(require 'auto-complete-autoloads)
@@ -443,14 +448,14 @@ that uses 'font-lock-warning-face'."
 (global-set-key (kbd "C-=") 'er/expand-region)
 
 ;; Give visual feedback on some commands
-(require 'volatile-highlights)
-(volatile-highlights-mode t)
+;;(require 'volatile-highlights)
+;;(volatile-highlights-mode t)
 ;; Set highlight faces for solarized.
-(set-face-attribute 'vhl/default-face nil
-                    :background "#586e75"
-                    :foreground "#93a1a1")
+;; (set-face-attribute 'vhl/default-face nil
+;;                     :background "#586e75"
+;;                     :foreground "#93a1a1")
 ;; Disable modeline for volatile highlights
-(setcar (cdr (assq 'volatile-highlights-mode minor-mode-alist)) nil)
+;;(setcar (cdr (assq 'volatile-highlights-mode minor-mode-alist)) nil)
 
 ;; Show search progress
 (require 'anzu)
