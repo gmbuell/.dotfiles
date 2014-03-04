@@ -1,6 +1,44 @@
 ;;; gmbuell --- User specific configuration.
 ;;; Commentary:
 ;; Requires the setup performed in init.el.
+;;
+;; Useful key bindings defined here (in order of importance):
+;; -------------------------------------------------------------------
+;; "C-s" -> isearch-forward-regexp
+;; Incremental forward search (by regexp)
+
+;; "C-r" -> isearch-backward-regexp
+;; Incremental backward search (by regexp)
+
+;; "C-c h" -> helm-ls-git-ls
+;; Open files that share the same git project as the current file. See
+;; section on helm below for pro tips.
+
+;; "M-y" -> helm-show-kill-ring
+;; Search through the kill ring. This replaces the standard interface
+;; for searching backwards through the kill ring with repeated
+;; invocations of "M-y".
+
+;; "C-c g" -> magit-status
+;; Opens the git interface for the current project.
+
+;; "<f1>" -> multi-term-dedicated-toggle
+;; Shows a shell. Hit "<f1>" again to hide the shell.
+
+;; "C-x C-b" -> helm-buffers-list
+;; List buffers using helm. For when you need something more powerful
+;; than the standard ido smart buffer switching with "C-x b"
+
+;; "C-c C-o" -> helm-occur
+;; Search for something in a buffer and see all the results
+;; simultaneously.
+
+;; "C-c M-o" -> helm-multi-occur
+;; Search for something in multiple buffers and see all the results
+;; simultaneously.
+
+;; "C-c c-b" -> helm-bookmarks
+;; Search through bookmarks.
 
 ;;; Code:
 ;; This first section cleans up the Emacs window and interface.
@@ -460,7 +498,7 @@ that uses 'font-lock-warning-face'."
   (if (get-buffer "*Occur*")
       (with-current-buffer "*Occur*"
         (goto-char (point-min))
-        (read-only-mode)
+        (setq buffer-read-only nil)
         (if (looking-at "^[0-9]+ lines matching \"")
             (kill-line 1))
         (while (re-search-forward "^[ \t]*[0-9]+:"
