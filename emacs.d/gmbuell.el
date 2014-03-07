@@ -93,10 +93,10 @@
 
 ;; Activate occur easily inside isearch
 ;; Note: this might already be enabled in emacs 24
-;; (define-key isearch-mode-map (kbd "C-o")
-;;   (lambda () (interactive)
-;;     (let ((case-fold-search isearch-case-fold-search))
-;;       (occur (if isearch-regexp isearch-string (regexp-quote isearch-string))))))
+(define-key isearch-mode-map (kbd "C-o")
+  (lambda () (interactive)
+    (let ((case-fold-search isearch-case-fold-search))
+      (occur (if isearch-regexp isearch-string (regexp-quote isearch-string))))))
 
 (show-paren-mode 1)
 (setq-default indent-tabs-mode nil)
@@ -313,6 +313,7 @@ that uses 'font-lock-warning-face'."
 ;; Company mode for completions: http://company-mode.github.io/
 (require 'company)
 (add-to-list 'company-backends 'company-capf)
+(setq company-global-modes '(c-mode c++-mode emacs-lisp-mode))
 (global-company-mode)
 
 ;; auto-complete has been disabled in favor of company mode.
@@ -349,14 +350,24 @@ that uses 'font-lock-warning-face'."
 (require 'multi-term)
 (define-key global-map (kbd "<f1>") 'multi-term-dedicated-toggle)
 (eval-after-load 'multi-term
-  '(setq
-    multi-term-dedicated-select-after-open-p t
-     ;; Use zsh for multi-term
-    multi-term-program "/usr/local/bin/zsh"
-    multi-term-program-switches "--login"))
+  '(progn
+     (setq
+      multi-term-dedicated-select-after-open-p t
+      ;; Use zsh for multi-term
+      multi-term-program "/usr/local/bin/zsh"
+      multi-term-program-switches "--login"
+      ;; Don't pass C-y through to the shell.
+      term-unbind-key-list (-difference term-unbind-key-list '("C-y" "C-l")))
+     (add-to-list 'term-bind-key-alist '("C-l" . recenter-top-bottom))
+     (add-to-list 'term-bind-key-alist '("C-f" . forward-char))
+     (add-to-list 'term-bind-key-alist '("C-b" . backward-char))))
+
+(add-hook 'term-mode-hook (lambda ()
+                            (define-key term-raw-map (kbd "C-y") 'term-paste)))
+
 
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
-;;(setq comint-scroll-to-bottom-on-input t)
+(setq comint-scroll-to-bottom-on-input t)
 (setq comint-prompt-read-only t)
 
 ;; Sets up Shift + arrow keys for moving between frames and windows.
