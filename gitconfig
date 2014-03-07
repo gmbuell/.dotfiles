@@ -1,3 +1,5 @@
 [user]
 	name = Garret Buell
 	email = gmbuell@gmail.com
+[push]
+	default = simple
