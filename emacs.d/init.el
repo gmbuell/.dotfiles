@@ -24,12 +24,14 @@
   (when (require 'dash nil :noerror)
     ;; Refresh the package contents before installing new packages
     (when (-difference packages package-activated-list)
-      (package-refresh-contents)))
-  (dolist (p packages)
-    (when (not (package-installed-p p))
-      (package-install p))))
+      (progn
+        (package-refresh-contents)
+        (dolist (p packages)
+          (when (not (package-installed-p p))
+            (package-install p)))))
+    ))
 
-(defvar my-packages '(ace-jump-buffer ace-jump-mode anzu auto-complete browse-kill-ring coffee-mode color-theme color-theme-solarized company dash dedicated deft elisp-slime-nav ess expand-region flx flx-ido flycheck flycheck-google-cpplint framemove fuzzy git-commit-mode git-gutter git-rebase-mode gitconfig-mode gitignore-mode google-c-style helm helm-c-yasnippet helm-ls-git hexrgb ido-hacks ido-ubiquitous iedit inf-ruby jabber jump magit markdown-mode multi-term multiple-cursors mustache-mode noflet pkg-info rainbow-delimiters rainbow-mode ruby-mode s smartparens smex unbound volatile-highlights w3m yaml-mode yari yasnippet)
+(defvar my-packages '(ace-jump-buffer ace-jump-mode anzu auto-complete base16-theme browse-kill-ring coffee-mode color-theme color-theme-solarized company dash dedicated deft elisp-slime-nav ess expand-region flx flx-ido flycheck flycheck-google-cpplint framemove fuzzy git-commit-mode git-gutter git-rebase-mode gitconfig-mode gitignore-mode google-c-style helm helm-c-yasnippet helm-ls-git hexrgb ido-hacks ido-ubiquitous iedit inf-ruby jabber jump magit markdown-mode multi-term multiple-cursors mustache-mode noflet pkg-info rainbow-delimiters rainbow-mode ruby-mode s smartparens smex unbound volatile-highlights w3m yaml-mode yari yasnippet)
   "A list of packages to ensure are installed at launch.")
 
 (ensure-package-installed my-packages)
@@ -54,10 +56,10 @@ If Emacs has already finished initialization, also eval FORM immediately."
 (add-to-list 'load-path esk-user-dir)
 (esk-eval-after-init
  '(progn
-    (when (file-exists-p esk-system-config) (load esk-system-config))
     (when (file-exists-p esk-user-config) (load esk-user-config))
     (when (file-exists-p esk-user-dir)
-      (mapc 'load (directory-files esk-user-dir t "^[^#].*el$")))))
+      (mapc 'load (directory-files esk-user-dir t "^[^#].*el$")))
+    (when (file-exists-p esk-system-config) (load esk-system-config))))
 
 (provide 'init)
 
