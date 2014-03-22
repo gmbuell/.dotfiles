@@ -228,14 +228,16 @@ comment as a filename."
 
 ;; Emacs theme.
 ;; http://ethanschoonover.com/solarized
-(load-theme 'solarized-dark t)
+;; (load-theme 'solarized-dark t)
+(load-theme 'base16-default t)
 ;; Nice fonts:
 ;; Inconsolata-11
 ;; Droid Sans Mono-11
 ;; DejaVu Sans Mono-11
 ;; Note, these require: apt-get install ttf-droid ttfinconsolata
 ;; ttf-dejavu
-(add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-11"))
+;;(add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-11"))
+(set-default-font "DejaVu Sans Mono 11")
 
 ;; Plain text settings
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
@@ -332,16 +334,16 @@ that uses 'font-lock-warning-face'."
 ;; Start with "C-c g"
 ;; http://daemianmack.com/magit-cheatsheet.html
 (require 'magit)
-(eval-after-load 'diff-mode
-  '(progn
-     (set-face-foreground 'diff-added "#5f8700")
-     (set-face-foreground 'diff-removed "#dc322f")))
-(eval-after-load 'magit
-  '(progn
-     (set-face-foreground 'magit-diff-add "#5f8700")
-     (set-face-foreground 'magit-diff-del "#dc322f")
-     (when (not window-system)
-       (set-face-background 'magit-item-highlight "black"))))
+;; (eval-after-load 'diff-mode
+;;   '(progn
+;;      (set-face-foreground 'diff-added "#5f8700")
+;;      (set-face-foreground 'diff-removed "#dc322f")))
+;; (eval-after-load 'magit
+;;   '(progn
+;;      (set-face-foreground 'magit-diff-add "#5f8700")
+;;      (set-face-foreground 'magit-diff-del "#dc322f")
+;;      (when (not window-system)
+;;        (set-face-background 'magit-item-highlight "black"))))
 (global-set-key (kbd "C-c g") 'magit-status)
 
 (global-auto-revert-mode)
@@ -359,13 +361,19 @@ that uses 'font-lock-warning-face'."
       multi-term-program "/usr/local/bin/zsh"
       multi-term-program-switches "--login"
       ;; Don't pass C-y through to the shell.
-      term-unbind-key-list (-difference term-unbind-key-list '("C-y" "C-l")))
-     (add-to-list 'term-bind-key-alist '("C-l" . recenter-top-bottom))
-     (add-to-list 'term-bind-key-alist '("C-f" . forward-char))
-     (add-to-list 'term-bind-key-alist '("C-b" . backward-char))))
+      ;;term-unbind-key-list (-difference term-unbind-key-list '("C-y"
+      ;;"C-l" "C-w")))
+      )
+      ;;(add-to-list 'term-bind-key-alist '("C-l" . recenter-top-bottom))
+      ;;(add-to-list 'term-bind-key-alist '("C-f" . forward-char))
+      ;;(add-to-list 'term-bind-key-alist '("C-b" . backward-char))
+      ;;(add-to-list 'term-bind-key-alist '("C-w" . kill-region))
+      ))
 
-(add-hook 'term-mode-hook (lambda ()
-                            (define-key term-raw-map (kbd "C-y") 'term-paste)))
+;; (add-hook 'term-mode-hook (lambda ()
+;;                             (define-key term-raw-map (kbd "C-y") 'term-paste)))
+;; (add-hook 'term-mode-hook (lambda ()
+;;                             (define-key term-raw-map (kbd "C-w") 'kill-region)))
 
 
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
@@ -461,20 +469,20 @@ that uses 'font-lock-warning-face'."
 (global-set-key (kbd "C-=") 'er/expand-region)
 
 ;; Give visual feedback on some commands
-;;(require 'volatile-highlights)
-;;(volatile-highlights-mode t)
+(require 'volatile-highlights)
+(volatile-highlights-mode t)
 ;; Set highlight faces for solarized.
 ;; (set-face-attribute 'vhl/default-face nil
 ;;                     :background "#586e75"
 ;;                     :foreground "#93a1a1")
 ;; Disable modeline for volatile highlights
-;;(setcar (cdr (assq 'volatile-highlights-mode minor-mode-alist)) nil)
+(setcar (cdr (assq 'volatile-highlights-mode minor-mode-alist)) nil)
 
 ;; Show search progress
 (require 'anzu)
 (global-anzu-mode +1)
-(set-face-attribute 'anzu-mode-line nil
-                    :foreground "#b58900" :weight 'bold)
+;; (set-face-attribute 'anzu-mode-line nil
+;;                     :foreground "#b58900" :weight 'bold)
 (custom-set-variables
  '(anzu-mode-lighter nil)
  '(anzu-deactivate-region t)
@@ -537,6 +545,18 @@ that uses 'font-lock-warning-face'."
 
 ;; For chromebook:
 (global-set-key (kbd "<deletechar>") 'backward-kill-word)
+
+;; Register
+(defun copy-to-j (start end)
+  "Copy the text in the region to register 'j'."
+  (interactive "r")
+  (copy-to-register ?j start end))
+(defun paste-from-j ()
+  "Paste the text from register 'j'."
+  (interactive)
+  (insert-register ?j t))
+(define-key global-map (kbd "C-c C-j") 'copy-to-j)
+(define-key global-map (kbd "C-j") 'paste-from-j)
 
 (server-start)
 
