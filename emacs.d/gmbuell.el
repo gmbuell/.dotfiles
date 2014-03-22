@@ -350,6 +350,7 @@ that uses 'font-lock-warning-face'."
 
 (require 'multi-term)
 (define-key global-map (kbd "<f1>") 'multi-term-dedicated-toggle)
+(define-key global-map (kbd "C-c s") 'multi-term-dedicated-toggle)
 (eval-after-load 'multi-term
   '(progn
      (setq
@@ -533,6 +534,9 @@ that uses 'font-lock-warning-face'."
   (if (active-minibuffer-window)
       (select-window (active-minibuffer-window))
     (error "Minibuffer is not active")))
+
+;; For chromebook:
+(global-set-key (kbd "<deletechar>") 'backward-kill-word)
 
 (server-start)
 
