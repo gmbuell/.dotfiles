@@ -541,6 +541,9 @@ that uses 'font-lock-warning-face'."
       (select-window (active-minibuffer-window))
     (error "Minibuffer is not active")))
 
+;; For chromebook:
+(global-set-key (kbd "<deletechar>") 'backward-kill-word)
+
 ;; Register
 (defun copy-to-j (start end)
   "Copy the text in the region to register 'j'."
