@@ -82,6 +82,7 @@
 
 (require 'saveplace)
 (setq-default save-place t)
+(setq save-place-file "~/.emacs.d/saved-places")
 
 ;; Replace all the search keys with regex versions.
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
@@ -227,8 +228,6 @@ comment as a filename."
 ;; Consider giving helm-adaptative-mode a try
 
 ;; Emacs theme.
-;; http://ethanschoonover.com/solarized
-;; (load-theme 'solarized-dark t)
 (load-theme 'base16-default t)
 ;; Nice fonts:
 ;; Inconsolata-11
@@ -236,8 +235,7 @@ comment as a filename."
 ;; DejaVu Sans Mono-11
 ;; Note, these require: apt-get install ttf-droid ttfinconsolata
 ;; ttf-dejavu
-;;(add-to-list 'default-frame-alist '(font . "DejaVu Sans Mono-11"))
-(set-default-font "DejaVu Sans Mono 11")
+(set-frame-font "DejaVu Sans Mono 11" t t)
 
 ;; Plain text settings
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
@@ -258,7 +256,6 @@ comment as a filename."
   '(progn
      (add-hook 'text-mode-hook 'turn-on-flyspell)
      (add-hook 'prog-mode-hook 'flyspell-prog-mode)
-     ;;(ac-flyspell-workaround) not needed since company mode is now used.
      (setq flyspell-issue-message-flag nil
            flyspell-issue-welcome-flag nil)))
 
@@ -303,26 +300,21 @@ that uses 'font-lock-warning-face'."
            (insert (current-kill 0)))))
 
 ;; Flycheck for linting
-(global-flycheck-mode)
-(require 'google-c-style)
-(add-hook 'c-mode-common-hook 'google-set-c-style)
-(add-hook 'c-mode-common-hook 'google-make-newline-indent)
-(require 'flycheck-google-cpplint)
+;;(global-flycheck-mode)
+;;(require 'google-c-style)
+;;(add-hook 'c-mode-common-hook 'google-set-c-style)
+;;(add-hook 'c-mode-common-hook 'google-make-newline-indent)
+;;(require 'flycheck-google-cpplint)
 ;; Add Google C++ Style checker.
 ;; In default, syntax checked by Clang and Cppcheck.
-(flycheck-add-next-checker 'c/c++-cppcheck
-                           '(warnings-only . c/c++-googlelint))
+;; (flycheck-add-next-checker 'c/c++-cppcheck
+;;                            '(warnings-only . c/c++-googlelint))
 
 ;; Company mode for completions: http://company-mode.github.io/
-(require 'company)
-(add-to-list 'company-backends 'company-capf)
-(setq company-global-modes '(c-mode c++-mode emacs-lisp-mode))
-(global-company-mode)
-
-;; auto-complete has been disabled in favor of company mode.
-;;(require 'auto-complete-autoloads)
-;;(require 'auto-complete-config)
-;;(ac-config-default)
+;; (require 'company)
+;; (add-to-list 'company-backends 'company-capf)
+;; (setq company-global-modes '(c-mode c++-mode emacs-lisp-mode))
+;; (global-company-mode)
 
 ;; Git integration
 ;; -------------------------------------------------------------------
@@ -352,6 +344,7 @@ that uses 'font-lock-warning-face'."
 
 (require 'multi-term)
 (define-key global-map (kbd "<f1>") 'multi-term-dedicated-toggle)
+(define-key global-map (kbd "C-c s") 'multi-term-dedicated-toggle)
 (eval-after-load 'multi-term
   '(progn
      (setq
@@ -400,11 +393,8 @@ that uses 'font-lock-warning-face'."
      ;;(setq deft-use-filename-as-title t)
      ))
 
-;; w3m (web browsing inside Emacs)
-(setq browse-url-browser-function 'w3m-browse-url)
-(autoload 'w3m-browse-url "w3m" "Ask a WWW browser to show a URL." t)
-(eval-after-load 'w3m
-  '(setq w3m-use-cookies t))
+;; eww browsing inside emacs. Much better than w3m!
+(setq browse-url-browser-function 'eww-browse-url)
 
 ;; Google Talk inside Emacs.
 (require 'jabber-autoloads)
@@ -422,7 +412,8 @@ that uses 'font-lock-warning-face'."
          ;; Don't show presense notifications.
          jabber-alert-presence-message-function (lambda (who oldstatus newstatus statustext) nil)
          ;; Don't show alerts if I'm already in the chat buffer.
-         jabber-message-alert-same-buffer nil))
+         jabber-message-alert-same-buffer nil
+         jabber-history-dir "~/.jabber"))
 
 ;; Settings and modes to make text entry and display smarter.
 ;; -------------------------------------------------------------------
@@ -462,7 +453,8 @@ that uses 'font-lock-warning-face'."
 ;; Highlight matching parentheses when the point is on them.
 (show-paren-mode 1)
 (require 'smartparens-config)
-;;(smartparens-global-mode t)
+(smartparens-global-mode t)
+(sp-use-smartparens-bindings)
 
 (require 'expand-region)
 (global-set-key (kbd "C-=") 'er/expand-region)
@@ -482,11 +474,18 @@ that uses 'font-lock-warning-face'."
 (global-anzu-mode +1)
 ;; (set-face-attribute 'anzu-mode-line nil
 ;;                     :foreground "#b58900" :weight 'bold)
-(custom-set-variables
- '(anzu-mode-lighter nil)
- '(anzu-deactivate-region t)
- '(anzu-search-threshold 1000)
- '(anzu-replace-to-string-separator " => "))
+(eval-after-load 'anzu
+  (setq
+   anzu-mode-lighter nil
+   anzu-deactivate-region t
+   anzu-search-threshold 1000
+   anzu-replace-to-string-separator " => "))
+
+(setq
+ elfeed-feeds
+ (quote
+  ("http://www.cardgamedb.com/forums/index.php?/rss/ccs/1c61-Game%20of%20Thrones/"))
+ shr-blocked-images ".+")
 
 (require 'rainbow-delimiters)
 (add-hook 'text-mode-hook 'rainbow-delimiters-mode)
@@ -504,7 +503,7 @@ that uses 'font-lock-warning-face'."
 ;; Enhancements to dired including dired-jump
 (require 'dired-x)
 
-(eval-after-load "dash" '(dash-enable-font-lock))
+(eval-after-load 'dash '(dash-enable-font-lock))
 (require 'coffee-mode)
 (eval-after-load 'coffee-mode
   '(progn
@@ -553,6 +552,7 @@ that uses 'font-lock-warning-face'."
   (insert-register ?j t))
 (define-key global-map (kbd "C-c C-j") 'copy-to-j)
 (define-key global-map (kbd "C-j") 'paste-from-j)
+
 
 (server-start)
 
