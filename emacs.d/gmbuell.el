@@ -241,20 +241,20 @@ comment as a filename."
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
 ;; Try and use aspell but fall back to ispell
 '(if (executable-find "aspell")
-     '(progn
+     (progn
         (setq ispell-program-name "aspell")
         (setq ispell-list-command "list")
         (require 'ispell)
         (require 'flyspell)
    (when (executable-find "ispell")
-     (setq ispell-program-name "aspell")
-     (setq ispell-list-command "list")
+     (setq ispell-program-name "ispell")
      (require 'ispell)
      (require 'flyspell))))
 
 (eval-after-load 'ispell
   '(progn
      (add-hook 'text-mode-hook 'turn-on-flyspell)
+     (add-hook 'markdown-mode-hook 'turn-on-flyspell)
      (add-hook 'prog-mode-hook 'flyspell-prog-mode)
      (setq flyspell-issue-message-flag nil
            flyspell-issue-welcome-flag nil)))
@@ -274,6 +274,12 @@ comment as a filename."
 (defun esk-local-comment-auto-fill ()
   (set (make-local-variable 'comment-auto-fill-only-comments) t)
   (auto-fill-mode t))
+(defun esk-pretty-lambdas ()
+  (font-lock-add-keywords
+   nil `(("(?\\(lambda\\>\\)"
+          (0 (progn (compose-region (match-beginning 1) (match-end 1)
+                                    ,(make-char 'greek-iso8859-7 107))
+                    nil))))))
 (add-hook 'prog-mode-hook 'esk-add-watchwords)
 (add-hook 'prog-mode-hook 'esk-pretty-lambdas)
 (add-hook 'prog-mode-hook 'esk-local-comment-auto-fill)
@@ -288,6 +294,7 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'java-mode (font-lock-width-keyword 100))
 (font-lock-add-keywords 'python-mode (font-lock-width-keyword 80))
 (font-lock-add-keywords 'ess-mode (font-lock-width-keyword 80))
+(font-lock-add-keywords 'markdown-mode (font-lock-width-keyword 80))
 
 (defun esk-eval-and-replace ()
   "Replace the preceding sexp with its value."
@@ -366,7 +373,9 @@ that uses 'font-lock-warning-face'."
 ;;                             (define-key term-raw-map (kbd "C-y") 'term-paste)))
 ;; (add-hook 'term-mode-hook (lambda ()
 ;;                             (define-key term-raw-map (kbd "C-w") 'kill-region)))
-
+(add-hook 'term-mode-hook
+          (lambda ()
+            (define-key term-raw-map (kbd "C-y") 'term-paste)))
 
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
 (setq comint-scroll-to-bottom-on-input t)
@@ -397,7 +406,8 @@ that uses 'font-lock-warning-face'."
 (setq browse-url-browser-function 'eww-browse-url)
 
 ;; Google Talk inside Emacs.
-(require 'jabber-autoloads)
+(require 'jabber)
+;;(require 'jabber-autoloads)
 (eval-after-load 'jabber
   '(setq jabber-account-list
          '(("gmbuell@gmail.com"
@@ -443,18 +453,55 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'emacs-lisp-mode '((fontify-hex-colors)))
 (font-lock-add-keywords 'ess-mode '((fontify-hex-colors)))
 
-(defun esk-pretty-lambdas ()
-  (font-lock-add-keywords
-   nil `(("(?\\(lambda\\>\\)"
-          (0 (progn (compose-region (match-beginning 1) (match-end 1)
-                                    ,(make-char 'greek-iso8859-7 107))
-                    nil))))))
-
 ;; Highlight matching parentheses when the point is on them.
 (show-paren-mode 1)
 (require 'smartparens-config)
 (smartparens-global-mode t)
 (sp-use-smartparens-bindings)
+(custom-set-variables
+ '(sp-override-key-bindings
+   '(("C-<right>" . sp-slurp-hybrid-sexp)
+     ("C-<left>" . sp-dedent-adjust-sexp))))
+
+;; My custom code to make kill line more intelligent
+(require 'subr-x)
+(defun gmbuell-smart-kill-line (arg)
+  "If the line is only whitespace or the command is prefixed with C-u,
+   use standard kill-line. Otherwise, use sp-kill-hybrid-sexp"
+  (interactive "P")
+  (if (or arg (string-blank-p (thing-at-point 'line)))
+      (progn (kill-line nil)
+             (indent-for-tab-command))
+    (progn (sp-kill-hybrid-sexp arg)
+           (indent-for-tab-command)))
+  )
+
+(defun setup-sp-bindings ()
+  (local-set-key (kbd "C-k") 'gmbuell-smart-kill-line))
+(add-hook 'prog-mode-hook 'setup-sp-bindings t)
+
+;; Fix forward slurp spacing
+;; https://github.com/Fuco1/smartparens/issues/297
+(sp-local-pair 'c-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
+(sp-local-pair 'c++-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*)")
+;; https://github.com/Fuco1/smartparens/issues/236
+;; (sp-local-pair 'c++-mode
+;;                "(" nil
+;;                :pre-handlers '(sp-fixspace-pre-slurp-handler))
+;; (sp-local-pair 'c-mode
+;;                "(" nil
+;;                :pre-handlers '(sp-fixspace-pre-slurp-handler))
+
+;; (defun sp-fixspace-pre-slurp-handler (id action context)
+;;   (when (eq action 'slurp-forward)
+;;     ;; if there was no space before, there shouldn't be after either
+;;     ;; ok = enclosing, next-thing one being slurped into
+;;     (save-excursion
+;;       (when (and (= (sp-get ok :end) (sp-get next-thing :beg))
+;;                  (equal (sp-get ok :op) (sp-get next-thing :op)))
+;;         (goto-char (sp-get ok :end))
+;;         (when (looking-back " ")
+;;           (delete-char -1))))))
 
 (require 'expand-region)
 (global-set-key (kbd "C-=") 'er/expand-region)
@@ -490,12 +537,6 @@ that uses 'font-lock-warning-face'."
 (require 'rainbow-delimiters)
 (add-hook 'text-mode-hook 'rainbow-delimiters-mode)
 (add-hook 'fundamental-mode-hook 'rainbow-delimiters-mode)
-
-;; Not currently used.
-;; (require 'ace-jump-mode)
-;; (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
-;; (define-key global-map (kbd "C-c C-p") 'ace-jump-line-mode)
-;; (define-key global-map (kbd "C-c C-n") 'ace-jump-line-mode)
 
 ;; Miscellaneous modes
 ;; -------------------------------------------------------------------
@@ -556,6 +597,123 @@ that uses 'font-lock-warning-face'."
 (define-key global-map (kbd "C-c C-j") 'copy-to-j)
 (define-key global-map (kbd "C-j") 'paste-from-j)
 
+;; Add zsh history search to helm
+(defvar helm-c-source-zsh-history
+  '((name . "Zsh History")
+    (candidates . helm-c-zsh-history-set-candidates)
+    (action . (("Execute Command" . helm-c-zsh-history-action)))
+    (volatile)
+    (requires-pattern . 3)
+    (delayed)))
+
+(defun helm-c-zsh-history-set-candidates (&optional request-prefix)
+  (let ((pattern (replace-regexp-in-string
+                  " " ".*"
+                  (or (and request-prefix
+                           (concat request-prefix
+                                   " " helm-pattern))
+                      helm-pattern))))
+    (with-current-buffer (find-file-noselect "~/.zsh_history" t t)
+      (auto-revert-mode -1)
+      (goto-char (point-max))
+      (loop for pos = (re-search-backward pattern nil t)
+            while pos
+            collect (replace-regexp-in-string
+                     "\\`:.+?;" ""
+                     (buffer-substring (line-beginning-position)
+                                       (line-end-position)))))))
+
+(defun helm-c-zsh-history-action (candidate)
+  (multi-term-dedicated-select)
+  (kill-new candidate)
+  (yank))
+
+(defun helm-command-from-zsh ()
+  (interactive)
+  (require 'helm)
+  (helm-other-buffer 'helm-c-source-zsh-history "*helm zsh history*"))
+
+(define-key global-map (kbd "C-c C-z") 'helm-command-from-zsh)
+
+;; Markdown mode
+(add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
+(setq markdown-command "gfm")
+
+;; which-function-mode
+;; http://emacsredux.com/blog/2014/04/05/which-function-mode/
+(which-function-mode)
+(setq-default header-line-format
+              '((which-func-mode ("" which-func-format " "))))
+(setq mode-line-misc-info
+      ;; We remove Which Function Mode from the mode line, because it's mostly
+      ;; invisible here anyway.
+      (assq-delete-all 'which-func-mode mode-line-misc-info))
+
+;; smart-mode-line
+;; https://github.com/Bruce-Connor/smart-mode-line
+(setq sml/theme 'respectful)
+(sml/setup)
+;; Move which-function-mode to front of mode line
+;; https://github.com/Bruce-Connor/smart-mode-line/issues/77
+;; (let ((which-func '(which-func-mode ("" which-func-format " "))))
+;;   (setq-default mode-line-format (remove which-func mode-line-format))
+;;   (setq-default mode-line-misc-info (remove which-func mode-line-misc-info))
+;;   (setq cell (last mode-line-format 8))
+;;   (setcdr cell
+;;           (cons which-func
+;;                 (cdr cell))))
+(setq sml/mode-width (quote full)
+      sml/mule-info nil
+      sml/position-percentage-format nil
+      sml/show-remote nil
+      sml/size-indication-format "")
+(add-to-list 'sml/hidden-modes magit-auto-revert-mode-lighter)
+(add-to-list 'sml/hidden-modes " GitGutter")
+
+;; base16-theme customizations
+(setq background-theme-color "#202020"
+      current-line-theme-color "#505050"
+      selection-theme-color "#b0b0b0"
+      foreground-theme-color "#e0e0e0"
+      comment-theme-color "#b0b0b0"
+      cursor-theme-color "#e0e0e0"
+      red-theme-color "#ac4142"
+      orange-theme-color "#d28445"
+      yellow-theme-color "#f4bf75"
+      green-theme-color "#90a959"
+      aqua-theme-color "#75b5aa"
+      blue-theme-color "#6a9fb5"
+      purple-theme-color "#aa759f"
+      )
+
+(custom-set-variables
+ `(sml/active-background-color ,current-line-theme-color)
+ `(sml/active-foreground-color ,foreground-theme-color)
+ `(sml/inactive-background-color ,background-theme-color)
+ `(sml/inactive-foreground-color ,foreground-theme-color)
+ )
+(custom-set-faces
+ `(sml/charging ((t (:inherit sml/global :foreground ,green-theme-color))))
+ `(sml/discharging ((t (:foreground ,red-theme-color :inherit sml/global))))
+ `(sml/filename ((t (:weight bold :foreground ,yellow-theme-color :inherit sml/global))))
+ `(sml/global ((t (:inverse-video nil :foreground ,selection-theme-color))))
+ `(sml/modes ((t (:foreground ,foreground-theme-color :inherit sml/global))))
+ `(sml/modified ((t (:weight bold :foreground ,red-theme-color :inherit sml/global))))
+ `(sml/outside-modified
+   ((t (:background ,red-theme-color :foreground ,foreground-theme-color :inherit
+                    sml/global))))
+ `(sml/prefix ((t (:foreground ,purple-theme-color :inherit sml/global))))
+ `(sml/read-only ((t (:foreground ,blue-theme-color :inherit sml/global))))
+ `(sml/client ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
+ `(sml/process ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
+ `(sml/vc-edited ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
+ `(which-func ((t (:foreground ,aqua-theme-color)))))
+
+;; My pinky hurts. Lets try out ace-jump-mode.
+(require 'ace-jump-mode)
+(define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
+(ace-jump-mode-enable-mark-sync)
+(define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
 
 (server-start)
 
