@@ -31,7 +31,7 @@
             (package-install p)))))
     ))
 
-(defvar my-packages '(ace-jump-buffer ace-jump-mode anzu auto-complete base16-theme browse-kill-ring coffee-mode color-theme color-theme-solarized company dash dedicated deft elfeed elisp-slime-nav ess expand-region flx flx-ido flycheck flycheck-google-cpplint framemove fuzzy git-commit-mode git-gutter git-rebase-mode gitconfig-mode gitignore-mode google-c-style helm helm-c-yasnippet helm-ls-git hexrgb ido-hacks ido-ubiquitous iedit inf-ruby jabber jump magit markdown-mode multi-term multiple-cursors mustache-mode noflet pkg-info rainbow-delimiters ruby-mode s smart-mode-line smartparens smex unbound volatile-highlights yaml-mode yari yasnippet)
+(defvar my-packages '(ace-jump-buffer ace-jump-mode anzu auto-complete base16-theme browse-kill-ring coffee-mode color-theme color-theme-solarized company company-go dash dedicated deft elfeed elisp-slime-nav ess expand-region flx flx-ido flycheck flycheck-google-cpplint framemove fuzzy git-commit-mode git-gutter git-rebase-mode gitconfig-mode gitignore-mode go-eldoc go-errcheck go-mode google-c-style helm helm-c-yasnippet helm-ls-git hexrgb ido-hacks ido-ubiquitous iedit inf-ruby jabber jump magit markdown-mode multi-term multiple-cursors mustache-mode noflet pkg-info rainbow-delimiters ruby-mode s smart-mode-line smartparens smex unbound volatile-highlights yaml-mode yari yasnippet)
   "A list of packages to ensure are installed at launch.")
 
 (ensure-package-installed my-packages)

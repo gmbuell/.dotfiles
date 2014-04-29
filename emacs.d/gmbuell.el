@@ -295,6 +295,7 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'python-mode (font-lock-width-keyword 80))
 (font-lock-add-keywords 'ess-mode (font-lock-width-keyword 80))
 (font-lock-add-keywords 'markdown-mode (font-lock-width-keyword 80))
+(font-lock-add-keywords 'go-mode (font-lock-width-keyword 80))
 
 (defun esk-eval-and-replace ()
   "Replace the preceding sexp with its value."
@@ -641,27 +642,18 @@ that uses 'font-lock-warning-face'."
 
 ;; which-function-mode
 ;; http://emacsredux.com/blog/2014/04/05/which-function-mode/
-(which-function-mode)
-(setq-default header-line-format
-              '((which-func-mode ("" which-func-format " "))))
-(setq mode-line-misc-info
-      ;; We remove Which Function Mode from the mode line, because it's mostly
-      ;; invisible here anyway.
-      (assq-delete-all 'which-func-mode mode-line-misc-info))
+;; (which-function-mode)
+;; (setq-default header-line-format
+;;               '((which-func-mode ("" which-func-format " "))))
+;; (setq mode-line-misc-info
+;;       ;; We remove Which Function Mode from the mode line, because it's mostly
+;;       ;; invisible here anyway.
+;;       (assq-delete-all 'which-func-mode mode-line-misc-info))
 
 ;; smart-mode-line
 ;; https://github.com/Bruce-Connor/smart-mode-line
 (setq sml/theme 'respectful)
 (sml/setup)
-;; Move which-function-mode to front of mode line
-;; https://github.com/Bruce-Connor/smart-mode-line/issues/77
-;; (let ((which-func '(which-func-mode ("" which-func-format " "))))
-;;   (setq-default mode-line-format (remove which-func mode-line-format))
-;;   (setq-default mode-line-misc-info (remove which-func mode-line-misc-info))
-;;   (setq cell (last mode-line-format 8))
-;;   (setcdr cell
-;;           (cons which-func
-;;                 (cdr cell))))
 (setq sml/mode-width (quote full)
       sml/mule-info nil
       sml/position-percentage-format nil
@@ -714,6 +706,50 @@ that uses 'font-lock-warning-face'."
 (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
 (ace-jump-mode-enable-mark-sync)
 (define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
+
+;; go-mode
+;; http://dominik.honnef.co/posts/2013/03/writing_go_in_emacs/
+;; http://dominik.honnef.co/posts/2013/08/writing_go_in_emacs__cont__/
+(require 'go-mode-load)
+;; https://github.com/dougm/goflymake
+;; go get -u github.com/dougm/goflymake
+(add-to-list 'load-path "~/go/src/github.com/dougm/goflymake")
+(require 'go-flycheck)
+
+;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
+;; go get -u github.com/nsf/gocode
+(require 'company)
+(require 'company-go)
+(setq company-tooltip-limit 20)                      ; bigger popup window
+(setq company-minimum-prefix-length 0)               ; autocomplete right after '.'
+(setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
+(setq company-echo-delay 0)                          ; remove annoying blinking
+(setq company-begin-commands '(self-insert-command)) ; start
+                                        ; autocompletion only after
+                                        ; typing
+;; Only use company mode for go-mode
+(add-hook 'go-mode-hook (lambda ()
+                          (set (make-local-variable 'company-backends) '(company-go))
+                          (company-mode)
+                          (flycheck-mode)))
+
+;; https://github.com/syohex/emacs-go-eldoc
+(require 'go-eldoc) ;; Don't need to require, if you install by package.el
+(add-hook 'go-mode-hook 'go-eldoc-setup)
+
+;; https://github.com/dominikh/go-errcheck.el
+;; go get github.com/kisielk/errcheck
+(require 'go-errcheck)
+
+;; Add yasnippets-go:
+;; https://github.com/dominikh/yasnippet-go
+
+;; Fix tab size
+(add-hook 'go-mode-hook
+          (lambda ()
+            (add-hook 'before-save-hook 'gofmt-before-save)
+            (setq tab-width 4)
+            (setq indent-tabs-mode 1)))
 
 (server-start)
 
