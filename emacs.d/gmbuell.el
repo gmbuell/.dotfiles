@@ -713,7 +713,7 @@ that uses 'font-lock-warning-face'."
 (require 'go-mode-load)
 ;; https://github.com/dougm/goflymake
 ;; go get -u github.com/dougm/goflymake
-(add-to-list 'load-path "~/go/src/github.com/dougm/goflymake")
+(add-to-list 'load-path (substitute-in-file-name "$GOPATH/src/github.com/dougm/goflymake"))
 (require 'go-flycheck)
 
 ;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
