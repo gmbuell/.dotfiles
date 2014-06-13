@@ -25,14 +25,13 @@
 ;; https://github.com/zenspider/enhanced-ruby-mode
 
 ;;; Code:
-(defvar ruby-packages '(company-inf-ruby enh-ruby-mode inf-ruby rinari robe ruby-compilation ruby-mode rvm yaml-mode yari)
-  "A list of packages to ensure are installed at launch.")
-
-;; Defined in init.el
-(ensure-package-installed ruby-packages)
-
 (defun enable-gmbuell-ruby
     (interactive)
+  (defvar ruby-packages '(company-inf-ruby enh-ruby-mode inf-ruby rinari robe ruby-compilation ruby-mode rvm yaml-mode yari)
+    "A list of packages to ensure are installed at launch.")
+
+  ;; Defined in init.el
+  (ensure-package-installed ruby-packages)
   (require 'enh-ruby-mode)
   (require 'robe)
   (require 'rinari)
@@ -60,6 +59,7 @@
 
   (defadvice inf-ruby-console-auto (before activate-rvm-for-robe activate)
     (rvm-activate-corresponding-ruby))
+  )
 
-  (provide 'gmbuell-ruby))
+(provide 'gmbuell-ruby)
 ;;; gmbuell-ruby.el ends here

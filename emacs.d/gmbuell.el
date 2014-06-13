@@ -114,6 +114,41 @@
 (defalias 'yes-or-no-p 'y-or-n-p)
 (defalias 'auto-tail-revert-mode 'tail-mode)
 
+;; From http://steckerhalter.co.vu/steckemacs.html
+;; Make isearch-forward put the cursor at the start of the search, not the end.
+(defun my-isearch-goto-match-beginning ()
+  (when (and isearch-forward (not isearch-mode-end-hook-quit)) (goto-char isearch-other-end)))
+(add-hook 'isearch-mode-end-hook 'my-isearch-goto-match-beginning)
+
+;; Delete more than one space
+(setq-default c-hungry-delete-key t)
+
+(setq highlight-symbol-on-navigation-p t)
+(add-hook 'prog-mode-hook 'highlight-symbol-mode)
+
+(require 'iedit)
+(setq iedit-unmatched-lines-invisible-default t)
+
+(require 'back-button)
+(back-button-mode 1)
+
+(global-set-key (kbd "C-h C-m") 'discover-my-major)
+
+(require 'helm-swoop)
+(global-set-key (kbd "M-i") 'helm-swoop)
+(global-set-key (kbd "M-I") 'helm-swoop-back-to-last-point)
+(global-set-key (kbd "C-c M-i") 'helm-multi-swoop)
+(global-set-key (kbd "C-x M-i") 'helm-multi-swoop-all)
+;; When doing isearch, hand the word over to helm-swoop
+(define-key isearch-mode-map (kbd "M-i") 'helm-swoop-from-isearch)
+;; From helm-swoop to helm-multi-swoop-all
+(define-key helm-swoop-map (kbd "M-i") 'helm-multi-swoop-all-from-helm-swoop)
+;; When doing evil-search, hand the word over to helm-swoop
+;; (define-key evil-motion-state-map (kbd "M-i")
+;; 'helm-swoop-from-evil-search)
+;; Save buffer when helm-multi-swoop-edit complete
+(setq helm-multi-swoop-edit-save t)
+
 ;; We need nested minibuffers mostly due to helm replacing "M-y"
 (setq enable-recursive-minibuffers t)
 
@@ -135,7 +170,7 @@
 (ido-hacks-mode)
 (ido-ubiquitous-mode)
 (setq ido-enable-prefix nil
-      ido-enable-flex-matching t
+      ido-enable-flex-matching nil
       ido-auto-merge-work-directories-length nil
       ido-create-new-buffer 'always
       ido-use-filename-at-point 'guess
@@ -145,7 +180,7 @@
       )
 (require 'flx-ido)
 (flx-ido-mode t)
-(setq gc-cons-threshold 20000000)  ;; For flx
+;; (setq gc-cons-threshold 20000000)  ;; For flx
 
 ;; Ignore some buffers.
 (add-to-list 'recentf-exclude "/COMMIT_EDITMSG$")
@@ -221,7 +256,7 @@ comment as a filename."
 (global-set-key (kbd "C-x C-b") 'helm-buffers-list)
 (global-set-key (kbd "C-c C-o") 'helm-occur)
 (global-set-key (kbd "C-c M-o") 'helm-multi-occur)
-(global-set-key (kbd "C-c c-b") 'helm-bookmarks)
+(global-set-key (kbd "C-c C-b") 'helm-bookmarks)
 (global-set-key (kbd "M-y") 'helm-show-kill-ring)
 ;; Jump to a definition in the current file.
 (global-set-key (kbd "C-x C-i") 'helm-imenu)
@@ -308,7 +343,7 @@ that uses 'font-lock-warning-face'."
            (insert (current-kill 0)))))
 
 ;; Flycheck for linting
-;;(global-flycheck-mode)
+(global-flycheck-mode)
 ;;(require 'google-c-style)
 ;;(add-hook 'c-mode-common-hook 'google-set-c-style)
 ;;(add-hook 'c-mode-common-hook 'google-make-newline-indent)
@@ -319,10 +354,13 @@ that uses 'font-lock-warning-face'."
 ;;                            '(warnings-only . c/c++-googlelint))
 
 ;; Company mode for completions: http://company-mode.github.io/
-;; (require 'company)
-;; (add-to-list 'company-backends 'company-capf)
-;; (setq company-global-modes '(c-mode c++-mode emacs-lisp-mode))
-;; (global-company-mode)
+(require 'company)
+(add-to-list 'company-backends 'company-capf)
+;;(setq company-global-modes '(c-mode c++-mode emacs-lisp-mode))
+(global-company-mode)
+(add-to-list 'company-backends 'company-dabbrev t)
+(add-to-list 'company-backends 'company-ispell t)
+;;(add-to-list 'company-backends 'company-files t)
 
 ;; Git integration
 ;; -------------------------------------------------------------------
@@ -579,9 +617,10 @@ that uses 'font-lock-warning-face'."
 (defun switch-to-minibuffer ()
   "Switch to minibuffer window."
   (interactive)
-  (if (active-minibuffer-window)
-      (select-window (active-minibuffer-window))
-    (error "Minibuffer is not active")))
+  (when (active-minibuffer-window)
+    (select-window (active-minibuffer-window))))
+;; Rebind C-g to completely exit minibuffers, no matter how nested.
+(global-set-key (kbd "C-g") 'top-level)
 
 ;; For chromebook:
 (global-set-key (kbd "<deletechar>") 'backward-kill-word)
@@ -705,7 +744,8 @@ that uses 'font-lock-warning-face'."
 (require 'ace-jump-mode)
 (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
 (ace-jump-mode-enable-mark-sync)
-(define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
+(setq ace-jump-mode-scope 'window)
+;; (define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
 
 ;; go-mode
 ;; http://dominik.honnef.co/posts/2013/03/writing_go_in_emacs/
@@ -721,17 +761,17 @@ that uses 'font-lock-warning-face'."
 (require 'company)
 (require 'company-go)
 (setq company-tooltip-limit 20)                      ; bigger popup window
-(setq company-minimum-prefix-length 0)               ; autocomplete right after '.'
+(setq company-minimum-prefix-length 3)               ; autocomplete right after '.'
 (setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
 (setq company-echo-delay 0)                          ; remove annoying blinking
 (setq company-begin-commands '(self-insert-command)) ; start
                                         ; autocompletion only after
                                         ; typing
 ;; Only use company mode for go-mode
-(add-hook 'go-mode-hook (lambda ()
-                          (set (make-local-variable 'company-backends) '(company-go))
-                          (company-mode)
-                          (flycheck-mode)))
+;; (add-hook 'go-mode-hook (lambda ()
+;;                           (set (make-local-variable 'company-backends) '(company-go))
+;;                           (company-mode)
+;;                           (flycheck-mode)))
 
 ;; https://github.com/syohex/emacs-go-eldoc
 (require 'go-eldoc) ;; Don't need to require, if you install by package.el
