@@ -3,3 +3,5 @@
 	email = gmbuell@gmail.com
 [push]
 	default = simple
+[clangformat]
+	style = Google

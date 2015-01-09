@@ -263,7 +263,8 @@ comment as a filename."
 ;; Consider giving helm-adaptative-mode a try
 
 ;; Emacs theme.
-(load-theme 'base16-default t)
+;; (load-theme 'base16-default t)
+
 ;; Nice fonts:
 ;; Inconsolata-11
 ;; Droid Sans Mono-11
@@ -285,6 +286,14 @@ comment as a filename."
      (setq ispell-program-name "ispell")
      (require 'ispell)
      (require 'flyspell))))
+
+(eval-after-load 'aspell
+  '(progn
+     (add-hook 'text-mode-hook 'turn-on-flyspell)
+     (add-hook 'markdown-mode-hook 'turn-on-flyspell)
+     (add-hook 'prog-mode-hook 'flyspell-prog-mode)
+     (setq flyspell-issue-message-flag nil
+           flyspell-issue-welcome-flag nil)))
 
 (eval-after-load 'ispell
   '(progn
@@ -330,7 +339,7 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'python-mode (font-lock-width-keyword 80))
 (font-lock-add-keywords 'ess-mode (font-lock-width-keyword 80))
 (font-lock-add-keywords 'markdown-mode (font-lock-width-keyword 80))
-(font-lock-add-keywords 'go-mode (font-lock-width-keyword 80))
+;; (font-lock-add-keywords 'go-mode (font-lock-width-keyword 80))
 
 (defun esk-eval-and-replace ()
   "Replace the preceding sexp with its value."
@@ -343,7 +352,7 @@ that uses 'font-lock-warning-face'."
            (insert (current-kill 0)))))
 
 ;; Flycheck for linting
-(global-flycheck-mode)
+;; (global-flycheck-mode)
 ;;(require 'google-c-style)
 ;;(add-hook 'c-mode-common-hook 'google-set-c-style)
 ;;(add-hook 'c-mode-common-hook 'google-make-newline-indent)
@@ -355,12 +364,34 @@ that uses 'font-lock-warning-face'."
 
 ;; Company mode for completions: http://company-mode.github.io/
 (require 'company)
+(require 'ycmd-next-error)
+(set-variable 'ycmd-server-command '("/usr/grte/v4/bin/python2.7" "/usr/lib/youcompleteme/python/ycm/../../third_party/ycmd/ycmd"))
+(set-variable 'ycmd-global-config "/usr/lib/youcompleteme/ycm_extra_conf.py")
+(set-variable 'ycmd-extra-conf-whitelist '("/usr/lib/youcompleteme/ycm_extra_conf.py"))
+(set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
+(require 'ycmd)
+(require 'company-ycmd)
+(company-ycmd-setup)
+(add-hook 'after-init-hook 'global-company-mode) 
+(add-hook 'prog-mode-hook 'ycmd-mode)
+;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
+;; go get -u github.com/nsf/gocode
+(require 'company-go)
+(setq company-tooltip-limit 20)                      ; bigger popup window
+(setq company-minimum-prefix-length 3)               ; autocomplete right after '.'
+(setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
+(setq company-echo-delay 0)                          ; remove annoying blinking
+(setq company-begin-commands '(self-insert-command)) ; start
+                                        ; autocompletion only after
+                                        ; typing
 (add-to-list 'company-backends 'company-capf)
 ;;(setq company-global-modes '(c-mode c++-mode emacs-lisp-mode))
-(global-company-mode)
 (add-to-list 'company-backends 'company-dabbrev t)
 (add-to-list 'company-backends 'company-ispell t)
+(setq company-backends (-difference company-backends '(company-clang)))
 ;;(add-to-list 'company-backends 'company-files t)
+;; (setq company-clang-arguments '("-I/google/src/head/depot/google3"))
+(global-company-mode)
 
 ;; Git integration
 ;; -------------------------------------------------------------------
@@ -702,43 +733,45 @@ that uses 'font-lock-warning-face'."
 (add-to-list 'sml/hidden-modes " GitGutter")
 
 ;; base16-theme customizations
-(setq background-theme-color "#202020"
-      current-line-theme-color "#505050"
-      selection-theme-color "#b0b0b0"
-      foreground-theme-color "#e0e0e0"
-      comment-theme-color "#b0b0b0"
-      cursor-theme-color "#e0e0e0"
-      red-theme-color "#ac4142"
-      orange-theme-color "#d28445"
-      yellow-theme-color "#f4bf75"
-      green-theme-color "#90a959"
-      aqua-theme-color "#75b5aa"
-      blue-theme-color "#6a9fb5"
-      purple-theme-color "#aa759f"
-      )
+;; (setq background-theme-color "#202020"
+;;       current-line-theme-color "#505050"
+;;       selection-theme-color "#b0b0b0"
+;;       foreground-theme-color "#e0e0e0"
+;;       comment-theme-color "#b0b0b0"
+;;       cursor-theme-color "#e0e0e0"
+;;       red-theme-color "#ac4142"
+;;       orange-theme-color "#d28445"
+;;       yellow-theme-color "#f4bf75"
+;;       green-theme-color "#90a959"
+;;       aqua-theme-color "#75b5aa"
+;;       blue-theme-color "#6a9fb5"
+;;       purple-theme-color "#aa759f"
+;;       )
 
-(custom-set-variables
- `(sml/active-background-color ,current-line-theme-color)
- `(sml/active-foreground-color ,foreground-theme-color)
- `(sml/inactive-background-color ,background-theme-color)
- `(sml/inactive-foreground-color ,foreground-theme-color)
- )
-(custom-set-faces
- `(sml/charging ((t (:inherit sml/global :foreground ,green-theme-color))))
- `(sml/discharging ((t (:foreground ,red-theme-color :inherit sml/global))))
- `(sml/filename ((t (:weight bold :foreground ,yellow-theme-color :inherit sml/global))))
- `(sml/global ((t (:inverse-video nil :foreground ,selection-theme-color))))
- `(sml/modes ((t (:foreground ,foreground-theme-color :inherit sml/global))))
- `(sml/modified ((t (:weight bold :foreground ,red-theme-color :inherit sml/global))))
- `(sml/outside-modified
-   ((t (:background ,red-theme-color :foreground ,foreground-theme-color :inherit
-                    sml/global))))
- `(sml/prefix ((t (:foreground ,purple-theme-color :inherit sml/global))))
- `(sml/read-only ((t (:foreground ,blue-theme-color :inherit sml/global))))
- `(sml/client ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
- `(sml/process ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
- `(sml/vc-edited ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
- `(which-func ((t (:foreground ,aqua-theme-color)))))
+;; (custom-set-variables
+;;  `(sml/active-background-color ,current-line-theme-color)
+;;  `(sml/active-foreground-color ,foreground-theme-color)
+;;  `(sml/inactive-background-color ,background-theme-color)
+;;  `(sml/inactive-foreground-color ,foreground-theme-color)
+;;  )
+;; (custom-set-faces
+;;  `(sml/charging ((t (:inherit sml/global :foreground ,green-theme-color))))
+;;  `(sml/discharging ((t (:foreground ,red-theme-color :inherit sml/global))))
+;;  `(sml/filename ((t (:weight bold :foreground ,yellow-theme-color :inherit sml/global))))
+;;  `(sml/global ((t (:inverse-video nil :foreground ,selection-theme-color))))
+;;  `(sml/modes ((t (:foreground ,foreground-theme-color :inherit sml/global))))
+;;  `(sml/modified ((t (:weight bold :foreground ,red-theme-color :inherit sml/global))))
+;;  `(sml/outside-modified
+;;    ((t (:background ,red-theme-color :foreground ,foreground-theme-color :inherit
+;;                     sml/global))))
+;;  `(sml/prefix ((t (:foreground ,purple-theme-color :inherit sml/global))))
+;;  `(sml/read-only ((t (:foreground ,blue-theme-color :inherit sml/global))))
+;;  `(sml/client ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
+;;  `(sml/process ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
+;;  `(sml/vc-edited ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
+;;  `(which-func ((t (:foreground ,aqua-theme-color)))))
+
+(load-theme 'gotham t)
 
 ;; My pinky hurts. Lets try out ace-jump-mode.
 (require 'ace-jump-mode)
@@ -750,28 +783,17 @@ that uses 'font-lock-warning-face'."
 ;; go-mode
 ;; http://dominik.honnef.co/posts/2013/03/writing_go_in_emacs/
 ;; http://dominik.honnef.co/posts/2013/08/writing_go_in_emacs__cont__/
-(require 'go-mode-load)
+;; (require 'go-mode-load)
 ;; https://github.com/dougm/goflymake
 ;; go get -u github.com/dougm/goflymake
-(add-to-list 'load-path (substitute-in-file-name "$GOPATH/src/github.com/dougm/goflymake"))
-(require 'go-flycheck)
+;; (add-to-list 'load-path (substitute-in-file-name "$GOPATH/src/github.com/dougm/goflymake"))
+;; (require 'go-flycheck)
 
-;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
-;; go get -u github.com/nsf/gocode
-(require 'company)
-(require 'company-go)
-(setq company-tooltip-limit 20)                      ; bigger popup window
-(setq company-minimum-prefix-length 3)               ; autocomplete right after '.'
-(setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
-(setq company-echo-delay 0)                          ; remove annoying blinking
-(setq company-begin-commands '(self-insert-command)) ; start
-                                        ; autocompletion only after
-                                        ; typing
 ;; Only use company mode for go-mode
-;; (add-hook 'go-mode-hook (lambda ()
-;;                           (set (make-local-variable 'company-backends) '(company-go))
-;;                           (company-mode)
-;;                           (flycheck-mode)))
+(add-hook 'go-mode-hook (lambda ()
+                          (set (make-local-variable 'company-backends) '(company-go))
+                          (company-mode)
+                          (flycheck-mode)))
 
 ;; https://github.com/syohex/emacs-go-eldoc
 (require 'go-eldoc) ;; Don't need to require, if you install by package.el
@@ -790,6 +812,79 @@ that uses 'font-lock-warning-face'."
             (add-hook 'before-save-hook 'gofmt-before-save)
             (setq tab-width 4)
             (setq indent-tabs-mode 1)))
+
+;; Empty scratch buffer
+(setq initial-scratch-message nil)
+(setq initial-major-mode 'text-mode)
+
+;; Correct words and add to abbrev for auto correction
+;; (define-key ctl-x-map "\C-i" 'endless/ispell-word-then-abbrev)
+
+(defun endless/ispell-word-then-abbrev (p)
+  "Call `ispell-word'. Then create an abbrev for the correction made.
+With prefix P, create local abbrev. Otherwise it will be global."
+  (interactive "P")
+  (let ((bef (downcase (or (thing-at-point 'word) ""))) aft)
+    (call-interactively 'ispell-word)
+    (setq aft (downcase (or (thing-at-point 'word) "")))
+    (unless (string= aft bef)
+      (message "\"%s\" now expands to \"%s\" %sally"
+               bef aft (if p "loc" "glob"))
+      (define-abbrev
+        (if p local-abbrev-table global-abbrev-table)
+        bef aft))))
+
+(setq save-abbrevs t)
+(setq-default abbrev-mode t)
+
+(set-face-attribute 'jabber-chat-prompt-local nil
+                    :foreground "#195466")
+(set-face-attribute 'jabber-chat-prompt-foreign nil
+                    :foreground "#c23127")
+(set-face-attribute 'jabber-roster-user-xa nil
+                    :foreground "#0a3749")
+(set-face-attribute 'jabber-roster-user-online nil
+                    :foreground "#599cab")
+(set-face-attribute 'jabber-roster-user-away nil
+                    :foreground "#245361")
+
+;; (set-face-attribute 'jabber-chat-prompt-local nil
+;;                     :background "#0c1014"
+;;                     :foreground "#195466")
+;; (set-face-attribute 'jabber-chat-prompt-foreign nil
+;;                     :background "#0c1014"
+;;                     :foreground "#c23127")
+;; (set-face-attribute 'jabber-roster-user-xa nil
+;;                     :background "#0c1014"
+;;                     :foreground "#0a3749")
+;; (set-face-attribute 'jabber-roster-user-online nil
+;;                     :background "#0c1014"
+;;                     :foreground "#599cab")
+;; (set-face-attribute 'jabber-roster-user-away nil
+;;                     :background "#0c1014"
+;;                     :foreground "#245361")
+(set-face-attribute 'jabber-activity-face nil
+                    :foreground "#d26937")
+(set-face-attribute 'jabber-activity-personal-face nil
+                    :foreground "#c23127")
+
+(global-set-key (kbd "M-p") 'ace-window)
+(setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+
+(defun narrow-to-region-indirect (start end)
+  "Restrict editing in this buffer to the current region, indirectly."
+  (interactive "r")
+  (deactivate-mark)
+  (let ((buf (clone-indirect-buffer nil nil)))
+    (with-current-buffer buf
+      (narrow-to-region start end))
+    (switch-to-buffer buf)))
+
+;; This might be bad? I don't really know what it does.
+(setq redisplay-dont-pause t)
+
+(require 're-builder)
+(setq reb-re-syntax 'string)
 
 (server-start)
 
