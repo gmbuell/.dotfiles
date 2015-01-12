@@ -10,14 +10,23 @@
 
 ;;; Code:
 (require 'package)
+(setq package-enable-at-startup nil)
 (add-to-list 'package-archives
              '("marmalade" . "http://marmalade-repo.org/packages/") t)
 (add-to-list 'package-archives
              '("melpa" . "http://melpa.milkbox.net/packages/") t)
 (package-initialize)
 
-(when (not package-archive-contents)
-  (package-refresh-contents))
+;; Bootstrap 'use-package'.
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+;; Get dash so we can install everything else that hasn't been
+;; migrated to use-package.
+(unless (package-installed-p 'dash)
+  (package-refresh-contents)
+  (package-install 'dash))
 
 (defun ensure-package-installed (packages)
   "Assure every package in PACKAGES is installed."
