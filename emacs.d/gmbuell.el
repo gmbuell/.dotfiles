@@ -352,7 +352,7 @@ that uses 'font-lock-warning-face'."
            (insert (current-kill 0)))))
 
 ;; Flycheck for linting
-;; (global-flycheck-mode)
+(global-flycheck-mode)
 ;;(require 'google-c-style)
 ;;(add-hook 'c-mode-common-hook 'google-set-c-style)
 ;;(add-hook 'c-mode-common-hook 'google-make-newline-indent)
@@ -365,30 +365,39 @@ that uses 'font-lock-warning-face'."
 ;; Company mode for completions: http://company-mode.github.io/
 (require 'company)
 (require 'ycmd-next-error)
-(set-variable 'ycmd-server-command '("/usr/grte/v4/bin/python2.7" "/usr/lib/youcompleteme/python/ycm/../../third_party/ycmd/ycmd"))
+(set-variable 'ycmd-server-command '("/usr/grte/v4/bin/python2.7" "/usr/lib/youcompleteme/third_party/ycmd/ycmd"))
 (set-variable 'ycmd-global-config "/usr/lib/youcompleteme/ycm_extra_conf.py")
 (set-variable 'ycmd-extra-conf-whitelist '("/usr/lib/youcompleteme/ycm_extra_conf.py"))
 (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
 (require 'ycmd)
 (require 'company-ycmd)
 (company-ycmd-setup)
-(add-hook 'after-init-hook 'global-company-mode) 
 (add-hook 'prog-mode-hook 'ycmd-mode)
+;; 'company-clang' does not work in google3; we do not want company to ever
+;; fall back to it.
+(delq 'company-clang company-backends)
+
+(require 'flycheck-ycmd)
+(flycheck-ycmd-setup)
+(add-hook 'prog-mode-hook 'flycheck-mode)
+
+
 ;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
 ;; go get -u github.com/nsf/gocode
 (require 'company-go)
 (setq company-tooltip-limit 20)                      ; bigger popup window
-(setq company-minimum-prefix-length 3)               ; autocomplete right after '.'
+;(setq company-minimum-prefix-length 3)               ; autocomplete right after '.'
 (setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
-(setq company-echo-delay 0)                          ; remove annoying blinking
-(setq company-begin-commands '(self-insert-command)) ; start
+;(setq company-echo-delay 0)                          ; remove annoying blinking
+;(setq company-begin-commands '(self-insert-command)) ; start
                                         ; autocompletion only after
                                         ; typing
-(add-to-list 'company-backends 'company-capf)
+;(add-to-list 'company-backends 'company-capf)
 ;;(setq company-global-modes '(c-mode c++-mode emacs-lisp-mode))
-(add-to-list 'company-backends 'company-dabbrev t)
-(add-to-list 'company-backends 'company-ispell t)
-(setq company-backends (-difference company-backends '(company-clang)))
+;(add-to-list 'company-backends 'company-dabbrev t)
+;(add-to-list 'company-backends 'company-ispell t)
+(add-to-list 'company-backends 'company-warhammer)
+;(setq company-backends (-difference company-backends '(company-clang)))
 ;;(add-to-list 'company-backends 'company-files t)
 ;; (setq company-clang-arguments '("-I/google/src/head/depot/google3"))
 (global-company-mode)
@@ -468,8 +477,9 @@ that uses 'font-lock-warning-face'."
        (setq deft-directory "~/Dropbox/notes")
        (when (not (file-exists-p deft-directory))
          (make-directory deft-directory t)))
-     ;;(setq deft-text-mode 'gfm-mode)  ;; Use Github flavored Markdown
-     ;;(setq deft-use-filename-as-title t)
+     (setq deft-text-mode 'org-mode)
+     (setq deft-extension "org")
+     (setq deft-use-filename-as-title t)
      ))
 
 ;; eww browsing inside emacs. Much better than w3m!
@@ -651,7 +661,7 @@ that uses 'font-lock-warning-face'."
   (when (active-minibuffer-window)
     (select-window (active-minibuffer-window))))
 ;; Rebind C-g to completely exit minibuffers, no matter how nested.
-(global-set-key (kbd "C-g") 'top-level)
+;; (global-set-key (kbd "C-g") 'top-level)
 
 ;; For chromebook:
 (global-set-key (kbd "<deletechar>") 'backward-kill-word)
@@ -868,7 +878,7 @@ With prefix P, create local abbrev. Otherwise it will be global."
 (set-face-attribute 'jabber-activity-personal-face nil
                     :foreground "#c23127")
 
-(global-set-key (kbd "M-p") 'ace-window)
+(global-set-key (kbd "M-o") 'ace-window)
 (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
 
 (defun narrow-to-region-indirect (start end)
@@ -885,6 +895,75 @@ With prefix P, create local abbrev. Otherwise it will be global."
 
 (require 're-builder)
 (setq reb-re-syntax 'string)
+
+;; Uses expand-region for movement
+;; Note, this doesn't work as well as one would hope...
+;; (require 'smart-forward)
+;; (global-set-key (kbd "M-p") 'smart-up)
+;; (global-set-key (kbd "M-n") 'smart-down)
+;; (global-set-key (kbd "M-b") 'smart-backward)
+;; (global-set-key (kbd "M-f") 'smart-forward)
+
+(require 'yasnippet)
+(yas-global-mode 1)
+
+;; Add shortcut to recalculate table
+(define-key org-mode-map (kbd "M-r") '(lambda () (interactive)(org-table-recalculate t)))
+
+;; Helm improvement. Make backspace quit when there is nothing
+;; there instead of erroring.
+(require 'helm)
+(defun helm-backspace ()
+  "Forward to `backward-delete-char'.
+On error (read-only), quit without selecting."
+  (interactive)
+  (condition-case nil
+      (backward-delete-char 1)
+    (error
+     (helm-keyboard-quit))))
+(define-key helm-map (kbd "DEL") 'helm-backspace)
+
+;; Try out hydra:
+(defhydra hydra-error (global-map "M-g")
+  "goto-error"
+  ("h" first-error "first")
+  ("j" next-error "next")
+  ("k" previous-error "prev")
+  ("v" recenter-top-bottom "recenter")
+  ("q" nil "quit"))
+
+(require 'multifiles)
+(global-set-key (kbd "C-!") 'mf/mirror-region-in-multifile)
+
+(defun keys-describe-prefixes ()
+  (interactive)
+  (with-output-to-temp-buffer "*Bindings*"
+    (dolist (letter-group (list
+                           (cl-loop for c from ?a to ?z
+                                    collect (string c))))
+      (dolist (prefix '("" "C-" "M-" "C-M-"))
+        (princ (mapconcat
+                (lambda (letter)
+                  (let ((key (concat prefix letter)))
+                    (format ";; (global-set-key (kbd \"%s\") '%S)"
+                            key
+                            (key-binding (kbd key)))))
+                letter-group
+                "\n"))
+        (princ "\n\n")))))
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((sh . t)))
+
+(require 'multiple-cursors)
+(global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+(global-set-key (kbd "C->") 'mc/mark-next-like-this)
+(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+(global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
+
+;; Faster tramp startup
+(setq tramp-default-method "ssh")
 
 (server-start)
 
