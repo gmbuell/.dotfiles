@@ -27,7 +27,7 @@
 ;;; Code:
 (defun enable-gmbuell-ruby
     (interactive)
-  (defvar ruby-packages '(company-inf-ruby enh-ruby-mode inf-ruby rinari robe ruby-compilation ruby-mode rvm yaml-mode yari)
+  (defvar ruby-packages '(company-inf-ruby enh-ruby-mode inf-ruby rinari robe ruby-compilation ruby-mode rvm yaml-mode yari yard-mode)
     "A list of packages to ensure are installed at launch.")
 
   ;; Defined in init.el

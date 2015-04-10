@@ -80,10 +80,6 @@
 (when (fboundp 'scroll-bar-mode)
   (scroll-bar-mode -1))
 
-(require 'saveplace)
-(setq-default save-place t)
-(setq save-place-file "~/.emacs.d/saved-places")
-
 ;; Replace all the search keys with regex versions.
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
@@ -102,6 +98,9 @@
 
 (show-paren-mode 1)
 (setq-default indent-tabs-mode nil)
+
+(require 'saveplace)
+(setq-default save-place t)
 (setq x-select-enable-clipboard t
       x-select-enable-primary t
       save-interprogram-paste-before-kill t
@@ -121,8 +120,9 @@
 (add-hook 'isearch-mode-end-hook 'my-isearch-goto-match-beginning)
 
 ;; Delete more than one space
-(setq-default c-hungry-delete-key t)
+;; (setq-default c-hungry-delete-key t)
 
+(require 'highlight-symbol)
 (setq highlight-symbol-on-navigation-p t)
 (add-hook 'prog-mode-hook 'highlight-symbol-mode)
 
@@ -151,12 +151,6 @@
 
 ;; We need nested minibuffers mostly due to helm replacing "M-y"
 (setq enable-recursive-minibuffers t)
-
-;; Ubiquitous Packages which should be loaded on startup rather than
-;; autoloaded on demand since they are likely to be used in every
-;; session.
-(require 'cl)
-(require 'ansi-color)
 
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'forward)
@@ -209,23 +203,22 @@
 (defvar ffap-c-commment-regexp "^/\\*+"
   "Matches an opening C-style comment, like \"/***\".")
 
-(defadvice ffap-file-at-point (after avoid-c-comments activate)
-  "Don't return paths like \"/******\" unless they actually exist.
+;; I have no idea where this came from.
+;; (defadvice ffap-file-at-point (after avoid-c-comments activate)
+;;   "Don't return paths like \"/******\" unless they actually exist.
 
-This fixes the bug where ido would try to suggest a C-style
-comment as a filename."
-  (ignore-errors
-    (when (and ad-return-value
-               (string-match-p ffap-c-commment-regexp
-                               ad-return-value)
-               (not (ffap-file-exists-string ad-return-value)))
-      (setq ad-return-value nil))))
+;; This fixes the bug where ido would try to suggest a C-style
+;; comment as a filename."
+;;   (ignore-errors
+;;     (when (and ad-return-value
+;;                (string-match-p ffap-c-commment-regexp
+;;                                ad-return-value)
+;;                (not (ffap-file-exists-string ad-return-value)))
+;;       (setq ad-return-value nil))))
 
 ;; Command to open files in another window. Useful for split buffer
 ;; setups.
 (global-set-key (kbd "C-x M-f") 'ido-find-file-other-window)
-
-(set-default 'imenu-auto-rescan t)
 
 ;; Hippie expand: at times perhaps too hip.
 (eval-after-load 'hippie-exp
@@ -234,7 +227,7 @@ comment as a filename."
        (delete f hippie-expand-try-functions-list))
      ;; Add this back in at the end of the list.
      (add-to-list 'hippie-expand-try-functions-list 'try-complete-file-name-partially t)))
-(global-set-key (kbd "M-/") 'hippie-expand)
+;; (global-set-key (kbd "M-/") 'hippie-expand)
 
 ;; Helm configuration. Helm is a great interface for finding things.
 ;; Protip: Helm uses space as a separator. So if you use helm to
@@ -259,19 +252,9 @@ comment as a filename."
 (global-set-key (kbd "C-c C-b") 'helm-bookmarks)
 (global-set-key (kbd "M-y") 'helm-show-kill-ring)
 ;; Jump to a definition in the current file.
+(set-default 'imenu-auto-rescan t)
 (global-set-key (kbd "C-x C-i") 'helm-imenu)
 ;; Consider giving helm-adaptative-mode a try
-
-;; Emacs theme.
-;; (load-theme 'base16-default t)
-
-;; Nice fonts:
-;; Inconsolata-11
-;; Droid Sans Mono-11
-;; DejaVu Sans Mono-11
-;; Note, these require: apt-get install ttf-droid ttfinconsolata
-;; ttf-dejavu
-(set-frame-font "DejaVu Sans Mono 11" t t)
 
 ;; Plain text settings
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
@@ -287,15 +270,7 @@ comment as a filename."
      (require 'ispell)
      (require 'flyspell))))
 
-(eval-after-load 'aspell
-  '(progn
-     (add-hook 'text-mode-hook 'turn-on-flyspell)
-     (add-hook 'markdown-mode-hook 'turn-on-flyspell)
-     (add-hook 'prog-mode-hook 'flyspell-prog-mode)
-     (setq flyspell-issue-message-flag nil
-           flyspell-issue-welcome-flag nil)))
-
-(eval-after-load 'ispell
+(eval-after-load 'flyspell
   '(progn
      (add-hook 'text-mode-hook 'turn-on-flyspell)
      (add-hook 'markdown-mode-hook 'turn-on-flyspell)
@@ -365,14 +340,14 @@ that uses 'font-lock-warning-face'."
 ;; Company mode for completions: http://company-mode.github.io/
 (require 'company)
 (require 'ycmd-next-error)
+(require 'ycmd)
+(require 'company-ycmd)
 (set-variable 'ycmd-server-command '("/usr/grte/v4/bin/python2.7" "/usr/lib/youcompleteme/third_party/ycmd/ycmd"))
 (set-variable 'ycmd-global-config "/usr/lib/youcompleteme/ycm_extra_conf.py")
 (set-variable 'ycmd-extra-conf-whitelist '("/usr/lib/youcompleteme/ycm_extra_conf.py"))
 (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
-(require 'ycmd)
-(require 'company-ycmd)
+(ycmd-setup)
 (company-ycmd-setup)
-(add-hook 'prog-mode-hook 'ycmd-mode)
 ;; 'company-clang' does not work in google3; we do not want company to ever
 ;; fall back to it.
 (delq 'company-clang company-backends)
@@ -381,13 +356,18 @@ that uses 'font-lock-warning-face'."
 (flycheck-ycmd-setup)
 (add-hook 'prog-mode-hook 'flycheck-mode)
 
+;; Maybe fix flycheck and company mode interaction. Is this even a
+;; problem?
+(when (not (display-graphic-p))
+  (setq flycheck-indication-mode nil))
+
 
 ;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
 ;; go get -u github.com/nsf/gocode
-(require 'company-go)
-(setq company-tooltip-limit 20)                      ; bigger popup window
+;; (require 'company-go)
+;; (setq company-tooltip-limit 20)                      ; bigger popup window
 ;(setq company-minimum-prefix-length 3)               ; autocomplete right after '.'
-(setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
+;; (setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
 ;(setq company-echo-delay 0)                          ; remove annoying blinking
 ;(setq company-begin-commands '(self-insert-command)) ; start
                                         ; autocompletion only after
@@ -401,6 +381,7 @@ that uses 'font-lock-warning-face'."
 ;;(add-to-list 'company-backends 'company-files t)
 ;; (setq company-clang-arguments '("-I/google/src/head/depot/google3"))
 (global-company-mode)
+(global-set-key (kbd "M-/") 'company-complete)
 
 ;; Git integration
 ;; -------------------------------------------------------------------
@@ -456,6 +437,7 @@ that uses 'font-lock-warning-face'."
           (lambda ()
             (define-key term-raw-map (kbd "C-y") 'term-paste)))
 
+(require 'ansi-color)
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
 (setq comint-scroll-to-bottom-on-input t)
 (setq comint-prompt-read-only t)
@@ -468,7 +450,6 @@ that uses 'font-lock-warning-face'."
 
 ;; Deft is my preferred note-taking setup. See:
 ;; http://jblevins.org/projects/deft/
-
 (require 'deft)
 (eval-after-load 'deft
   '(progn
@@ -617,6 +598,8 @@ that uses 'font-lock-warning-face'."
 (require 'rainbow-delimiters)
 (add-hook 'text-mode-hook 'rainbow-delimiters-mode)
 (add-hook 'fundamental-mode-hook 'rainbow-delimiters-mode)
+(add-hook 'sql-mode-hook 'rainbow-delimiters-mode)
+(add-hook 'org-mode-hook 'rainbow-delimiters-mode)
 
 ;; Miscellaneous modes
 ;; -------------------------------------------------------------------
@@ -660,6 +643,7 @@ that uses 'font-lock-warning-face'."
   (interactive)
   (when (active-minibuffer-window)
     (select-window (active-minibuffer-window))))
+
 ;; Rebind C-g to completely exit minibuffers, no matter how nested.
 ;; (global-set-key (kbd "C-g") 'top-level)
 
@@ -781,11 +765,25 @@ that uses 'font-lock-warning-face'."
 ;;  `(sml/vc-edited ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
 ;;  `(which-func ((t (:foreground ,aqua-theme-color)))))
 
-(load-theme 'gotham t)
+;; Emacs theme.
+;; (load-theme 'base16-default t)
+
+;; Nice fonts:
+;; Inconsolata-11
+;; Droid Sans Mono-11
+;; DejaVu Sans Mono-11
+;; Note, these require: apt-get install ttf-droid ttfinconsolata
+;; ttf-dejavu
+;; Only load the theme if we are in a graphical display.
+(when (display-graphic-p)
+  (load-theme 'gotham t)
+  (set-frame-font "DejaVu Sans Mono 11" t t))
+
 
 ;; My pinky hurts. Lets try out ace-jump-mode.
 (require 'ace-jump-mode)
 (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
+(define-key org-mode-map (kbd "C-c SPC") 'ace-jump-mode)
 (ace-jump-mode-enable-mark-sync)
 (setq ace-jump-mode-scope 'window)
 ;; (define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
@@ -799,29 +797,28 @@ that uses 'font-lock-warning-face'."
 ;; (add-to-list 'load-path (substitute-in-file-name "$GOPATH/src/github.com/dougm/goflymake"))
 ;; (require 'go-flycheck)
 
-;; Only use company mode for go-mode
-(add-hook 'go-mode-hook (lambda ()
-                          (set (make-local-variable 'company-backends) '(company-go))
-                          (company-mode)
-                          (flycheck-mode)))
+;; (add-hook 'go-mode-hook (lambda ()
+;;                           (set (make-local-variable 'company-backends) '(company-go))
+;;                           (company-mode)
+;;                           (flycheck-mode)))
 
 ;; https://github.com/syohex/emacs-go-eldoc
-(require 'go-eldoc) ;; Don't need to require, if you install by package.el
-(add-hook 'go-mode-hook 'go-eldoc-setup)
+;; (require 'go-eldoc) ;; Don't need to require, if you install by package.el
+;; (add-hook 'go-mode-hook 'go-eldoc-setup)
 
 ;; https://github.com/dominikh/go-errcheck.el
 ;; go get github.com/kisielk/errcheck
-(require 'go-errcheck)
+;; (require 'go-errcheck)
 
 ;; Add yasnippets-go:
 ;; https://github.com/dominikh/yasnippet-go
 
 ;; Fix tab size
-(add-hook 'go-mode-hook
-          (lambda ()
-            (add-hook 'before-save-hook 'gofmt-before-save)
-            (setq tab-width 4)
-            (setq indent-tabs-mode 1)))
+;; (add-hook 'go-mode-hook
+;;           (lambda ()
+;;             (add-hook 'before-save-hook 'gofmt-before-save)
+;;             (setq tab-width 4)
+;;             (setq indent-tabs-mode 1)))
 
 ;; Empty scratch buffer
 (setq initial-scratch-message nil)
@@ -889,9 +886,6 @@ With prefix P, create local abbrev. Otherwise it will be global."
     (with-current-buffer buf
       (narrow-to-region start end))
     (switch-to-buffer buf)))
-
-;; This might be bad? I don't really know what it does.
-(setq redisplay-dont-pause t)
 
 (require 're-builder)
 (setq reb-re-syntax 'string)
@@ -964,6 +958,19 @@ On error (read-only), quit without selecting."
 
 ;; Faster tramp startup
 (setq tramp-default-method "ssh")
+
+;; Emacs doesn't understand objective-c++
+(add-to-list 'auto-mode-alist '("\\.mm\\'" . objc-mode))
+
+(defun find-experiment ()
+  (interactive)
+  (save-excursion
+    (er/mark-symbol)
+    (let ((file-name (car (last (s-match "^/google/src/files/head/depot/google3/\\([^ ]+\\)"
+                                         (shell-command-to-string (concat "cs f:gcl " (buffer-substring-no-properties (region-beginning) (region-end)))))))))
+      (move-end-of-line nil)
+      (insert file-name)
+      )))
 
 (server-start)
 

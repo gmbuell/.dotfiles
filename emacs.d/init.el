@@ -11,16 +11,21 @@
 ;;; Code:
 (require 'package)
 (setq package-enable-at-startup nil)
-(add-to-list 'package-archives
-             '("marmalade" . "http://marmalade-repo.org/packages/") t)
+
+;; Add package repositories
 (add-to-list 'package-archives
              '("melpa" . "http://melpa.org/packages/") t)
+(add-to-list 'package-archives
+             '("marmalade" . "http://marmalade-repo.org/packages/") t)
+
 (package-initialize)
 
 ;; Bootstrap 'use-package'.
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
+
+(require 'use-package)
 
 ;; Get dash so we can install everything else that hasn't been
 ;; migrated to use-package.
@@ -40,7 +45,7 @@
             (package-install p)))))
     ))
 
-(defvar my-packages '(ace-jump-buffer ace-jump-mode ace-window anzu auto-complete back-button base16-theme browse-kill-ring coffee-mode color-theme color-theme-solarized company company-go dash dedicated deft discover-my-major elfeed elisp-slime-nav ess expand-region flx flx-ido flycheck flycheck-google-cpplint framemove fuzzy git-commit-mode git-gutter git-rebase-mode git-timemachine gitconfig-mode gitignore-mode go-eldoc go-errcheck go-mode google-c-style helm helm-c-yasnippet helm-ls-git helm-swoop hexrgb highlight-symbol ido-hacks ido-ubiquitous iedit inf-ruby jabber jump magit markdown-mode multi-term multiple-cursors mustache-mode noflet pkg-info rainbow-delimiters readline-complete ruby-mode s smart-mode-line smartparens smex unbound volatile-highlights yaml-mode yari yasnippet ycmd company-ycmd gotham-theme dash-functional smart-forward hydra multifiles flycheck-ycmd)
+(defvar my-packages '(ace-jump-buffer ace-jump-mode ace-window anzu auto-complete back-button base16-theme browse-kill-ring coffee-mode color-theme color-theme-solarized company company-go dash dedicated deft discover-my-major elfeed elisp-slime-nav ess expand-region flx flx-ido flycheck flycheck-google-cpplint framemove fuzzy git-commit-mode git-gutter git-rebase-mode git-timemachine gitconfig-mode gitignore-mode go-eldoc go-errcheck go-mode google-c-style helm helm-c-yasnippet helm-ls-git helm-swoop hexrgb highlight-symbol ido-hacks ido-ubiquitous iedit inf-ruby jabber jump magit markdown-mode multi-term multiple-cursors mustache-mode noflet pkg-info rainbow-delimiters readline-complete ruby-mode s smart-mode-line smartparens smex unbound volatile-highlights yaml-mode yari yasnippet ycmd company-ycmd gotham-theme dash-functional smart-forward hydra multifiles flycheck-ycmd company-c-headers sr-speedbar)
   "A list of packages to ensure are in
 stalled at launch.")
 
@@ -81,15 +86,12 @@ If Emacs has already finished initialization, also eval FORM immediately."
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    (quote
-    ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "c5a044ba03d43a725bd79700087dea813abcb6beb6be08c7eb3303ed90782482" "3a727bdc09a7a141e58925258b6e873c65ccf393b2240c51553098ca93957723" default)))
- '(sp-override-key-bindings
-   (quote
-    (("C-<right>" . sp-slurp-hybrid-sexp)
-     ("C-<left>" . sp-dedent-adjust-sexp)))))
+    ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "c5a044ba03d43a725bd79700087dea813abcb6beb6be08c7eb3303ed90782482" "3a727bdc09a7a141e58925258b6e873c65ccf393b2240c51553098ca93957723" default))))
+
+;; Why did I have this inside custom-set-variables?
+;; (sp-override-key-bindings
+;;    (quote
+;;     (("C-<right>" . sp-slurp-hybrid-sexp)
+;;      ("C-<left>" . sp-dedent-adjust-sexp))))
+
 (put 'narrow-to-region 'disabled nil)
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
