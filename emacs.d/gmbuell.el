@@ -158,15 +158,15 @@
 
 ;; Ido configuration. Gives smart buffer switching and menus.
 ;; -------------------------------------------------------------------
-;; recentf is likely unnecessary thanks to ido-use-virtual-buffers below.
-;; (use-package recentf
-;;   :ensure t
-;;   :init
-;;   (recentf-mode t)
-;;   :config
-;;   ;; Ignore some buffers.
-;;   (add-to-list 'recentf-exclude "/COMMIT_EDITMSG$")
-;;   (add-to-list 'recentf-exclude "/.ido.last$"))
+(use-package recentf
+  :ensure t
+  :init
+  (recentf-mode t)
+  :config
+  ;; Ignore some buffers.
+  (add-to-list 'recentf-exclude "/COMMIT_EDITMSG$")
+  (add-to-list 'recentf-exclude "/.ido.last$")
+  (add-to-list 'recentf-exclude "^\*Helm"))
 
 (use-package ido-hacks
   :ensure t
@@ -184,7 +184,7 @@
         ido-max-prospects 10
         ido-use-faces nil  ;; Disabled to see flx highlights
         )
-  (add-to-list 'ido-ignore-buffers '"^\*Helm"))
+  (add-to-list 'ido-ignore-buffers "^\*Helm"))
 (use-package flx-ido
   :ensure t
   :init
