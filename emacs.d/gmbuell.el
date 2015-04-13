@@ -73,13 +73,6 @@
 (add-to-list 'safe-local-variable-values '(lexical-binding . t))
 (add-to-list 'safe-local-variable-values '(whitespace-line-column . 80))
 
-;; Better Defaults
-(menu-bar-mode -1)
-(when (fboundp 'tool-bar-mode)
-  (tool-bar-mode -1))
-(when (fboundp 'scroll-bar-mode)
-  (scroll-bar-mode -1))
-
 ;; Replace all the search keys with regex versions.
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
@@ -98,20 +91,21 @@
 
 (show-paren-mode 1)
 (setq-default indent-tabs-mode nil)
+(defalias 'yes-or-no-p 'y-or-n-p)
+(defalias 'auto-tail-revert-mode 'tail-mode)
 
-(require 'saveplace)
-(setq-default save-place t)
-(setq x-select-enable-clipboard t
+(use-package saveplace
+  :ensure t
+  :init
+  (setq-default save-place t)
+  (setq x-select-enable-clipboard t
       x-select-enable-primary t
       save-interprogram-paste-before-kill t
       apropos-do-all t
       mouse-yank-at-point t
       save-place-file (concat user-emacs-directory "places")
       backup-directory-alist `(("." . ,(concat user-emacs-directory
-                                               "backups"))))
-
-(defalias 'yes-or-no-p 'y-or-n-p)
-(defalias 'auto-tail-revert-mode 'tail-mode)
+                                               "backups")))))
 
 ;; From http://steckerhalter.co.vu/steckemacs.html
 ;; Make isearch-forward put the cursor at the start of the search, not the end.
@@ -119,66 +113,82 @@
   (when (and isearch-forward (not isearch-mode-end-hook-quit)) (goto-char isearch-other-end)))
 (add-hook 'isearch-mode-end-hook 'my-isearch-goto-match-beginning)
 
-;; Delete more than one space
-;; (setq-default c-hungry-delete-key t)
+(use-package highlight-symbol
+  :ensure t
+  :init
+  (add-hook 'prog-mode-hook 'highlight-symbol-mode)
+  :config
+  (setq highlight-symbol-on-navigation-p t))
 
-(require 'highlight-symbol)
-(setq highlight-symbol-on-navigation-p t)
-(add-hook 'prog-mode-hook 'highlight-symbol-mode)
+(use-package iedit
+  :ensure t
+  :config
+  (setq iedit-unmatched-lines-invisible-default t))
 
-(require 'iedit)
-(setq iedit-unmatched-lines-invisible-default t)
+(use-package back-button
+  :ensure t
+  :init
+  (back-button-mode 1))
 
-(require 'back-button)
-(back-button-mode 1)
+(use-package discover-my-major
+  :ensure t
+  :bind ("C-h C-m" . discover-my-major))
 
-(global-set-key (kbd "C-h C-m") 'discover-my-major)
-
-(require 'helm-swoop)
-(global-set-key (kbd "M-i") 'helm-swoop)
-(global-set-key (kbd "M-I") 'helm-swoop-back-to-last-point)
-(global-set-key (kbd "C-c M-i") 'helm-multi-swoop)
-(global-set-key (kbd "C-x M-i") 'helm-multi-swoop-all)
-;; When doing isearch, hand the word over to helm-swoop
-(define-key isearch-mode-map (kbd "M-i") 'helm-swoop-from-isearch)
-;; From helm-swoop to helm-multi-swoop-all
-(define-key helm-swoop-map (kbd "M-i") 'helm-multi-swoop-all-from-helm-swoop)
-;; When doing evil-search, hand the word over to helm-swoop
-;; (define-key evil-motion-state-map (kbd "M-i")
-;; 'helm-swoop-from-evil-search)
-;; Save buffer when helm-multi-swoop-edit complete
-(setq helm-multi-swoop-edit-save t)
+(use-package helm-swoop
+  :ensure t
+  :bind (("M-i" . helm-swoop)
+         ("M-I" . helm-swoop-back-to-last-point)
+         ("C-c M-i" . helm-multi-swoop)
+         ("C-x M-i" . helm-multi-swoop-all))
+  :init
+  ;; When doing isearch, hand the word over to helm-swoop
+  (bind-key "M-i" 'helm-swoop-from-isearch isearch-mode-map)
+  :config
+  ;; Save buffer when helm-multi-swoop-edit complete
+  (setq helm-multi-swoop-edit-save t)
+  ;; From helm-swoop to helm-multi-swoop-all
+  (bind-key "M-i" 'helm-multi-swoop-all-from-helm-swoop helm-swoop-map))
 
 ;; We need nested minibuffers mostly due to helm replacing "M-y"
 (setq enable-recursive-minibuffers t)
 
-(require 'uniquify)
-(setq uniquify-buffer-name-style 'forward)
+(use-package uniquify
+  :config (setq uniquify-buffer-name-style 'forward))
+
 
 ;; Ido configuration. Gives smart buffer switching and menus.
 ;; -------------------------------------------------------------------
-(require 'recentf)
-(recentf-mode t)
-(ido-mode t)
-(require 'ido-hacks)
-(ido-hacks-mode)
-(ido-ubiquitous-mode)
-(setq ido-enable-prefix nil
-      ido-enable-flex-matching nil
-      ido-auto-merge-work-directories-length nil
-      ido-create-new-buffer 'always
-      ido-use-filename-at-point 'guess
-      ido-use-virtual-buffers t
-      ido-max-prospects 10
-      ido-use-faces nil  ;; Disabled to see flx highlights
-      )
-(require 'flx-ido)
-(flx-ido-mode t)
-;; (setq gc-cons-threshold 20000000)  ;; For flx
+;; recentf is likely unnecessary thanks to ido-use-virtual-buffers below.
+;; (use-package recentf
+;;   :ensure t
+;;   :init
+;;   (recentf-mode t)
+;;   :config
+;;   ;; Ignore some buffers.
+;;   (add-to-list 'recentf-exclude "/COMMIT_EDITMSG$")
+;;   (add-to-list 'recentf-exclude "/.ido.last$"))
 
-;; Ignore some buffers.
-(add-to-list 'recentf-exclude "/COMMIT_EDITMSG$")
-(add-to-list 'recentf-exclude "/.ido.last$")
+(use-package ido-hacks
+  :ensure t
+  :init
+  (ido-mode t)
+  (ido-ubiquitous-mode)
+  :config
+  (ido-hacks-mode)
+  (setq ido-enable-prefix nil
+        ido-enable-flex-matching nil
+        ido-auto-merge-work-directories-length nil
+        ido-create-new-buffer 'always
+        ido-use-filename-at-point 'guess
+        ido-use-virtual-buffers t
+        ido-max-prospects 10
+        ido-use-faces nil  ;; Disabled to see flx highlights
+        )
+  (add-to-list 'ido-ignore-buffers '"^\*Helm"))
+(use-package flx-ido
+  :ensure t
+  :init
+  (flx-ido-mode t))
 
 ;; Ido uses "virtual buffers" so that you do not have to re-open files
 ;; between emacs sessions. This can get out of hand sometimes and this
@@ -186,10 +196,7 @@
 (defun ido-clear-history ()
   "Clear ido virtual buffers list."
   (interactive)
-  (setq ido-virtual-buffers '())
-  (setq recentf-list '()))
-(setq ido-ignore-buffers
-      (append ido-ignore-buffers '("^\*Helm")))
+  (setq ido-virtual-buffers '()))
 
 ;; Smex is for smart completion of M-x commands.
 (setq smex-save-file (concat user-emacs-directory ".smex-items"))
@@ -199,9 +206,11 @@
 
 ;; Find File at Point. Makes sevaral commands smarter when the cursor
 ;; is on something relevant.
-(require 'ffap)
-(defvar ffap-c-commment-regexp "^/\\*+"
-  "Matches an opening C-style comment, like \"/***\".")
+(use-package ffap
+  :ensure t
+  :config
+  (defvar ffap-c-commment-regexp "^/\\*+"
+  "Matches an opening C-style comment, like \"/***\"."))
 
 ;; I have no idea where this came from.
 ;; (defadvice ffap-file-at-point (after avoid-c-comments activate)
@@ -220,15 +229,6 @@
 ;; setups.
 (global-set-key (kbd "C-x M-f") 'ido-find-file-other-window)
 
-;; Hippie expand: at times perhaps too hip.
-(eval-after-load 'hippie-exp
-  '(progn
-     (dolist (f '(try-expand-line try-expand-list try-complete-file-name-partially))
-       (delete f hippie-expand-try-functions-list))
-     ;; Add this back in at the end of the list.
-     (add-to-list 'hippie-expand-try-functions-list 'try-complete-file-name-partially t)))
-;; (global-set-key (kbd "M-/") 'hippie-expand)
-
 ;; Helm configuration. Helm is a great interface for finding things.
 ;; Protip: Helm uses space as a separator. So if you use helm to
 ;; switch to a buffer titled 'gmbuell-ruby.el', you could narrow using
@@ -236,24 +236,39 @@
 ;; section. In regex speak, this is like space being translated to .*
 ;; This is unlike ido mode which transparently inserts virtual '.'
 ;; characters for matches.
-(require 'helm-config)
-(require 'helm-ls-git)
-;; This is my main interface to opening/switching between files in the
-;; same git repository. It is particularly useful because the virtual
-;; buffers of ido mode can make finding a project specific file
-;; difficult.
-(global-set-key (kbd "C-c h") 'helm-ls-git-ls)
-;; helm-ls-git-ls is specific to git projects. helm-browse-project
-;; might be more general. Ex.
-;; (global-set-key (kbd "C-c h") 'helm-browse-project)
-(global-set-key (kbd "C-x C-b") 'helm-buffers-list)
-(global-set-key (kbd "C-c C-o") 'helm-occur)
-(global-set-key (kbd "C-c M-o") 'helm-multi-occur)
-(global-set-key (kbd "C-c C-b") 'helm-bookmarks)
-(global-set-key (kbd "M-y") 'helm-show-kill-ring)
-;; Jump to a definition in the current file.
-(set-default 'imenu-auto-rescan t)
-(global-set-key (kbd "C-x C-i") 'helm-imenu)
+(use-package helm-config
+  :ensure helm
+  :bind (
+         ;; This is my main interface to opening/switching between files in the
+         ;; same git repository. It is particularly useful because the virtual
+         ;; buffers of ido mode can make finding a project specific file
+         ;; difficult.
+         ("C-c h" . helm-ls-git-ls)
+         ;; helm-ls-git-ls is specific to git projects. helm-browse-project
+         ;; might be more general. Ex.
+         ;; (global-set-key (kbd "C-c h") 'helm-browse-project)
+         ("C-x C-b" . helm-buffers-list)
+         ("C-c C-o" . helm-occur)
+         ("C-c M-o" . helm-multi-occur)
+         ("C-c C-b" . helm-bookmarks)
+         ("M-y" . helm-show-kill-ring)
+         ;; Jump to a definition in the current file.
+         ("C-x C-i" . helm-imenu))
+  :config
+  ;; Helm improvement. Make backspace quit when there is nothing
+  ;; there instead of erroring.
+  (defun helm-backspace ()
+    "Forward to `backward-delete-char'.
+On error (read-only), quit without selecting."
+    (interactive)
+    (condition-case nil
+        (backward-delete-char 1)
+      (error
+       (helm-keyboard-quit))))
+  (bind-key "DEL" 'helm-backspace helm-map)
+  (use-package helm-ls-git)
+  (set-default 'imenu-auto-rescan t))
+
 ;; Consider giving helm-adaptative-mode a try
 
 ;; Plain text settings
@@ -261,22 +276,21 @@
 ;; Try and use aspell but fall back to ispell
 '(if (executable-find "aspell")
      (progn
-        (setq ispell-program-name "aspell")
-        (setq ispell-list-command "list")
-        (require 'ispell)
-        (require 'flyspell)
+       (setq ispell-program-name "aspell")
+       (setq ispell-list-command "list")
+       (use-package aspell))
    (when (executable-find "ispell")
      (setq ispell-program-name "ispell")
-     (require 'ispell)
-     (require 'flyspell))))
+     (use-package ispell)))
 
-(eval-after-load 'flyspell
-  '(progn
-     (add-hook 'text-mode-hook 'turn-on-flyspell)
-     (add-hook 'markdown-mode-hook 'turn-on-flyspell)
-     (add-hook 'prog-mode-hook 'flyspell-prog-mode)
-     (setq flyspell-issue-message-flag nil
-           flyspell-issue-welcome-flag nil)))
+(use-package flyspell
+  :init
+  (add-hook 'text-mode-hook 'turn-on-flyspell)
+  (add-hook 'markdown-mode-hook 'turn-on-flyspell)
+  (add-hook 'prog-mode-hook 'flyspell-prog-mode)
+  :config
+  (setq flyspell-issue-message-flag nil
+        flyspell-issue-welcome-flag nil))
 
 ;; Emacs expects sentences to end with double spaces. This is crazy.
 (setq sentence-end-double-space nil)
@@ -285,23 +299,6 @@
 (set-default 'indent-tabs-mode nil)
 (set-default 'indicate-empty-lines t)
 (column-number-mode t)
-
-(defun esk-add-watchwords ()
-  (font-lock-add-keywords
-   nil '(("\\<\\(FIX\\(ME\\)?\\|TODO\\|HACK\\|REFACTOR\\|NOCOMMIT\\)"
-          1 font-lock-warning-face t))))
-(defun esk-local-comment-auto-fill ()
-  (set (make-local-variable 'comment-auto-fill-only-comments) t)
-  (auto-fill-mode t))
-(defun esk-pretty-lambdas ()
-  (font-lock-add-keywords
-   nil `(("(?\\(lambda\\>\\)"
-          (0 (progn (compose-region (match-beginning 1) (match-end 1)
-                                    ,(make-char 'greek-iso8859-7 107))
-                    nil))))))
-(add-hook 'prog-mode-hook 'esk-add-watchwords)
-(add-hook 'prog-mode-hook 'esk-pretty-lambdas)
-(add-hook 'prog-mode-hook 'esk-local-comment-auto-fill)
 
 ;; Turn on red highlighting for characters outside of the 80/100 char limit
 (defun font-lock-width-keyword (width)
@@ -327,164 +324,147 @@ that uses 'font-lock-warning-face'."
            (insert (current-kill 0)))))
 
 ;; Flycheck for linting
-(global-flycheck-mode)
-;;(require 'google-c-style)
-;;(add-hook 'c-mode-common-hook 'google-set-c-style)
-;;(add-hook 'c-mode-common-hook 'google-make-newline-indent)
-;;(require 'flycheck-google-cpplint)
-;; Add Google C++ Style checker.
-;; In default, syntax checked by Clang and Cppcheck.
-;; (flycheck-add-next-checker 'c/c++-cppcheck
-;;                            '(warnings-only . c/c++-googlelint))
+(use-package flycheck
+  :ensure t
+  :init
+  (global-flycheck-mode)
+  :config
+  ;; Maybe fix flycheck and company mode interaction. Is this even a
+  ;; problem?
+  (when (not (display-graphic-p))
+    (setq flycheck-indication-mode nil)))
 
 ;; Company mode for completions: http://company-mode.github.io/
-(require 'company)
-(require 'ycmd-next-error)
-(require 'ycmd)
-(require 'company-ycmd)
-(set-variable 'ycmd-server-command '("/usr/grte/v4/bin/python2.7" "/usr/lib/youcompleteme/third_party/ycmd/ycmd"))
-(set-variable 'ycmd-global-config "/usr/lib/youcompleteme/ycm_extra_conf.py")
-(set-variable 'ycmd-extra-conf-whitelist '("/usr/lib/youcompleteme/ycm_extra_conf.py"))
-(set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
-(ycmd-setup)
-(company-ycmd-setup)
-;; 'company-clang' does not work in google3; we do not want company to ever
-;; fall back to it.
-(delq 'company-clang company-backends)
+(use-package company
+  :ensure t
+  :bind ("M-/" . company-complete)
+  :init
+  (global-company-mode)
+  :config
+  ;; Add company-yasnippet carefully.
+  (setq company-backends (-map (lambda (item) (cond ((listp item)
+                                                (cons 'company-yasnippet item))
+                                               ((eq 'company-dabbrev item)
+                                                '(company-yasnippet company-dabbrev))
+                                               (t item
+                                                  ))) company-backends))
+  (add-to-list 'company-backends 'company-warhammer)
+  ;; Decrease delay before autocompletion popup shows.
+  (setq company-idle-delay .3)
+  ;; Bigger popup window.
+  (setq company-tooltip-limit 20)
+  (setq company-echo-delay 0))
 
-(require 'flycheck-ycmd)
-(flycheck-ycmd-setup)
-(add-hook 'prog-mode-hook 'flycheck-mode)
-
-;; Maybe fix flycheck and company mode interaction. Is this even a
-;; problem?
-(when (not (display-graphic-p))
-  (setq flycheck-indication-mode nil))
-
+(use-package ycmd-next-error
+  :ensure ycmd)
+(use-package ycmd
+  :ensure t
+  :init
+  (set-variable 'ycmd-server-command '("/usr/grte/v4/bin/python2.7" "/usr/lib/youcompleteme/third_party/ycmd/ycmd"))
+  (set-variable 'ycmd-global-config "/usr/lib/youcompleteme/ycm_extra_conf.py")
+  (set-variable 'ycmd-extra-conf-whitelist '("/usr/lib/youcompleteme/ycm_extra_conf.py"))
+  (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
+  (ycmd-setup)
+  (use-package company-ycmd
+    :ensure t
+    :init
+    (company-ycmd-setup)
+    ;; 'company-clang' isn't needed with company-ycmd.
+    (delq 'company-clang company-backends))
+  (use-package flycheck-ycmd
+    :ensure t
+    :init
+    (flycheck-ycmd-setup)))
 
 ;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
 ;; go get -u github.com/nsf/gocode
 ;; (require 'company-go)
-;; (setq company-tooltip-limit 20)                      ; bigger popup window
-;(setq company-minimum-prefix-length 3)               ; autocomplete right after '.'
-;; (setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
-;(setq company-echo-delay 0)                          ; remove annoying blinking
-;(setq company-begin-commands '(self-insert-command)) ; start
-                                        ; autocompletion only after
-                                        ; typing
-;(add-to-list 'company-backends 'company-capf)
-;;(setq company-global-modes '(c-mode c++-mode emacs-lisp-mode))
-;(add-to-list 'company-backends 'company-dabbrev t)
-;(add-to-list 'company-backends 'company-ispell t)
-(add-to-list 'company-backends 'company-warhammer)
-;(setq company-backends (-difference company-backends '(company-clang)))
-;;(add-to-list 'company-backends 'company-files t)
-;; (setq company-clang-arguments '("-I/google/src/head/depot/google3"))
-(global-company-mode)
-(global-set-key (kbd "M-/") 'company-complete)
 
 ;; Git integration
 ;; -------------------------------------------------------------------
 ;; Shows git diff information in the gutter.
-(require 'git-gutter)
-(global-git-gutter-mode t)
+(use-package git-gutter
+  :ensure t
+  :init
+  (global-git-gutter-mode t))
 
 ;; Magit makes git inside emacs awesome.
 ;; Start with "C-c g"
 ;; http://daemianmack.com/magit-cheatsheet.html
-(require 'magit)
-;; (eval-after-load 'diff-mode
-;;   '(progn
-;;      (set-face-foreground 'diff-added "#5f8700")
-;;      (set-face-foreground 'diff-removed "#dc322f")))
-;; (eval-after-load 'magit
-;;   '(progn
-;;      (set-face-foreground 'magit-diff-add "#5f8700")
-;;      (set-face-foreground 'magit-diff-del "#dc322f")
-;;      (when (not window-system)
-;;        (set-face-background 'magit-item-highlight "black"))))
-(global-set-key (kbd "C-c g") 'magit-status)
+(use-package magit
+  :ensure t
+  :bind ("C-c g" . magit-status)
+  :init
+  (global-auto-revert-mode)
+  (setq auto-revert-check-vc-info t)
+  (setq vc-follow-symlinks t)
+  :config
+  (add-to-list 'sml/hidden-modes magit-auto-revert-mode-lighter))
 
-(global-auto-revert-mode)
-(setq auto-revert-check-vc-info t)
-(setq vc-follow-symlinks t)
+(use-package multi-term
+  :ensure t
+  :bind (("<f1>" . multi-term-dedicated-toggle)
+         ("C-c s" . multi-term-dedicated-toggle))
+  :config
+  (bind-key "C-y" 'term-paste term-raw-map)
+  (setq
+   multi-term-dedicated-select-after-open-p t
+   ;; Use zsh for multi-term
+   multi-term-program "/usr/local/bin/zsh"
+   multi-term-program-switches "--login"))
 
-(require 'multi-term)
-(define-key global-map (kbd "<f1>") 'multi-term-dedicated-toggle)
-(define-key global-map (kbd "C-c s") 'multi-term-dedicated-toggle)
-(eval-after-load 'multi-term
-  '(progn
-     (setq
-      multi-term-dedicated-select-after-open-p t
-      ;; Use zsh for multi-term
-      multi-term-program "/usr/local/bin/zsh"
-      multi-term-program-switches "--login"
-      ;; Don't pass C-y through to the shell.
-      ;;term-unbind-key-list (-difference term-unbind-key-list '("C-y"
-      ;;"C-l" "C-w")))
-      )
-      ;;(add-to-list 'term-bind-key-alist '("C-l" . recenter-top-bottom))
-      ;;(add-to-list 'term-bind-key-alist '("C-f" . forward-char))
-      ;;(add-to-list 'term-bind-key-alist '("C-b" . backward-char))
-      ;;(add-to-list 'term-bind-key-alist '("C-w" . kill-region))
-      ))
-
-;; (add-hook 'term-mode-hook (lambda ()
-;;                             (define-key term-raw-map (kbd "C-y") 'term-paste)))
-;; (add-hook 'term-mode-hook (lambda ()
-;;                             (define-key term-raw-map (kbd "C-w") 'kill-region)))
-(add-hook 'term-mode-hook
-          (lambda ()
-            (define-key term-raw-map (kbd "C-y") 'term-paste)))
-
-(require 'ansi-color)
-(add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
-(setq comint-scroll-to-bottom-on-input t)
-(setq comint-prompt-read-only t)
+(use-package ansi-color
+  :ensure t
+  :init
+  (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
+  (setq comint-scroll-to-bottom-on-input t)
+  (setq comint-prompt-read-only t))
 
 ;; Sets up Shift + arrow keys for moving between frames and windows.
 ;; This is particularly useful for multi-monitor setups.
-(require 'framemove)
-(windmove-default-keybindings)
-(setq framemove-hook-into-windmove t)
+(use-package framemove
+  :ensure t
+  :init
+  (windmove-default-keybindings)
+  :config
+  (setq framemove-hook-into-windmove t))
 
 ;; Deft is my preferred note-taking setup. See:
 ;; http://jblevins.org/projects/deft/
-(require 'deft)
-(eval-after-load 'deft
-  '(progn
-     ;; Set the deft directory to Dropbox/notes if it exists.
-     (when (file-exists-p "~/Dropbox")
-       (setq deft-directory "~/Dropbox/notes")
-       (when (not (file-exists-p deft-directory))
-         (make-directory deft-directory t)))
-     (setq deft-text-mode 'org-mode)
-     (setq deft-extension "org")
-     (setq deft-use-filename-as-title t)
-     ))
+(use-package deft
+  :ensure t
+  :config
+  ;; Set the deft directory to Dropbox/notes if it exists.
+  (when (file-exists-p "~/Dropbox")
+    (setq deft-directory "~/Dropbox/notes")
+    (when (not (file-exists-p deft-directory))
+      (make-directory deft-directory t)))
+  (setq deft-text-mode 'org-mode)
+  (setq deft-extension "org")
+  (setq deft-use-filename-as-title t))
 
 ;; eww browsing inside emacs. Much better than w3m!
 (setq browse-url-browser-function 'eww-browse-url)
 
 ;; Google Talk inside Emacs.
-(require 'jabber)
-;;(require 'jabber-autoloads)
-(eval-after-load 'jabber
-  '(setq jabber-account-list
-         '(("gmbuell@gmail.com"
-            (:network-server . "talk.google.com")
-            (:connection-type . ssl)))
-         ;; Disable jabber images
-         jabber-chat-buffer-show-avatar nil
-         jabber-vcard-avatars-publish nil
-         jabber-vcard-avatars-retrieve nil
-         jabber-history-enabled t
-         jabber-use-global-history nil
-         ;; Don't show presense notifications.
-         jabber-alert-presence-message-function (lambda (who oldstatus newstatus statustext) nil)
-         ;; Don't show alerts if I'm already in the chat buffer.
-         jabber-message-alert-same-buffer nil
-         jabber-history-dir "~/.jabber"))
+(use-package jabber
+  :ensure t
+  :config
+  (setq jabber-account-list
+        '(("gmbuell@gmail.com"
+           (:network-server . "talk.google.com")
+           (:connection-type . ssl)))
+        ;; Disable jabber images
+        jabber-chat-buffer-show-avatar nil
+        jabber-vcard-avatars-publish nil
+        jabber-vcard-avatars-retrieve nil
+        jabber-history-enabled t
+        jabber-use-global-history nil
+        ;; Don't show presense notifications.
+        jabber-alert-presence-message-function (lambda (who oldstatus newstatus statustext) nil)
+        ;; Don't show alerts if I'm already in the chat buffer.
+        jabber-message-alert-same-buffer nil
+        jabber-history-dir "~/.jabber"))
 
 ;; Settings and modes to make text entry and display smarter.
 ;; -------------------------------------------------------------------
@@ -516,73 +496,49 @@ that uses 'font-lock-warning-face'."
 
 ;; Highlight matching parentheses when the point is on them.
 (show-paren-mode 1)
-(require 'smartparens-config)
-(smartparens-global-mode t)
-(sp-use-smartparens-bindings)
-(custom-set-variables
- '(sp-override-key-bindings
-   '(("C-<right>" . sp-slurp-hybrid-sexp)
-     ("C-<left>" . sp-dedent-adjust-sexp))))
-
-;; My custom code to make kill line more intelligent
-(require 'subr-x)
-(defun gmbuell-smart-kill-line (arg)
-  "If the line is only whitespace or the command is prefixed with C-u,
+(use-package subr-x
+  :config
+  ;; My custom code to make kill line more intelligent
+  (defun gmbuell-smart-kill-line (arg)
+    "If the line is only whitespace or the command is prefixed with C-u,
    use standard kill-line. Otherwise, use sp-kill-hybrid-sexp"
-  (interactive "P")
-  (if (or arg (string-blank-p (thing-at-point 'line)))
-      (progn (kill-line nil)
-             (indent-for-tab-command))
-    (progn (sp-kill-hybrid-sexp arg)
-           (indent-for-tab-command)))
-  )
+    (interactive "P")
+    (if (or arg (string-blank-p (thing-at-point 'line)))
+        (progn (kill-line nil)
+               (indent-for-tab-command))
+      (progn (sp-kill-hybrid-sexp arg)
+             (indent-for-tab-command)))))
 
-(defun setup-sp-bindings ()
-  (local-set-key (kbd "C-k") 'gmbuell-smart-kill-line))
-(add-hook 'prog-mode-hook 'setup-sp-bindings t)
+(use-package smartparens-config
+  :ensure smartparens
+  :init
+  (smartparens-global-mode t)
+  (bind-key "C-k" 'gmbuell-smart-kill-line prog-mode-map)
+  :config
+  (sp-use-smartparens-bindings)
+  (setq sp-override-key-bindings
+        '(("C-<right>" . sp-slurp-hybrid-sexp)
+          ("C-<left>" . sp-dedent-adjust-sexp)))
+  ;; Fix forward slurp spacing
+  ;; https://github.com/Fuco1/smartparens/issues/297
+  (sp-local-pair 'c-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
+  (sp-local-pair 'c++-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*)"))
 
-;; Fix forward slurp spacing
-;; https://github.com/Fuco1/smartparens/issues/297
-(sp-local-pair 'c-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
-(sp-local-pair 'c++-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*)")
-;; https://github.com/Fuco1/smartparens/issues/236
-;; (sp-local-pair 'c++-mode
-;;                "(" nil
-;;                :pre-handlers '(sp-fixspace-pre-slurp-handler))
-;; (sp-local-pair 'c-mode
-;;                "(" nil
-;;                :pre-handlers '(sp-fixspace-pre-slurp-handler))
-
-;; (defun sp-fixspace-pre-slurp-handler (id action context)
-;;   (when (eq action 'slurp-forward)
-;;     ;; if there was no space before, there shouldn't be after either
-;;     ;; ok = enclosing, next-thing one being slurped into
-;;     (save-excursion
-;;       (when (and (= (sp-get ok :end) (sp-get next-thing :beg))
-;;                  (equal (sp-get ok :op) (sp-get next-thing :op)))
-;;         (goto-char (sp-get ok :end))
-;;         (when (looking-back " ")
-;;           (delete-char -1))))))
-
-(require 'expand-region)
-(global-set-key (kbd "C-=") 'er/expand-region)
+(use-package expand-region
+  :ensure t
+  :bind ("C-=" . er/expand-region))
 
 ;; Give visual feedback on some commands
-(require 'volatile-highlights)
-(volatile-highlights-mode t)
-;; Set highlight faces for solarized.
-;; (set-face-attribute 'vhl/default-face nil
-;;                     :background "#586e75"
-;;                     :foreground "#93a1a1")
-;; Disable modeline for volatile highlights
-(setcar (cdr (assq 'volatile-highlights-mode minor-mode-alist)) nil)
+(use-package volatile-highlights
+  :ensure t
+  :diminish volatile-highlights-mode
+  :config (volatile-highlights-mode t))
 
 ;; Show search progress
-(require 'anzu)
-(global-anzu-mode +1)
-;; (set-face-attribute 'anzu-mode-line nil
-;;                     :foreground "#b58900" :weight 'bold)
-(eval-after-load 'anzu
+(use-package anzu
+  :ensure t
+  :init (global-anzu-mode +1)
+  :config
   (setq
    anzu-mode-lighter nil
    anzu-deactivate-region t
@@ -595,25 +551,30 @@ that uses 'font-lock-warning-face'."
   ("http://www.cardgamedb.com/forums/index.php?/rss/ccs/1c61-Game%20of%20Thrones/"))
  shr-blocked-images ".+")
 
-(require 'rainbow-delimiters)
-(add-hook 'text-mode-hook 'rainbow-delimiters-mode)
-(add-hook 'fundamental-mode-hook 'rainbow-delimiters-mode)
-(add-hook 'sql-mode-hook 'rainbow-delimiters-mode)
-(add-hook 'org-mode-hook 'rainbow-delimiters-mode)
+(use-package rainbow-delimiters
+  :ensure t
+  :init
+  (add-hook 'text-mode-hook 'rainbow-delimiters-mode)
+  (add-hook 'fundamental-mode-hook 'rainbow-delimiters-mode)
+  (add-hook 'sql-mode-hook 'rainbow-delimiters-mode)
+  (add-hook 'org-mode-hook 'rainbow-delimiters-mode))
 
 ;; Miscellaneous modes
 ;; -------------------------------------------------------------------
 
 ;; Enhancements to dired including dired-jump
-(require 'dired-x)
+(use-package dired-x)
 
-(eval-after-load 'dash '(dash-enable-font-lock))
-(require 'coffee-mode)
-(eval-after-load 'coffee-mode
-  '(progn
-     (setq coffee-tab-width 2)
-     (define-key coffee-mode-map (kbd "C-c C-c") 'coffee-compile-file)))
-(add-to-list 'auto-mode-alist '("Vagrantfile$" . ruby-mode))
+(use-package dash
+  :ensure t
+  :config
+  (dash-enable-font-lock))
+
+(use-package coffee-mode
+  :ensure t
+  :config
+  (bind-key "C-c C-c" 'coffee-compile-file coffee-mode-map)
+  (setq coffee-tab-width 2))
 
 ;; Miscellaneous utility functions
 ;; -------------------------------------------------------------------
@@ -663,46 +624,49 @@ that uses 'font-lock-warning-face'."
 (define-key global-map (kbd "C-j") 'paste-from-j)
 
 ;; Add zsh history search to helm
-(defvar helm-c-source-zsh-history
-  '((name . "Zsh History")
-    (candidates . helm-c-zsh-history-set-candidates)
-    (action . (("Execute Command" . helm-c-zsh-history-action)))
-    (volatile)
-    (requires-pattern . 3)
-    (delayed)))
+;; (defvar helm-c-source-zsh-history
+;;   '((name . "Zsh History")
+;;     (candidates . helm-c-zsh-history-set-candidates)
+;;     (action . (("Execute Command" . helm-c-zsh-history-action)))
+;;     (volatile)
+;;     (requires-pattern . 3)
+;;     (delayed)))
 
-(defun helm-c-zsh-history-set-candidates (&optional request-prefix)
-  (let ((pattern (replace-regexp-in-string
-                  " " ".*"
-                  (or (and request-prefix
-                           (concat request-prefix
-                                   " " helm-pattern))
-                      helm-pattern))))
-    (with-current-buffer (find-file-noselect "~/.zsh_history" t t)
-      (auto-revert-mode -1)
-      (goto-char (point-max))
-      (loop for pos = (re-search-backward pattern nil t)
-            while pos
-            collect (replace-regexp-in-string
-                     "\\`:.+?;" ""
-                     (buffer-substring (line-beginning-position)
-                                       (line-end-position)))))))
+;; (defun helm-c-zsh-history-set-candidates (&optional request-prefix)
+;;   (let ((pattern (replace-regexp-in-string
+;;                   " " ".*"
+;;                   (or (and request-prefix
+;;                            (concat request-prefix
+;;                                    " " helm-pattern))
+;;                       helm-pattern))))
+;;     (with-current-buffer (find-file-noselect "~/.zsh_history" t t)
+;;       (auto-revert-mode -1)
+;;       (goto-char (point-max))
+;;       (loop for pos = (re-search-backward pattern nil t)
+;;             while pos
+;;             collect (replace-regexp-in-string
+;;                      "\\`:.+?;" ""
+;;                      (buffer-substring (line-beginning-position)
+;;                                        (line-end-position)))))))
 
-(defun helm-c-zsh-history-action (candidate)
-  (multi-term-dedicated-select)
-  (kill-new candidate)
-  (yank))
+;; (defun helm-c-zsh-history-action (candidate)
+;;   (multi-term-dedicated-select)
+;;   (kill-new candidate)
+;;   (yank))
 
-(defun helm-command-from-zsh ()
-  (interactive)
-  (require 'helm)
-  (helm-other-buffer 'helm-c-source-zsh-history "*helm zsh history*"))
+;; (defun helm-command-from-zsh ()
+;;   (interactive)
+;;   (helm-other-buffer 'helm-c-source-zsh-history "*helm zsh history*"))
 
-(define-key global-map (kbd "C-c C-z") 'helm-command-from-zsh)
+;; (define-key global-map (kbd "C-c C-z") 'helm-command-from-zsh)
 
 ;; Markdown mode
-(add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
-(setq markdown-command "gfm")
+(use-package markdown-mode
+  :ensure t
+  :mode "\\.md\\'"
+  :config
+  (setq markdown-command "gfm"))
+
 
 ;; which-function-mode
 ;; http://emacsredux.com/blog/2014/04/05/which-function-mode/
@@ -716,57 +680,18 @@ that uses 'font-lock-warning-face'."
 
 ;; smart-mode-line
 ;; https://github.com/Bruce-Connor/smart-mode-line
-(setq sml/theme 'respectful)
-(sml/setup)
-(setq sml/mode-width (quote full)
-      sml/mule-info nil
-      sml/position-percentage-format nil
-      sml/show-remote nil
-      sml/size-indication-format "")
-(add-to-list 'sml/hidden-modes magit-auto-revert-mode-lighter)
-(add-to-list 'sml/hidden-modes " GitGutter")
-
-;; base16-theme customizations
-;; (setq background-theme-color "#202020"
-;;       current-line-theme-color "#505050"
-;;       selection-theme-color "#b0b0b0"
-;;       foreground-theme-color "#e0e0e0"
-;;       comment-theme-color "#b0b0b0"
-;;       cursor-theme-color "#e0e0e0"
-;;       red-theme-color "#ac4142"
-;;       orange-theme-color "#d28445"
-;;       yellow-theme-color "#f4bf75"
-;;       green-theme-color "#90a959"
-;;       aqua-theme-color "#75b5aa"
-;;       blue-theme-color "#6a9fb5"
-;;       purple-theme-color "#aa759f"
-;;       )
-
-;; (custom-set-variables
-;;  `(sml/active-background-color ,current-line-theme-color)
-;;  `(sml/active-foreground-color ,foreground-theme-color)
-;;  `(sml/inactive-background-color ,background-theme-color)
-;;  `(sml/inactive-foreground-color ,foreground-theme-color)
-;;  )
-;; (custom-set-faces
-;;  `(sml/charging ((t (:inherit sml/global :foreground ,green-theme-color))))
-;;  `(sml/discharging ((t (:foreground ,red-theme-color :inherit sml/global))))
-;;  `(sml/filename ((t (:weight bold :foreground ,yellow-theme-color :inherit sml/global))))
-;;  `(sml/global ((t (:inverse-video nil :foreground ,selection-theme-color))))
-;;  `(sml/modes ((t (:foreground ,foreground-theme-color :inherit sml/global))))
-;;  `(sml/modified ((t (:weight bold :foreground ,red-theme-color :inherit sml/global))))
-;;  `(sml/outside-modified
-;;    ((t (:background ,red-theme-color :foreground ,foreground-theme-color :inherit
-;;                     sml/global))))
-;;  `(sml/prefix ((t (:foreground ,purple-theme-color :inherit sml/global))))
-;;  `(sml/read-only ((t (:foreground ,blue-theme-color :inherit sml/global))))
-;;  `(sml/client ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
-;;  `(sml/process ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
-;;  `(sml/vc-edited ((t (:inherit sml/prefix :foreground ,orange-theme-color))))
-;;  `(which-func ((t (:foreground ,aqua-theme-color)))))
-
-;; Emacs theme.
-;; (load-theme 'base16-default t)
+(use-package smart-mode-line
+  :ensure t
+  :init
+  (setq sml/theme 'respectful)
+  (sml/setup)
+  :config
+  (setq sml/mode-width (quote full)
+        sml/mule-info nil
+        sml/position-percentage-format nil
+        sml/show-remote nil
+        sml/size-indication-format "")
+  (add-to-list 'sml/hidden-modes " GitGutter"))
 
 ;; Nice fonts:
 ;; Inconsolata-11
@@ -781,11 +706,12 @@ that uses 'font-lock-warning-face'."
 
 
 ;; My pinky hurts. Lets try out ace-jump-mode.
-(require 'ace-jump-mode)
-(define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
-(define-key org-mode-map (kbd "C-c SPC") 'ace-jump-mode)
-(ace-jump-mode-enable-mark-sync)
-(setq ace-jump-mode-scope 'window)
+(use-package ace-jump-mode
+  :ensure t
+  :bind ("C-c SPC" . ace-jump-mode)
+  :config
+  (ace-jump-mode-enable-mark-sync)
+  (setq ace-jump-mode-scope 'window))
 ;; (define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
 
 ;; go-mode
@@ -875,8 +801,11 @@ With prefix P, create local abbrev. Otherwise it will be global."
 (set-face-attribute 'jabber-activity-personal-face nil
                     :foreground "#c23127")
 
-(global-set-key (kbd "M-o") 'ace-window)
-(setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+(use-package ace-window
+  :ensure t
+  :bind ("M-o" . ace-window)
+  :config
+  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
 
 (defun narrow-to-region-indirect (start end)
   "Restrict editing in this buffer to the current region, indirectly."
@@ -887,8 +816,9 @@ With prefix P, create local abbrev. Otherwise it will be global."
       (narrow-to-region start end))
     (switch-to-buffer buf)))
 
-(require 're-builder)
-(setq reb-re-syntax 'string)
+(use-package re-builder
+  :ensure t
+  :config (setq reb-re-syntax 'string))
 
 ;; Uses expand-region for movement
 ;; Note, this doesn't work as well as one would hope...
@@ -898,36 +828,31 @@ With prefix P, create local abbrev. Otherwise it will be global."
 ;; (global-set-key (kbd "M-b") 'smart-backward)
 ;; (global-set-key (kbd "M-f") 'smart-forward)
 
-(require 'yasnippet)
-(yas-global-mode 1)
+(use-package yasnippet
+  :ensure t
+  :init (yas-global-mode 1))
 
-;; Add shortcut to recalculate table
-(define-key org-mode-map (kbd "M-r") '(lambda () (interactive)(org-table-recalculate t)))
-
-;; Helm improvement. Make backspace quit when there is nothing
-;; there instead of erroring.
-(require 'helm)
-(defun helm-backspace ()
-  "Forward to `backward-delete-char'.
-On error (read-only), quit without selecting."
-  (interactive)
-  (condition-case nil
-      (backward-delete-char 1)
-    (error
-     (helm-keyboard-quit))))
-(define-key helm-map (kbd "DEL") 'helm-backspace)
+(use-package org-mode
+    :config
+    (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
+    ;; Add shortcut to recalculate table
+    (bind-key "M-r" '(lambda () (interactive)(org-table-recalculate t)) org-mode-map))
 
 ;; Try out hydra:
-(defhydra hydra-error (global-map "M-g")
-  "goto-error"
-  ("h" first-error "first")
-  ("j" next-error "next")
-  ("k" previous-error "prev")
-  ("v" recenter-top-bottom "recenter")
-  ("q" nil "quit"))
+(use-package hydra
+  :ensure t
+  :config
+  (defhydra hydra-error (global-map "M-g")
+    "goto-error"
+    ("h" first-error "first")
+    ("j" next-error "next")
+    ("k" previous-error "prev")
+    ("v" recenter-top-bottom "recenter")
+    ("q" nil "quit")))
 
-(require 'multifiles)
-(global-set-key (kbd "C-!") 'mf/mirror-region-in-multifile)
+(use-package multifiles
+  :ensure t
+  :bind ("C-!" . mf/mirror-region-in-multifile))
 
 (defun keys-describe-prefixes ()
   (interactive)
@@ -950,11 +875,12 @@ On error (read-only), quit without selecting."
  'org-babel-load-languages
  '((sh . t)))
 
-(require 'multiple-cursors)
-(global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
-(global-set-key (kbd "C->") 'mc/mark-next-like-this)
-(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
-(global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
+(use-package multiple-cursors
+  :bind (
+         ("C-S-c C-S-c" . mc/edit-lines)
+         ("C->" . mc/mark-next-like-this)
+         ("C-<" . mc/mark-previous-like-this)
+         ("C-c C-<" . mc/mark-all-like-this)))
 
 ;; Faster tramp startup
 (setq tramp-default-method "ssh")

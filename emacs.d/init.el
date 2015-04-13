@@ -26,6 +26,8 @@
   (package-install 'use-package))
 
 (require 'use-package)
+(require 'diminish)
+(require 'bind-key)
 
 ;; Get dash so we can install everything else that hasn't been
 ;; migrated to use-package.
@@ -87,11 +89,5 @@ If Emacs has already finished initialization, also eval FORM immediately."
  '(custom-safe-themes
    (quote
     ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "c5a044ba03d43a725bd79700087dea813abcb6beb6be08c7eb3303ed90782482" "3a727bdc09a7a141e58925258b6e873c65ccf393b2240c51553098ca93957723" default))))
-
-;; Why did I have this inside custom-set-variables?
-;; (sp-override-key-bindings
-;;    (quote
-;;     (("C-<right>" . sp-slurp-hybrid-sexp)
-;;      ("C-<left>" . sp-dedent-adjust-sexp))))
 
 (put 'narrow-to-region 'disabled nil)
