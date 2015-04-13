@@ -196,6 +196,7 @@
 (defun ido-clear-history ()
   "Clear ido virtual buffers list."
   (interactive)
+  (setq recentf-list '())
   (setq ido-virtual-buffers '()))
 
 ;; Smex is for smart completion of M-x commands.
@@ -884,6 +885,11 @@ With prefix P, create local abbrev. Otherwise it will be global."
       (move-end-of-line nil)
       (insert file-name)
       )))
+
+(use-package aggressive-indent
+  :ensure t
+  :init
+  (global-aggressive-indent-mode 1))
 
 (server-start)
 
