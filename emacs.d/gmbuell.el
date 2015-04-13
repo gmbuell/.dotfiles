@@ -701,7 +701,25 @@ that uses 'font-lock-warning-face'."
 ;; ttf-dejavu
 ;; Only load the theme if we are in a graphical display.
 (when (display-graphic-p)
-  (load-theme 'gotham t)
+  (use-package gotham-theme
+    :ensure t
+    :init
+    (load-theme 'gotham t)
+    :config
+    (set-face-attribute 'jabber-chat-prompt-local nil
+                        :foreground "#195466")
+    (set-face-attribute 'jabber-chat-prompt-foreign nil
+                        :foreground "#c23127")
+    (set-face-attribute 'jabber-roster-user-xa nil
+                        :foreground "#0a3749")
+    (set-face-attribute 'jabber-roster-user-online nil
+                        :foreground "#599cab")
+    (set-face-attribute 'jabber-roster-user-away nil
+                        :foreground "#245361")
+    (set-face-attribute 'jabber-activity-face nil
+                        :foreground "#d26937")
+    (set-face-attribute 'jabber-activity-personal-face nil
+                        :foreground "#c23127"))
   (set-frame-font "DejaVu Sans Mono 11" t t))
 
 
@@ -769,37 +787,6 @@ With prefix P, create local abbrev. Otherwise it will be global."
 
 (setq save-abbrevs t)
 (setq-default abbrev-mode t)
-
-(set-face-attribute 'jabber-chat-prompt-local nil
-                    :foreground "#195466")
-(set-face-attribute 'jabber-chat-prompt-foreign nil
-                    :foreground "#c23127")
-(set-face-attribute 'jabber-roster-user-xa nil
-                    :foreground "#0a3749")
-(set-face-attribute 'jabber-roster-user-online nil
-                    :foreground "#599cab")
-(set-face-attribute 'jabber-roster-user-away nil
-                    :foreground "#245361")
-
-;; (set-face-attribute 'jabber-chat-prompt-local nil
-;;                     :background "#0c1014"
-;;                     :foreground "#195466")
-;; (set-face-attribute 'jabber-chat-prompt-foreign nil
-;;                     :background "#0c1014"
-;;                     :foreground "#c23127")
-;; (set-face-attribute 'jabber-roster-user-xa nil
-;;                     :background "#0c1014"
-;;                     :foreground "#0a3749")
-;; (set-face-attribute 'jabber-roster-user-online nil
-;;                     :background "#0c1014"
-;;                     :foreground "#599cab")
-;; (set-face-attribute 'jabber-roster-user-away nil
-;;                     :background "#0c1014"
-;;                     :foreground "#245361")
-(set-face-attribute 'jabber-activity-face nil
-                    :foreground "#d26937")
-(set-face-attribute 'jabber-activity-personal-face nil
-                    :foreground "#c23127")
 
 (use-package ace-window
   :ensure t
