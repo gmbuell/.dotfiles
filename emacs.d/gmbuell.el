@@ -344,6 +344,8 @@ directory to make multiple eshell windows easier."
   ;; Complete targets
   (cond
    ((pcomplete-match "test")
+    (when (< pcomplete-index pcomplete-last)
+      (pcomplete-next-arg))
     (pcomplete-here* (pcmpl-blaze-get-test-targets)))))
 
 ;; Consider giving helm-adaptative-mode a try
