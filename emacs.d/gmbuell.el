@@ -307,9 +307,19 @@ directory to make multiple eshell windows easier."
       (insert (concat "ls"))
       (eshell-send-input)))
   (global-set-key (kbd "C-c e") 'eshell-here)
+  (defun delete-single-window (&optional window)
+    "Remove WINDOW from the display.  Default is `selected-window'.
+If WINDOW is the only one in its frame, then `delete-frame' too."
+    (interactive)
+    (save-current-buffer
+      (setq window (or window (selected-window)))
+      (select-window window)
+      (kill-buffer)
+      (if (one-window-p t)
+          (delete-frame)
+        (delete-window (selected-window)))))
   (defun eshell/x ()
-    (kill-buffer)
-    (delete-window))
+    (delete-single-window))
   (use-package esh-buf-stack
     :ensure t
     :config
@@ -321,7 +331,19 @@ directory to make multiple eshell windows easier."
   ;; Add pcomplete to company-capf
   (defun add-pcomplete-to-capf ()
     (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
-  (add-hook 'eshell-mode-hook #'add-pcomplete-to-capf))
+  (add-hook 'eshell-mode-hook #'add-pcomplete-to-capf)
+  ;; Re-use eshell
+  (defun af-eshell-here ()
+    "Go to eshell and set current directory to the buffer's directory"
+    (interactive)
+    (let ((dir (file-name-directory (or (buffer-file-name)
+                                        default-directory))))
+      (eshell)
+      (eshell/pushd ".")
+      (cd dir)
+      (goto-char (point-max))
+      (eshell-kill-input)
+      (eshell-send-input))))
 
 (use-package f
   :ensure t)
