@@ -513,6 +513,7 @@ that uses 'font-lock-warning-face'."
   (global-auto-revert-mode)
   (setq auto-revert-check-vc-info t)
   (setq vc-follow-symlinks t)
+  (setq magit-last-seen-setup-instructions "1.4.0")
   :config
   (add-to-list 'sml/hidden-modes magit-auto-revert-mode-lighter))
 
