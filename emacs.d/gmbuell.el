@@ -76,20 +76,16 @@
 ;; Replace all the search keys with regex versions.
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
-(global-set-key (kbd "C-M-s") 'isearch-forward)
-(global-set-key (kbd "C-M-r") 'isearch-backward)
 
 ;; Help should search more than just commands
 (define-key 'help-command "a" 'apropos)
 
 ;; Activate occur easily inside isearch
-;; Note: this might already be enabled in emacs 24
 (define-key isearch-mode-map (kbd "C-o")
   (lambda () (interactive)
     (let ((case-fold-search isearch-case-fold-search))
       (occur (if isearch-regexp isearch-string (regexp-quote isearch-string))))))
 
-(show-paren-mode 1)
 (setq-default indent-tabs-mode nil)
 (defalias 'yes-or-no-p 'y-or-n-p)
 (defalias 'auto-tail-revert-mode 'tail-mode)
@@ -180,11 +176,12 @@
         ido-auto-merge-work-directories-length nil
         ido-create-new-buffer 'always
         ido-use-filename-at-point 'guess
-        ido-use-virtual-buffers t
+        ido-use-virtual-buffers nil
         ido-max-prospects 10
         ido-use-faces nil  ;; Disabled to see flx highlights
         )
-  (add-to-list 'ido-ignore-buffers "^\*Helm"))
+  (add-to-list 'ido-ignore-buffers "^\*Helm")
+  (add-to-list 'ido-ignore-buffers "^\*MULTI-TERM-DEDICATED\*"))
 (use-package flx-ido
   :ensure t
   :init
@@ -268,7 +265,86 @@ On error (read-only), quit without selecting."
        (helm-keyboard-quit))))
   (bind-key "DEL" 'helm-backspace helm-map)
   (use-package helm-ls-git)
-  (set-default 'imenu-auto-rescan t))
+  (set-default 'imenu-auto-rescan t)
+  ;; Eshell
+  (add-hook 'eshell-mode-hook
+            #'(lambda ()
+                (define-key eshell-mode-map
+                  [remap eshell-pcomplete]
+                  'helm-esh-pcomplete)))
+  (add-hook 'eshell-mode-hook
+            #'(lambda ()
+                (define-key eshell-mode-map
+                  (kbd "M-p")
+                  'helm-eshell-history))))
+
+;; for eshell
+(use-package pcomplete-extension
+  :ensure t)
+
+(use-package eshell
+  :config
+  (require 'em-smart)
+  (setq eshell-where-to-jump 'begin)
+  (setq eshell-review-quick-commands nil)
+  (setq eshell-smart-space-goes-to-end t)
+  (setq eshell-buffer-shorthand t)
+  (defun eshell-here ()
+    "Opens up a new shell in the directory associated with the
+current buffer's file. The eshell is renamed to match that
+directory to make multiple eshell windows easier."
+    (interactive)
+    (let* ((parent (if (buffer-file-name)
+                       (file-name-directory (buffer-file-name))
+                     default-directory))
+           (height (/ (window-total-height) 3))
+           (name   (car (last (split-string parent "/" t)))))
+      (split-window-vertically (- height))
+      (other-window 1)
+      (eshell "new")
+      (rename-buffer (concat "*eshell: " name "*"))
+
+      (insert (concat "ls"))
+      (eshell-send-input)))
+  (global-set-key (kbd "C-c e") 'eshell-here)
+  (defun eshell/x ()
+    (insert "exit")
+    (eshell-send-input)
+    (delete-window)))
+
+(use-package f
+  :ensure t)
+
+(defvar pcmpl-blaze-test-target-cmd "blaze query 'kind(\".*_test rule\", ...)'"
+  "The blaze query command to run to get a list of test targets.")
+
+(defun pcmpl-blaze-get-test-targets ()
+  "Return a list of `blaze' test targets."
+  (let ((extraction-regexp (concat "//"
+                                   (save-match-data
+                                     (string-match ".+/google3/\\(.+\\)" (eshell/pwd))
+                                     (match-string-no-properties 1 (eshell/pwd)))
+                                   "/?\\(.+\\)")))
+    (with-temp-buffer
+      (insert (shell-command-to-string pcmpl-blaze-test-target-cmd))
+      (goto-char (point-min))
+      (let ((target-list))
+        (while (re-search-forward extraction-regexp nil t)
+          (add-to-list 'target-list (match-string 1)))
+        target-list))))
+
+(defconst pcmpl-blaze-commands
+  '("build" "test" "run")
+  "List of `blaze' commands.")
+(defun pcomplete/blaze ()
+  "Completion for `blaze'."
+  ;; Completion for the command argument.
+  (pcomplete-here* pcmpl-blaze-commands)
+
+  ;; Complete targets
+  (cond
+   ((pcomplete-match "test")
+    (pcomplete-here* (pcmpl-blaze-get-test-targets)))))
 
 ;; Consider giving helm-adaptative-mode a try
 
@@ -375,7 +451,10 @@ that uses 'font-lock-warning-face'."
   (use-package flycheck-ycmd
     :ensure t
     :init
-    (flycheck-ycmd-setup)))
+    (flycheck-ycmd-setup)
+    :config
+    (setq-default flycheck-disabled-checkers
+                  '(c/c++-gcc c/c++-clang c/c++-cppcheck))))
 
 ;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
 ;; go get -u github.com/nsf/gocode
@@ -412,7 +491,8 @@ that uses 'font-lock-warning-face'."
    multi-term-dedicated-select-after-open-p t
    ;; Use zsh for multi-term
    multi-term-program "/usr/local/bin/zsh"
-   multi-term-program-switches "--login"))
+   multi-term-program-switches "--login"
+   multi-term-dedicated-skip-other-window-p t))
 
 (use-package ansi-color
   :ensure t
@@ -465,7 +545,21 @@ that uses 'font-lock-warning-face'."
         jabber-alert-presence-message-function (lambda (who oldstatus newstatus statustext) nil)
         ;; Don't show alerts if I'm already in the chat buffer.
         jabber-message-alert-same-buffer nil
-        jabber-history-dir "~/.jabber"))
+        jabber-history-dir "~/.jabber")
+  (set-face-attribute 'jabber-chat-prompt-local nil
+                      :foreground "#195466")
+  (set-face-attribute 'jabber-chat-prompt-foreign nil
+                      :foreground "#c23127")
+  (set-face-attribute 'jabber-roster-user-xa nil
+                      :foreground "#0a3749")
+  (set-face-attribute 'jabber-roster-user-online nil
+                      :foreground "#599cab")
+  (set-face-attribute 'jabber-roster-user-away nil
+                      :foreground "#245361")
+  (set-face-attribute 'jabber-activity-face nil
+                      :foreground "#d26937")
+  (set-face-attribute 'jabber-activity-personal-face nil
+                      :foreground "#c23127"))
 
 ;; Settings and modes to make text entry and display smarter.
 ;; -------------------------------------------------------------------
@@ -495,10 +589,21 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'emacs-lisp-mode '((fontify-hex-colors)))
 (font-lock-add-keywords 'ess-mode '((fontify-hex-colors)))
 
-;; Highlight matching parentheses when the point is on them.
-(show-paren-mode 1)
-(use-package subr-x
+(use-package smartparens-config
+  :ensure smartparens
+  :init
+  (smartparens-global-mode t)
+  (show-smartparens-global-mode +1)
   :config
+  (sp-use-smartparens-bindings)
+  (setq sp-override-key-bindings
+        '(("C-<right>" . sp-slurp-hybrid-sexp)
+          ("C-<left>" . sp-dedent-adjust-sexp)))
+  ;; Fix forward slurp spacing
+  ;; https://github.com/Fuco1/smartparens/issues/297
+  (sp-local-pair 'c-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
+  (sp-local-pair 'c++-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*)")
+  (require 'subr-x)
   ;; My custom code to make kill line more intelligent
   (defun gmbuell-smart-kill-line (arg)
     "If the line is only whitespace or the command is prefixed with C-u,
@@ -508,22 +613,8 @@ that uses 'font-lock-warning-face'."
         (progn (kill-line nil)
                (indent-for-tab-command))
       (progn (sp-kill-hybrid-sexp arg)
-             (indent-for-tab-command)))))
-
-(use-package smartparens-config
-  :ensure smartparens
-  :init
-  (smartparens-global-mode t)
-  (bind-key "C-k" 'gmbuell-smart-kill-line prog-mode-map)
-  :config
-  (sp-use-smartparens-bindings)
-  (setq sp-override-key-bindings
-        '(("C-<right>" . sp-slurp-hybrid-sexp)
-          ("C-<left>" . sp-dedent-adjust-sexp)))
-  ;; Fix forward slurp spacing
-  ;; https://github.com/Fuco1/smartparens/issues/297
-  (sp-local-pair 'c-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
-  (sp-local-pair 'c++-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*)"))
+             (indent-for-tab-command))))
+  (bind-key "C-k" 'gmbuell-smart-kill-line prog-mode-map))
 
 (use-package expand-region
   :ensure t
@@ -564,7 +655,10 @@ that uses 'font-lock-warning-face'."
 ;; -------------------------------------------------------------------
 
 ;; Enhancements to dired including dired-jump
-(use-package dired-x)
+(use-package dired-x
+  :init
+  (setq dired-bind-jump nil)
+  :bind ("C-x j" . dired-jump))
 
 (use-package dash
   :ensure t
@@ -613,16 +707,16 @@ that uses 'font-lock-warning-face'."
 (global-set-key (kbd "<deletechar>") 'backward-kill-word)
 
 ;; Register
-(defun copy-to-j (start end)
-  "Copy the text in the region to register 'j'."
-  (interactive "r")
-  (copy-to-register ?j start end))
-(defun paste-from-j ()
-  "Paste the text from register 'j'."
-  (interactive)
-  (insert-register ?j t))
-(define-key global-map (kbd "C-c C-j") 'copy-to-j)
-(define-key global-map (kbd "C-j") 'paste-from-j)
+;; (defun copy-to-j (start end)
+;;   "Copy the text in the region to register 'j'."
+;;   (interactive "r")
+;;   (copy-to-register ?j start end))
+;; (defun paste-from-j ()
+;;   "Paste the text from register 'j'."
+;;   (interactive)
+;;   (insert-register ?j t))
+;; (define-key global-map (kbd "C-c C-j") 'copy-to-j)
+;; (define-key global-map (kbd "C-j") 'paste-from-j)
 
 ;; Add zsh history search to helm
 ;; (defvar helm-c-source-zsh-history
@@ -705,22 +799,7 @@ that uses 'font-lock-warning-face'."
   (use-package gotham-theme
     :ensure t
     :init
-    (load-theme 'gotham t)
-    :config
-    (set-face-attribute 'jabber-chat-prompt-local nil
-                        :foreground "#195466")
-    (set-face-attribute 'jabber-chat-prompt-foreign nil
-                        :foreground "#c23127")
-    (set-face-attribute 'jabber-roster-user-xa nil
-                        :foreground "#0a3749")
-    (set-face-attribute 'jabber-roster-user-online nil
-                        :foreground "#599cab")
-    (set-face-attribute 'jabber-roster-user-away nil
-                        :foreground "#245361")
-    (set-face-attribute 'jabber-activity-face nil
-                        :foreground "#d26937")
-    (set-face-attribute 'jabber-activity-personal-face nil
-                        :foreground "#c23127"))
+    (load-theme 'gotham t))
   (set-frame-font "DejaVu Sans Mono 11" t t))
 
 
@@ -890,6 +969,16 @@ With prefix P, create local abbrev. Otherwise it will be global."
   :ensure t
   :init
   (global-aggressive-indent-mode 1))
+
+(use-package smartscan
+  :ensure t
+  :init
+  (smartscan-mode 1))
+
+(use-package auto-yasnippet
+  :ensure t
+  :bind (("M-w" . aya-create)
+         ("M-W" . aya-expand)))
 
 (server-start)
 
