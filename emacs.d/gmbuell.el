@@ -308,9 +308,20 @@ directory to make multiple eshell windows easier."
       (eshell-send-input)))
   (global-set-key (kbd "C-c e") 'eshell-here)
   (defun eshell/x ()
-    (insert "exit")
-    (eshell-send-input)
-    (delete-window)))
+    (kill-buffer)
+    (delete-window))
+  (use-package esh-buf-stack
+    :ensure t
+    :config
+    (setup-eshell-buf-stack)
+    (add-hook 'eshell-mode-hook
+              (lambda ()
+                (local-set-key
+                 (kbd "M-q") 'eshell-push-command))))
+  ;; Add pcomplete to company-capf
+  (defun add-pcomplete-to-capf ()
+    (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
+  (add-hook 'eshell-mode-hook #'add-pcomplete-to-capf))
 
 (use-package f
   :ensure t)
@@ -330,7 +341,7 @@ directory to make multiple eshell windows easier."
       (goto-char (point-min))
       (let ((target-list))
         (while (re-search-forward extraction-regexp nil t)
-          (add-to-list 'target-list (match-string 1)))
+          (add-to-list 'target-list (match-string-no-properties 1)))
         target-list))))
 
 (defconst pcmpl-blaze-commands
