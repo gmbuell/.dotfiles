@@ -293,6 +293,8 @@ On error (read-only), quit without selecting."
   (setq eshell-review-quick-commands nil)
   (setq eshell-smart-space-goes-to-end t)
   (setq eshell-buffer-shorthand t)
+  (setenv "EDITOR" "emacsclient")
+  (setenv "VISUAL" "emacsclient")
   (defun eshell-here ()
     "Opens up a new shell in the directory associated with the
 current buffer's file. The eshell is renamed to match that
