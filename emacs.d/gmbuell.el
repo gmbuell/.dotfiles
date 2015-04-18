@@ -396,6 +396,13 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
     (pcomplete-next-arg))
   (pcomplete-here* (pcmpl-blaze-get-targets "all")))
 
+(defun pcomplete/fixdeps_main.par ()
+  "Completion for `fixdeps'."
+  ;; Complete targets
+  (while (< pcomplete-index pcomplete-last)
+    (pcomplete-next-arg))
+  (pcomplete-here* (pcmpl-blaze-get-targets "all")))
+
 ;; Consider giving helm-adaptative-mode a try
 
 ;; Plain text settings
