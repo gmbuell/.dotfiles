@@ -149,7 +149,7 @@
 (setq enable-recursive-minibuffers t)
 
 (use-package uniquify
-  :config (setq uniquify-buffer-name-style 'forward))
+  :init (setq uniquify-buffer-name-style 'forward))
 
 
 ;; Ido configuration. Gives smart buffer switching and menus.
@@ -269,14 +269,18 @@ On error (read-only), quit without selecting."
   ;; Eshell
   (add-hook 'eshell-mode-hook
             #'(lambda ()
+                (bind-key "TAB" 'helm-esh-pcomplete eshell-mode-map)))
+  (add-hook 'eshell-mode-hook
+            #'(lambda ()
                 (define-key eshell-mode-map
                   [remap eshell-pcomplete]
                   'helm-esh-pcomplete)))
   (add-hook 'eshell-mode-hook
             #'(lambda ()
-                (define-key eshell-mode-map
-                  (kbd "M-p")
-                  'helm-eshell-history))))
+                (bind-key "M-p" 'helm-eshell-history eshell-mode-map)))
+  (add-hook 'eshell-mode-hook
+            #'(lambda ()
+                (setq-local yas-fallback-behavior '(apply helm-esh-pcomplete)))))
 
 ;; for eshell
 (use-package pcomplete-extension
@@ -348,18 +352,22 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
 (use-package f
   :ensure t)
 
-(defvar pcmpl-blaze-test-target-cmd "blaze query 'kind(\".*_test rule\", ...)'"
-  "The blaze query command to run to get a list of test targets.")
+(defun pcmpl-blaze-target-cmd (target-type)
+  "The blaze query command to run to get a list of targets."
+  (cond ((string= target-type "test")
+         "blaze query 'kind(\".*_test rule\", ...)'")
+        ((string= target-type "all")
+         "blaze query 'kind(\"rule\", ...)'")))
 
-(defun pcmpl-blaze-get-test-targets ()
+(defun pcmpl-blaze-get-targets (target-type)
   "Return a list of `blaze' test targets."
   (let ((extraction-regexp (concat "//"
                                    (save-match-data
                                      (string-match ".+/google3/\\(.+\\)" (eshell/pwd))
                                      (match-string-no-properties 1 (eshell/pwd)))
-                                   "/?\\(.+\\)")))
+                                   "\\(:.+\\)")))
     (with-temp-buffer
-      (insert (shell-command-to-string pcmpl-blaze-test-target-cmd))
+      (insert (shell-command-to-string (pcmpl-blaze-target-cmd target-type)))
       (goto-char (point-min))
       (let ((target-list))
         (while (re-search-forward extraction-regexp nil t)
@@ -377,9 +385,16 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
   ;; Complete targets
   (cond
    ((pcomplete-match "test")
-    (when (< pcomplete-index pcomplete-last)
+    (while (< pcomplete-index pcomplete-last)
       (pcomplete-next-arg))
-    (pcomplete-here* (pcmpl-blaze-get-test-targets)))))
+    (pcomplete-here* (pcmpl-blaze-get-targets "test")))))
+
+(defun pcomplete/iwyu.py ()
+  "Completion for `iwyu'."
+  ;; Complete targets
+  (while (< pcomplete-index pcomplete-last)
+    (pcomplete-next-arg))
+  (pcomplete-here* (pcmpl-blaze-get-targets "all")))
 
 ;; Consider giving helm-adaptative-mode a try
 
@@ -625,13 +640,18 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'emacs-lisp-mode '((fontify-hex-colors)))
 (font-lock-add-keywords 'ess-mode '((fontify-hex-colors)))
 
-(use-package smartparens-config
-  :ensure smartparens
-  :init
-  (smartparens-global-mode t)
-  (show-smartparens-global-mode +1)
-  :config
-  (sp-use-smartparens-bindings)
+(defun gmbuell-smart-kill-line (arg)
+  "If the line is only whitespace or the command is prefixed with C-u,
+   use standard kill-line. Otherwise, use sp-kill-hybrid-sexp"
+  (interactive "P")
+  (if (or arg (string-blank-p (thing-at-point 'line)))
+      (progn (kill-line nil)
+             (indent-for-tab-command))
+    (progn (sp-kill-hybrid-sexp arg)
+           (indent-for-tab-command))))
+
+(defun gmbuell-smartparens-config ()
+  "Custom configuration for smartparens."
   (setq sp-override-key-bindings
         '(("C-<right>" . sp-slurp-hybrid-sexp)
           ("C-<left>" . sp-dedent-adjust-sexp)))
@@ -641,16 +661,19 @@ that uses 'font-lock-warning-face'."
   (sp-local-pair 'c++-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*)")
   (require 'subr-x)
   ;; My custom code to make kill line more intelligent
-  (defun gmbuell-smart-kill-line (arg)
-    "If the line is only whitespace or the command is prefixed with C-u,
-   use standard kill-line. Otherwise, use sp-kill-hybrid-sexp"
-    (interactive "P")
-    (if (or arg (string-blank-p (thing-at-point 'line)))
-        (progn (kill-line nil)
-               (indent-for-tab-command))
-      (progn (sp-kill-hybrid-sexp arg)
-             (indent-for-tab-command))))
-  (bind-key "C-k" 'gmbuell-smart-kill-line prog-mode-map))
+  (bind-key "C-k" 'gmbuell-smart-kill-line prog-mode-map)
+  (add-hook 'c++-mode-hook
+            '(lambda () (bind-key "C-k" 'gmbuell-smart-kill-line c++-mode-map)))
+  (add-hook 'c-mode-hook
+            '(lambda () (bind-key "C-k" 'gmbuell-smart-kill-line c-mode-map))))
+
+(use-package smartparens-config
+  :ensure smartparens
+  :init
+  (smartparens-global-mode t)
+  (show-smartparens-global-mode +1)
+  (sp-use-smartparens-bindings)
+  (gmbuell-smartparens-config))
 
 (use-package expand-region
   :ensure t
@@ -845,7 +868,9 @@ that uses 'font-lock-warning-face'."
   :bind ("C-c SPC" . ace-jump-mode)
   :config
   (ace-jump-mode-enable-mark-sync)
-  (setq ace-jump-mode-scope 'window))
+  (setq ace-jump-mode-scope 'window)
+  (add-hook 'eshell-mode-hook
+            '(lambda () (bind-key "C-c SPC" 'ace-jump-mode eshell-mode-map))))
 ;; (define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
 
 ;; go-mode
