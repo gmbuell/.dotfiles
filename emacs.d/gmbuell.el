@@ -236,6 +236,18 @@
 ;; characters for matches.
 (use-package helm-config
   :ensure helm
+  :init
+  (add-hook 'eshell-mode-hook
+            #'(lambda ()
+                (define-key eshell-mode-map
+                  [remap eshell-pcomplete]
+                  'helm-esh-pcomplete)))
+  (add-hook 'eshell-mode-hook
+            #'(lambda ()
+                (bind-key "M-p" 'helm-eshell-history eshell-mode-map)))
+  (add-hook 'eshell-mode-hook
+            #'(lambda ()
+                (bind-key "<tab>" 'helm-esh-pcomplete eshell-mode-map)))
   :bind (
          ;; This is my main interface to opening/switching between files in the
          ;; same git repository. It is particularly useful because the virtual
@@ -265,22 +277,7 @@ On error (read-only), quit without selecting."
        (helm-keyboard-quit))))
   (bind-key "DEL" 'helm-backspace helm-map)
   (use-package helm-ls-git)
-  (set-default 'imenu-auto-rescan t)
-  ;; Eshell
-  (add-hook 'eshell-mode-hook
-            #'(lambda ()
-                (bind-key "TAB" 'helm-esh-pcomplete eshell-mode-map)))
-  (add-hook 'eshell-mode-hook
-            #'(lambda ()
-                (define-key eshell-mode-map
-                  [remap eshell-pcomplete]
-                  'helm-esh-pcomplete)))
-  (add-hook 'eshell-mode-hook
-            #'(lambda ()
-                (bind-key "M-p" 'helm-eshell-history eshell-mode-map)))
-  (add-hook 'eshell-mode-hook
-            #'(lambda ()
-                (setq-local yas-fallback-behavior '(apply helm-esh-pcomplete)))))
+  (set-default 'imenu-auto-rescan t))
 
 ;; for eshell
 (use-package pcomplete-extension
@@ -479,11 +476,11 @@ that uses 'font-lock-warning-face'."
   :config
   ;; Add company-yasnippet carefully.
   (setq company-backends (-map (lambda (item) (cond ((listp item)
-                                                (cons 'company-yasnippet item))
-                                               ((eq 'company-dabbrev item)
-                                                '(company-yasnippet company-dabbrev))
-                                               (t item
-                                                  ))) company-backends))
+                                                     (cons 'company-yasnippet item))
+                                                    ((eq 'company-dabbrev item)
+                                                     '(company-yasnippet company-dabbrev))
+                                                    (t item
+                                                       ))) company-backends))
   (add-to-list 'company-backends 'company-warhammer)
   ;; Decrease delay before autocompletion popup shows.
   (setq company-idle-delay .3)
@@ -967,13 +964,15 @@ With prefix P, create local abbrev. Otherwise it will be global."
 
 (use-package yasnippet
   :ensure t
-  :init (yas-global-mode 1))
+  :init
+  (yas-global-mode 1))
+
 
 (use-package org-mode
-    :config
-    (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
-    ;; Add shortcut to recalculate table
-    (bind-key "M-r" '(lambda () (interactive)(org-table-recalculate t)) org-mode-map))
+  :config
+  (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
+  ;; Add shortcut to recalculate table
+  (bind-key "M-r" '(lambda () (interactive)(org-table-recalculate t)) org-mode-map))
 
 ;; Try out hydra:
 (use-package hydra
