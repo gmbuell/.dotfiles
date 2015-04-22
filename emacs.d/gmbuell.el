@@ -286,10 +286,12 @@ On error (read-only), quit without selecting."
 (use-package eshell
   :config
   (require 'em-smart)
-  (setq eshell-where-to-jump 'begin)
-  (setq eshell-review-quick-commands nil)
-  (setq eshell-smart-space-goes-to-end t)
-  (setq eshell-buffer-shorthand t)
+  (setq eshell-where-to-jump 'begin
+        eshell-review-quick-commands nil
+        eshell-smart-space-goes-to-end t
+        eshell-buffer-shorthand t
+        pcomplete-ignore-case t
+        eshell-save-history-on-exit t)
   (setenv "EDITOR" "emacsclient")
   (setenv "VISUAL" "emacsclient")
   (defun eshell-here ()
@@ -323,14 +325,6 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
         (delete-window (selected-window)))))
   (defun eshell/x ()
     (delete-single-window))
-  (use-package esh-buf-stack
-    :ensure t
-    :config
-    (setup-eshell-buf-stack)
-    (add-hook 'eshell-mode-hook
-              (lambda ()
-                (local-set-key
-                 (kbd "M-q") 'eshell-push-command))))
   ;; Add pcomplete to company-capf
   (defun add-pcomplete-to-capf ()
     (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
@@ -348,6 +342,21 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
       (eshell-kill-input)
       (eshell-send-input))))
 
+(use-package esh-buf-stack
+  :ensure t
+  :config
+  (setup-eshell-buf-stack)
+  (add-hook 'eshell-mode-hook
+            (lambda ()
+              (local-set-key
+               (kbd "M-q") 'eshell-push-command))))
+
+(use-package pcmpl-pip
+  :ensure t)
+
+(use-package pcmpl-git
+  :ensure t)
+
 (use-package f
   :ensure t)
 
@@ -356,7 +365,9 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
   (cond ((string= target-type "test")
          "blaze query 'kind(\".*_test rule\", ...)'")
         ((string= target-type "all")
-         "blaze query 'kind(\"rule\", ...)'")))
+         "blaze query 'kind(\"rule\", ...)'")
+        ((string= target-type "run")
+         "blaze query 'kind(\".*_binary rule\", ...)'")))
 
 (defun pcmpl-blaze-get-targets (target-type)
   "Return a list of `blaze' test targets."
@@ -386,7 +397,11 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
    ((pcomplete-match "test")
     (while (< pcomplete-index pcomplete-last)
       (pcomplete-next-arg))
-    (pcomplete-here* (pcmpl-blaze-get-targets "test")))))
+    (pcomplete-here* (pcmpl-blaze-get-targets "test")))
+   ((pcomplete-match "run")
+    (while (< pcomplete-index pcomplete-last)
+      (pcomplete-next-arg))
+    (pcomplete-here* (pcmpl-blaze-get-targets "run")))))
 
 (defun pcomplete/iwyu.py ()
   "Completion for `iwyu'."
