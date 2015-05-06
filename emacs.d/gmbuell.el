@@ -294,6 +294,8 @@ On error (read-only), quit without selecting."
         eshell-save-history-on-exit t)
   (setenv "EDITOR" "emacsclient")
   (setenv "VISUAL" "emacsclient")
+  (setenv "GOPATH" (concat (getenv "HOME") "/gocode"))
+  (setenv "PATH" (concat (getenv "PATH") ":" (getenv "GOPATH") "/bin"))
   (defun eshell-here ()
     "Opens up a new shell in the directory associated with the
 current buffer's file. The eshell is renamed to match that
