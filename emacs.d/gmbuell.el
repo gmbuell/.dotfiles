@@ -296,6 +296,7 @@ On error (read-only), quit without selecting."
   (setenv "VISUAL" "emacsclient")
   (setenv "GOPATH" (concat (getenv "HOME") "/go"))
   (setenv "PATH" (concat (getenv "PATH") ":" (getenv "GOPATH") "/bin"))
+  (setenv "PATH" (concat (getenv "PATH") ":" (getenv "HOME") "/gsutil"))
   (defun eshell-here ()
     "Opens up a new shell in the directory associated with the
 current buffer's file. The eshell is renamed to match that
@@ -923,8 +924,9 @@ that uses 'font-lock-warning-face'."
 (require 'go-errcheck)
 
 ;; Add yasnippets-go:
+;; Isn't needed since the default yasnippet directory contains some.
 ;; https://github.com/dominikh/yasnippet-go
-(add-to-list 'yas-snippet-dirs (substitute-in-file-name "$HOME/github/yasnippet-go"))
+;; (add-to-list 'yas-snippet-dirs (substitute-in-file-name "$HOME/github/yasnippet-go"))
 
 ;; Fix tab size
 (add-hook 'go-mode-hook
