@@ -294,7 +294,7 @@ On error (read-only), quit without selecting."
         eshell-save-history-on-exit t)
   (setenv "EDITOR" "emacsclient")
   (setenv "VISUAL" "emacsclient")
-  (setenv "GOPATH" (concat (getenv "HOME") "/gocode"))
+  (setenv "GOPATH" (concat (getenv "HOME") "/go"))
   (setenv "PATH" (concat (getenv "PATH") ":" (getenv "GOPATH") "/bin"))
   (defun eshell-here ()
     "Opens up a new shell in the directory associated with the
@@ -531,7 +531,8 @@ that uses 'font-lock-warning-face'."
 
 ;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
 ;; go get -u github.com/nsf/gocode
-;; (require 'company-go)
+(use-package company-go
+  :ensure t)
 
 ;; Git integration
 ;; -------------------------------------------------------------------
@@ -899,34 +900,38 @@ that uses 'font-lock-warning-face'."
 ;; go-mode
 ;; http://dominik.honnef.co/posts/2013/03/writing_go_in_emacs/
 ;; http://dominik.honnef.co/posts/2013/08/writing_go_in_emacs__cont__/
-;; (require 'go-mode-load)
+(use-package go-mode
+  :ensure t)
 ;; https://github.com/dougm/goflymake
 ;; go get -u github.com/dougm/goflymake
-;; (add-to-list 'load-path (substitute-in-file-name "$GOPATH/src/github.com/dougm/goflymake"))
-;; (require 'go-flycheck)
+(add-to-list 'load-path (substitute-in-file-name "$GOPATH/src/github.com/dougm/goflymake"))
+(require 'go-flycheck)
 
-;; (add-hook 'go-mode-hook (lambda ()
-;;                           (set (make-local-variable 'company-backends) '(company-go))
-;;                           (company-mode)
-;;                           (flycheck-mode)))
+(add-hook 'go-mode-hook (lambda ()
+                          (set (make-local-variable 'company-backends) '(company-go))
+                          (company-mode)
+                          (flycheck-mode)))
 
 ;; https://github.com/syohex/emacs-go-eldoc
-;; (require 'go-eldoc) ;; Don't need to require, if you install by package.el
-;; (add-hook 'go-mode-hook 'go-eldoc-setup)
+(use-package go-eldoc
+  :ensure t
+  :init
+  (add-hook 'go-mode-hook 'go-eldoc-setup))
 
 ;; https://github.com/dominikh/go-errcheck.el
 ;; go get github.com/kisielk/errcheck
-;; (require 'go-errcheck)
+(require 'go-errcheck)
 
 ;; Add yasnippets-go:
 ;; https://github.com/dominikh/yasnippet-go
+(add-to-list 'yas-snippet-dirs (substitute-in-file-name "$HOME/github/yasnippet-go"))
 
 ;; Fix tab size
-;; (add-hook 'go-mode-hook
-;;           (lambda ()
-;;             (add-hook 'before-save-hook 'gofmt-before-save)
-;;             (setq tab-width 4)
-;;             (setq indent-tabs-mode 1)))
+(add-hook 'go-mode-hook
+          (lambda ()
+            (add-hook 'before-save-hook 'gofmt-before-save)
+            (setq tab-width 4)
+            (setq indent-tabs-mode 1)))
 
 ;; Empty scratch buffer
 (setq initial-scratch-message nil)
