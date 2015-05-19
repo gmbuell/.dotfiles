@@ -516,6 +516,7 @@ that uses 'font-lock-warning-face'."
   (set-variable 'ycmd-global-config "/usr/lib/youcompleteme/ycm_extra_conf.py")
   (set-variable 'ycmd-extra-conf-whitelist '("/usr/lib/youcompleteme/ycm_extra_conf.py"))
   (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
+  (set-variable 'url-show-status nil)
   (ycmd-setup)
   (use-package company-ycmd
     :ensure t
