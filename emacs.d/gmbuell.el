@@ -297,6 +297,7 @@ On error (read-only), quit without selecting."
   (setenv "GOPATH" (concat (getenv "HOME") "/go"))
   (setenv "PATH" (concat (getenv "PATH") ":" (getenv "GOPATH") "/bin"))
   (setenv "PATH" (concat (getenv "PATH") ":" (getenv "HOME") "/gsutil"))
+  (add-to-list 'exec-path (concat (getenv "GOPATH") "/bin"))
   (defun eshell-here ()
     "Opens up a new shell in the directory associated with the
 current buffer's file. The eshell is renamed to match that
@@ -514,6 +515,7 @@ that uses 'font-lock-warning-face'."
   (set-variable 'ycmd-global-config "/usr/lib/youcompleteme/ycm_extra_conf.py")
   (set-variable 'ycmd-extra-conf-whitelist '("/usr/lib/youcompleteme/ycm_extra_conf.py"))
   (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
+  (set-variable 'url-show-status nil)
   (ycmd-setup)
   (use-package company-ycmd
     :ensure t
@@ -683,13 +685,16 @@ that uses 'font-lock-warning-face'."
   ;; https://github.com/Fuco1/smartparens/issues/297
   (sp-local-pair 'c-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
   (sp-local-pair 'c++-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*)")
+  (sp-local-pair 'go-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
   (require 'subr-x)
   ;; My custom code to make kill line more intelligent
   (bind-key "C-k" 'gmbuell-smart-kill-line prog-mode-map)
   (add-hook 'c++-mode-hook
             '(lambda () (bind-key "C-k" 'gmbuell-smart-kill-line c++-mode-map)))
   (add-hook 'c-mode-hook
-            '(lambda () (bind-key "C-k" 'gmbuell-smart-kill-line c-mode-map))))
+            '(lambda () (bind-key "C-k" 'gmbuell-smart-kill-line c-mode-map)))
+  (add-hook 'go-mode-hook
+            '(lambda () (bind-key "C-k" 'gmbuell-smart-kill-line go-mode-map))))
 
 (use-package smartparens-config
   :ensure smartparens
