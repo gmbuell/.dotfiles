@@ -499,7 +499,6 @@ that uses 'font-lock-warning-face'."
                                                      '(company-yasnippet company-dabbrev))
                                                     (t item
                                                        ))) company-backends))
-  (add-to-list 'company-backends 'company-warhammer)
   ;; Decrease delay before autocompletion popup shows.
   (setq company-idle-delay .3)
   ;; Bigger popup window.
@@ -992,7 +991,7 @@ With prefix P, create local abbrev. Otherwise it will be global."
   (yas-global-mode 1))
 
 
-(use-package org-mode
+(use-package org
   :config
   (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
   ;; Add shortcut to recalculate table
