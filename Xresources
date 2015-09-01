@@ -29,4 +29,5 @@
 *.color7:       #98d1ce
 *.color15:      #d3ebe9
 
-!Emacs.font:DejaVu Sans Mono-11
+!Emacs.font:Inconsolata-12
+!xterm*font:Inconsolata-12

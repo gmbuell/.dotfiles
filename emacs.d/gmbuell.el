@@ -726,11 +726,12 @@ that uses 'font-lock-warning-face'."
    anzu-search-threshold 1000
    anzu-replace-to-string-separator " => "))
 
-(setq
- elfeed-feeds
- (quote
-  ("http://www.cardgamedb.com/forums/index.php?/rss/ccs/1c61-Game%20of%20Thrones/"))
- shr-blocked-images ".+")
+;; ("http://www.cardgamedb.com/forums/index.php?/rss/ccs/1c61-Game%20of%20Thrones/")
+;; (setq
+;;  elfeed-feeds
+;;  (quote
+;;   ("http://gaijinhunter.tumblr.com/rss"))
+;;  shr-blocked-images ".+")
 
 (use-package rainbow-delimiters
   :ensure t
@@ -878,6 +879,7 @@ that uses 'font-lock-warning-face'."
   (add-to-list 'sml/hidden-modes " GitGutter"))
 
 ;; Nice fonts:
+;; Hack https://github.com/chrissimpkins/Hack
 ;; Inconsolata-11
 ;; Droid Sans Mono-11
 ;; DejaVu Sans Mono-11
@@ -889,7 +891,7 @@ that uses 'font-lock-warning-face'."
     :ensure t
     :init
     (load-theme 'gotham t))
-  (set-frame-font "DejaVu Sans Mono 11" t t))
+  (set-frame-font "Inconsolata 12" t t))
 
 
 ;; My pinky hurts. Lets try out ace-jump-mode.
