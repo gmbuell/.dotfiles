@@ -95,13 +95,13 @@
   :init
   (setq-default save-place t)
   (setq x-select-enable-clipboard t
-      x-select-enable-primary t
-      save-interprogram-paste-before-kill t
-      apropos-do-all t
-      mouse-yank-at-point t
-      save-place-file (concat user-emacs-directory "places")
-      backup-directory-alist `(("." . ,(concat user-emacs-directory
-                                               "backups")))))
+        x-select-enable-primary t
+        save-interprogram-paste-before-kill t
+        apropos-do-all t
+        mouse-yank-at-point t
+        save-place-file (concat user-emacs-directory "places")
+        backup-directory-alist `(("." . ,(concat user-emacs-directory
+                                                 "backups")))))
 
 ;; From http://steckerhalter.co.vu/steckemacs.html
 ;; Make isearch-forward put the cursor at the start of the search, not the end.
@@ -208,7 +208,7 @@
   :ensure t
   :config
   (defvar ffap-c-commment-regexp "^/\\*+"
-  "Matches an opening C-style comment, like \"/***\"."))
+    "Matches an opening C-style comment, like \"/***\"."))
 
 ;; I have no idea where this came from.
 ;; (defadvice ffap-file-at-point (after avoid-c-comments activate)
@@ -276,8 +276,9 @@ On error (read-only), quit without selecting."
       (error
        (helm-keyboard-quit))))
   (bind-key "DEL" 'helm-backspace helm-map)
-  (use-package helm-ls-git)
   (set-default 'imenu-auto-rescan t))
+
+(use-package helm-ls-git)
 
 ;; for eshell
 (use-package pcomplete-extension
@@ -507,8 +508,6 @@ that uses 'font-lock-warning-face'."
   (setq company-tooltip-limit 20)
   (setq company-echo-delay 0))
 
-(use-package ycmd-next-error
-  :ensure ycmd)
 (use-package ycmd
   :ensure t
   :init
@@ -517,20 +516,25 @@ that uses 'font-lock-warning-face'."
   (set-variable 'ycmd-extra-conf-whitelist '("/usr/lib/youcompleteme/ycm_extra_conf.py"))
   (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
   (set-variable 'url-show-status nil)
-  (ycmd-setup)
-  (use-package company-ycmd
-    :ensure t
-    :init
-    (company-ycmd-setup)
-    ;; 'company-clang' isn't needed with company-ycmd.
-    (delq 'company-clang company-backends))
-  (use-package flycheck-ycmd
-    :ensure t
-    :init
-    (flycheck-ycmd-setup)
-    :config
-    (setq-default flycheck-disabled-checkers
-                  '(c/c++-gcc c/c++-clang c/c++-cppcheck))))
+  (global-ycmd-mode))
+
+(use-package ycmd-next-error
+  :ensure ycmd)
+
+(use-package company-ycmd
+  :ensure t
+  :init
+  (company-ycmd-setup)
+  ;; 'company-clang' isn't needed with company-ycmd.
+  (delq 'company-clang company-backends))
+
+(use-package flycheck-ycmd
+  :ensure t
+  :init
+  (flycheck-ycmd-setup)
+  :config
+  (setq-default flycheck-disabled-checkers
+                '(c/c++-gcc c/c++-clang c/c++-cppcheck)))
 
 ;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
 ;; go get -u github.com/nsf/gocode
@@ -1067,8 +1071,9 @@ With prefix P, create local abbrev. Otherwise it will be global."
 
 (use-package aggressive-indent
   :ensure t
-  :init
-  (global-aggressive-indent-mode 1))
+  ;; :init
+  ;; (global-aggressive-indent-mode 1)
+  )
 
 (use-package smartscan
   :ensure t
@@ -1079,6 +1084,46 @@ With prefix P, create local abbrev. Otherwise it will be global."
   :ensure t
   :bind (("M-w" . aya-create)
          ("M-W" . aya-expand)))
+
+;; Protocol buffer support
+(use-package protobuf-mode
+  :ensure t)
+
+(use-package flycheck-protobuf
+  :ensure t)
+
+;; Show/Hide images in eww
+(defvar-local endless/display-images t)
+
+(defun endless/toggle-image-display ()
+  "Toggle images display on current buffer."
+  (interactive)
+  (setq endless/display-images
+        (null endless/display-images))
+  (endless/backup-display-property endless/display-images))
+(defun endless/backup-display-property (invert &optional object)
+  "Move the 'display property at POS to 'display-backup.
+Only applies if display property is an image.
+If INVERT is non-nil, move from 'display-backup to 'display
+instead.
+Optional OBJECT specifies the string or buffer. Nil means current
+buffer."
+  (let* ((inhibit-read-only t)
+         (from (if invert 'display-backup 'display))
+         (to (if invert 'display 'display-backup))
+         (pos (point-min))
+         left prop)
+    (while (and pos (/= pos (point-max)))
+      (if (get-text-property pos from object)
+          (setq left pos)
+        (setq left (next-single-property-change pos from object)))
+      (if (or (null left) (= left (point-max)))
+          (setq pos nil)
+        (setq prop (get-text-property left from object))
+        (setq pos (or (next-single-property-change left from object)
+                      (point-max)))
+        (when (eq (car prop) 'image)
+          (add-text-properties left pos (list from nil to prop) object))))))
 
 (server-start)
 
