@@ -248,6 +248,8 @@
   (add-hook 'eshell-mode-hook
             #'(lambda ()
                 (bind-key "<tab>" 'helm-esh-pcomplete eshell-mode-map)))
+  (unbind-key "C-c C-b" cc-mode)
+  (bind-key* "C-c C-b" 'helm-bookmarks)
   :bind (
          ;; This is my main interface to opening/switching between files in the
          ;; same git repository. It is particularly useful because the virtual
@@ -260,7 +262,6 @@
          ("C-x C-b" . helm-buffers-list)
          ("C-c C-o" . helm-occur)
          ("C-c M-o" . helm-multi-occur)
-         ("C-c C-b" . helm-bookmarks)
          ("M-y" . helm-show-kill-ring)
          ;; Jump to a definition in the current file.
          ("C-x C-i" . helm-imenu))
@@ -1003,7 +1004,7 @@ With prefix P, create local abbrev. Otherwise it will be global."
   (yas-global-mode 1))
 
 
-(use-package org-mode
+(use-package org
   :config
   (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
   ;; Add shortcut to recalculate table
