@@ -44,6 +44,9 @@
 ;; This first section cleans up the Emacs window and interface.
 
 ;; Turn off mouse interface early in startup to avoid momentary display.
+(eval-when-compile
+  (require 'use-package))
+
 (dolist (mode '(menu-bar-mode tool-bar-mode scroll-bar-mode))
   (when (fboundp mode) (funcall mode -1)))
 (when window-system
@@ -916,8 +919,8 @@ that uses 'font-lock-warning-face'."
   :ensure t)
 ;; https://github.com/dougm/goflymake
 ;; go get -u github.com/dougm/goflymake
-(add-to-list 'load-path (substitute-in-file-name "$GOPATH/src/github.com/dougm/goflymake"))
-(require 'go-flycheck)
+(use-package go-flycheck
+  :load-path (lambda () (concat (getenv "HOME") "/go/src/github.com/dougm/goflymake")))
 
 (add-hook 'go-mode-hook (lambda ()
                           (set (make-local-variable 'company-backends) '(company-go))
@@ -932,7 +935,7 @@ that uses 'font-lock-warning-face'."
 
 ;; https://github.com/dominikh/go-errcheck.el
 ;; go get github.com/kisielk/errcheck
-(require 'go-errcheck)
+(use-package go-errcheck)
 
 ;; Add yasnippets-go:
 ;; Isn't needed since the default yasnippet directory contains some.

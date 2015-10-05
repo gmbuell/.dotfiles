@@ -9,6 +9,15 @@
 ;; and esk-user-dir below.
 
 ;;; Code:
+;; We have plenty of ram.
+(setq gc-cons-threshold 100000000)
+(run-with-idle-timer
+ 5 nil
+ (lambda ()
+   (setq gc-cons-threshold 1000000)
+   (message "gc-cons-threshold restored to %S"
+            gc-cons-threshold)))
+
 (require 'package)
 (setq package-enable-at-startup nil)
 
