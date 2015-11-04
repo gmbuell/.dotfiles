@@ -1136,6 +1136,18 @@ buffer."
         (when (eq (car prop) 'image)
           (add-text-properties left pos (list from nil to prop) object))))))
 
+;; For Javascript/React
+(use-package web-mode
+  :ensure t
+  :mode (("\\.phtml\\'" . web-mode)
+         ("\\.erb\\'" . web-mode)
+         ("\\.jsp\\'" . web-mode)
+         ("\\.as[cp]x\\'" . web-mode)
+         ("\\.erb\\'" . web-mode)
+         ("\\.html\\'" . web-mode)
+         ("\\.rhtml\\'" . web-mode)
+         ("\\.mustache\\'" . web-mode)))
+
 (server-start)
 
 (provide 'gmbuell)
