@@ -925,6 +925,13 @@ that uses 'font-lock-warning-face'."
   :ensure t)
 ;; https://github.com/dougm/goflymake
 ;; go get -u github.com/dougm/goflymake
+;; go get -u golang.org/x/tools/cmd/goimports
+;; go get -u sourcegraph.com/sqs/goreturns
+;; go get -u github.com/rogpeppe/godef
+;; go get -u golang.org/x/tools/cmd/oracle
+;; go get -u golang.org/x/tools/cmd/gorename
+(load-file (concat (getenv "GOPATH") "/src/golang.org/x/tools/cmd/oracle/oracle.el"))
+
 (use-package go-flycheck
   :load-path (lambda () (concat (getenv "HOME") "/go/src/github.com/dougm/goflymake")))
 
@@ -953,7 +960,8 @@ that uses 'font-lock-warning-face'."
           (lambda ()
             (add-hook 'before-save-hook 'gofmt-before-save)
             (setq tab-width 4)
-            (setq indent-tabs-mode 1)))
+            (setq indent-tabs-mode 1)
+            (setq gofmt-command "goreturns")))
 
 ;; Empty scratch buffer
 (setq initial-scratch-message nil)
@@ -1133,6 +1141,18 @@ buffer."
                       (point-max)))
         (when (eq (car prop) 'image)
           (add-text-properties left pos (list from nil to prop) object))))))
+
+;; For Javascript/React
+(use-package web-mode
+  :ensure t
+  :mode (("\\.phtml\\'" . web-mode)
+         ("\\.erb\\'" . web-mode)
+         ("\\.jsp\\'" . web-mode)
+         ("\\.as[cp]x\\'" . web-mode)
+         ("\\.erb\\'" . web-mode)
+         ("\\.html\\'" . web-mode)
+         ("\\.rhtml\\'" . web-mode)
+         ("\\.mustache\\'" . web-mode)))
 
 (server-start)
 
