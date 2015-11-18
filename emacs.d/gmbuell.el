@@ -200,10 +200,16 @@
   (setq ido-virtual-buffers '()))
 
 ;; Smex is for smart completion of M-x commands.
-(setq smex-save-file (concat user-emacs-directory ".smex-items"))
-(smex-initialize)
-(global-set-key (kbd "M-x") 'smex)
-(global-set-key (kbd "M-X") 'smex-major-mode-commands)
+(use-package smex
+  :ensure t
+  :config
+  (setq smex-save-file (concat user-emacs-directory ".smex-items"))
+  :init
+  (smex-initialize)
+  (global-set-key (kbd "M-x") 'smex)
+  (global-set-key (kbd "M-X") 'smex-major-mode-commands))
+
+
 
 ;; Find File at Point. Makes sevaral commands smarter when the cursor
 ;; is on something relevant.
