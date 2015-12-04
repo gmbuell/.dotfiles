@@ -252,6 +252,8 @@
             #'(lambda ()
                 (bind-key "<tab>" 'helm-esh-pcomplete eshell-mode-map)))
   (bind-key* "C-c C-b" 'helm-bookmarks)
+  (use-package helm-ls-git
+    :ensure t)
   :bind (
          ;; This is my main interface to opening/switching between files in the
          ;; same git repository. It is particularly useful because the virtual
@@ -280,8 +282,6 @@ On error (read-only), quit without selecting."
        (helm-keyboard-quit))))
   (bind-key "DEL" 'helm-backspace helm-map)
   (set-default 'imenu-auto-rescan t))
-
-(use-package helm-ls-git)
 
 ;; for eshell
 (use-package pcomplete-extension
@@ -498,18 +498,33 @@ that uses 'font-lock-warning-face'."
   (global-company-mode)
   :config
   ;; Add company-yasnippet carefully.
-  (setq company-backends (-map (lambda (item) (cond ((listp item)
-                                                     (cons 'company-yasnippet item))
-                                                    ((eq 'company-dabbrev item)
+  (setq company-backends (-map (lambda (item) (cond ((eq 'company-dabbrev item)
                                                      '(company-yasnippet company-dabbrev))
-                                                    (t item
-                                                       ))) company-backends))
-  (add-to-list 'company-backends 'company-warhammer)
+                                                    (t item))) company-backends))
   ;; Decrease delay before autocompletion popup shows.
-  (setq company-idle-delay .3)
-  ;; Bigger popup window.
-  (setq company-tooltip-limit 20)
-  (setq company-echo-delay 0))
+  (setq company-minimum-prefix-length 1
+        company-idle-delay .2
+        ;; Bigger popup window.
+        company-tooltip-limit 20
+        company-echo-delay 0
+        company-show-numbers t
+        company-dabbrev-downcase nil
+        company-dabbrev-ignore-case t
+        company-dabbrev-minimum-length 10
+        company-dabbrev-code-everywhere t
+        company-dabbrev-code-ignore-case t
+        company-dabbrev-code-modes (append company-dabbrev-code-modes `(minibuffer-inactive-mode))
+        company-dabbrev-code-other-buffers 'code
+        )
+  )
+(use-package helm-company
+    :ensure t
+    :init
+   (bind-key "C-:" 'helm-company company-mode-map)
+   (bind-key "C-:" 'helm-company company-active-map))
+(add-hook 'minibuffer-setup-hook 'company-mode)
+(add-hook 'minibuffer-setup-hook (lambda () (setq-local company-minimum-prefix-length 10)
+                                            (setq-local company-idle-delay 3)))
 
 (use-package ycmd
   :ensure t
@@ -954,8 +969,9 @@ that uses 'font-lock-warning-face'."
           (lambda ()
             (add-hook 'before-save-hook 'gofmt-before-save)
             (setq tab-width 4)
-            (setq indent-tabs-mode 1)
-            (setq gofmt-command "goreturns")))
+            (setq indent-tabs-mode 1)))
+
+;; maybe use (setq gofmt-command "goreturns")
 
 ;; Empty scratch buffer
 (setq initial-scratch-message nil)
@@ -1148,8 +1164,24 @@ buffer."
          ("\\.rhtml\\'" . web-mode)
          ("\\.mustache\\'" . web-mode)))
 
+;; Use M-x sauron-start
+(use-package sauron
+  :ensure t
+  :init
+  (defun sauron-stretch ()
+    (sauron-add-event
+     'sauron-stretch    ;; origin
+     3                  ;; priority
+     "Go walk!"
+     '(lambda ()        ;; function called when activated
+        (run-with-timer (* 20 60) nil 'sauron-stretch))))
+  (run-with-timer (* 20 60) nil 'sauron-stretch)
+  :config
+  (setq sauron-hide-mode-line t))
+
 (server-start)
 
 (provide 'gmbuell)
+
 
 ;;; gmbuell.el ends here
