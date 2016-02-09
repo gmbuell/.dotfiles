@@ -9,15 +9,23 @@
 ;; and esk-user-dir below.
 
 ;;; Code:
+;; We have plenty of ram.
+(setq gc-cons-threshold 100000000)
+(run-with-idle-timer
+ 5 nil
+ (lambda ()
+   (setq gc-cons-threshold 1000000)
+   (message "gc-cons-threshold restored to %S"
+            gc-cons-threshold)))
+
 (require 'package)
 (setq package-enable-at-startup nil)
 
 ;; Add package repositories
 (add-to-list 'package-archives
              '("melpa" . "http://melpa.org/packages/") t)
-;; Disabled until they get their TLS fixed.
-;; (add-to-list 'package-archives
-;;              '("marmalade" . "http://marmalade-repo.org/packages/") t)
+(add-to-list 'package-archives
+             '("marmalade" . "https://marmalade-repo.org/packages/") t)
 
 (package-initialize)
 
@@ -26,33 +34,10 @@
   (package-refresh-contents)
   (package-install 'use-package))
 
-(require 'use-package)
+(eval-when-compile
+  (require 'use-package))
 (require 'diminish)
 (require 'bind-key)
-
-;; Get dash so we can install everything else that hasn't been
-;; migrated to use-package.
-(unless (package-installed-p 'dash)
-  (package-refresh-contents)
-  (package-install 'dash))
-
-(defun ensure-package-installed (packages)
-  "Assure every package in PACKAGES is installed."
-  (when (require 'dash nil :noerror)
-    ;; Refresh the package contents before installing new packages
-    (when (-difference packages package-activated-list)
-      (progn
-        (package-refresh-contents)
-        (dolist (p packages)
-          (when (not (package-installed-p p))
-            (package-install p)))))
-    ))
-
-(defvar my-packages '(ace-jump-buffer ace-jump-mode ace-window anzu auto-complete back-button base16-theme browse-kill-ring coffee-mode color-theme color-theme-solarized company company-go dash dedicated deft discover-my-major elfeed elisp-slime-nav ess expand-region flx flx-ido flycheck flycheck-google-cpplint framemove fuzzy git-commit-mode git-gutter git-rebase-mode git-timemachine gitconfig-mode gitignore-mode go-eldoc go-errcheck go-mode google-c-style helm helm-c-yasnippet helm-ls-git helm-swoop hexrgb highlight-symbol ido-hacks ido-ubiquitous iedit inf-ruby jabber jump magit markdown-mode multi-term multiple-cursors mustache-mode noflet pkg-info rainbow-delimiters readline-complete ruby-mode s smart-mode-line smartparens smex unbound volatile-highlights yaml-mode yari yasnippet ycmd company-ycmd gotham-theme dash-functional smart-forward hydra multifiles flycheck-ycmd company-c-headers sr-speedbar)
-  "A list of packages to ensure are in
-stalled at launch.")
-
-(ensure-package-installed my-packages)
 
 (defun esk-eval-after-init (form)
   "Add `(lambda () FORM)' to `after-init-hook'.

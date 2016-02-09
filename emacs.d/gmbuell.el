@@ -44,6 +44,9 @@
 ;; This first section cleans up the Emacs window and interface.
 
 ;; Turn off mouse interface early in startup to avoid momentary display.
+(eval-when-compile
+  (require 'use-package))
+
 (dolist (mode '(menu-bar-mode tool-bar-mode scroll-bar-mode))
   (when (fboundp mode) (funcall mode -1)))
 (when window-system
@@ -95,13 +98,13 @@
   :init
   (setq-default save-place t)
   (setq x-select-enable-clipboard t
-      x-select-enable-primary t
-      save-interprogram-paste-before-kill t
-      apropos-do-all t
-      mouse-yank-at-point t
-      save-place-file (concat user-emacs-directory "places")
-      backup-directory-alist `(("." . ,(concat user-emacs-directory
-                                               "backups")))))
+        x-select-enable-primary t
+        save-interprogram-paste-before-kill t
+        apropos-do-all t
+        mouse-yank-at-point t
+        save-place-file (concat user-emacs-directory "places")
+        backup-directory-alist `(("." . ,(concat user-emacs-directory
+                                                 "backups")))))
 
 ;; From http://steckerhalter.co.vu/steckemacs.html
 ;; Make isearch-forward put the cursor at the start of the search, not the end.
@@ -197,10 +200,16 @@
   (setq ido-virtual-buffers '()))
 
 ;; Smex is for smart completion of M-x commands.
-(setq smex-save-file (concat user-emacs-directory ".smex-items"))
-(smex-initialize)
-(global-set-key (kbd "M-x") 'smex)
-(global-set-key (kbd "M-X") 'smex-major-mode-commands)
+(use-package smex
+  :ensure t
+  :config
+  (setq smex-save-file (concat user-emacs-directory ".smex-items"))
+  :init
+  (smex-initialize)
+  (global-set-key (kbd "M-x") 'smex)
+  (global-set-key (kbd "M-X") 'smex-major-mode-commands))
+
+
 
 ;; Find File at Point. Makes sevaral commands smarter when the cursor
 ;; is on something relevant.
@@ -208,7 +217,7 @@
   :ensure t
   :config
   (defvar ffap-c-commment-regexp "^/\\*+"
-  "Matches an opening C-style comment, like \"/***\"."))
+    "Matches an opening C-style comment, like \"/***\"."))
 
 ;; I have no idea where this came from.
 ;; (defadvice ffap-file-at-point (after avoid-c-comments activate)
@@ -248,6 +257,9 @@
   (add-hook 'eshell-mode-hook
             #'(lambda ()
                 (bind-key "<tab>" 'helm-esh-pcomplete eshell-mode-map)))
+  (bind-key* "C-c C-b" 'helm-bookmarks)
+  (use-package helm-ls-git
+    :ensure t)
   :bind (
          ;; This is my main interface to opening/switching between files in the
          ;; same git repository. It is particularly useful because the virtual
@@ -260,7 +272,6 @@
          ("C-x C-b" . helm-buffers-list)
          ("C-c C-o" . helm-occur)
          ("C-c M-o" . helm-multi-occur)
-         ("C-c C-b" . helm-bookmarks)
          ("M-y" . helm-show-kill-ring)
          ;; Jump to a definition in the current file.
          ("C-x C-i" . helm-imenu))
@@ -276,7 +287,6 @@ On error (read-only), quit without selecting."
       (error
        (helm-keyboard-quit))))
   (bind-key "DEL" 'helm-backspace helm-map)
-  (use-package helm-ls-git)
   (set-default 'imenu-auto-rescan t))
 
 ;; for eshell
@@ -494,24 +504,40 @@ that uses 'font-lock-warning-face'."
   (global-company-mode)
   :config
   ;; Add company-yasnippet carefully.
-  (setq company-backends (-map (lambda (item) (cond ((listp item)
-                                                     (cons 'company-yasnippet item))
-                                                    ((eq 'company-dabbrev item)
+  (setq company-backends (-map (lambda (item) (cond ((eq 'company-dabbrev item)
                                                      '(company-yasnippet company-dabbrev))
-                                                    (t item
-                                                       ))) company-backends))
+                                                    (t item))) company-backends))
   ;; Decrease delay before autocompletion popup shows.
-  (setq company-idle-delay .3)
-  ;; Bigger popup window.
-  (setq company-tooltip-limit 20)
-  (setq company-echo-delay 0))
+  (setq company-minimum-prefix-length 1
+        company-idle-delay .2
+        ;; Bigger popup window.
+        company-tooltip-limit 20
+        company-echo-delay 0
+        company-show-numbers t
+        company-dabbrev-downcase nil
+        company-dabbrev-ignore-case t
+        company-dabbrev-minimum-length 10
+        company-dabbrev-code-everywhere t
+        company-dabbrev-code-ignore-case t
+        company-dabbrev-code-modes (append company-dabbrev-code-modes `(minibuffer-inactive-mode))
+        company-dabbrev-code-other-buffers 'code
+        )
+  )
+(use-package helm-company
+    :ensure t
+    :init
+   (bind-key "C-:" 'helm-company company-mode-map)
+   (bind-key "C-:" 'helm-company company-active-map))
+(add-hook 'minibuffer-setup-hook 'company-mode)
+(add-hook 'minibuffer-setup-hook (lambda () (setq-local company-minimum-prefix-length 10)
+                                            (setq-local company-idle-delay 3)))
 
-(use-package ycmd-next-error
-  :ensure ycmd)
 (use-package ycmd
   :ensure t
   :init
   (set-variable 'ycmd-server-command '("python" "/home/gmbuell/github/ycmd/ycmd"))
+  (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
+  (set-variable 'url-show-status nil)
   (global-ycmd-mode)
   (use-package company-ycmd
     :ensure t
@@ -526,6 +552,24 @@ that uses 'font-lock-warning-face'."
     :config
     (setq-default flycheck-disabled-checkers
                   '(c/c++-gcc c/c++-clang c/c++-cppcheck))))
+
+(use-package ycmd-next-error
+  :ensure ycmd)
+
+(use-package company-ycmd
+  :ensure t
+  :init
+  (company-ycmd-setup)
+  ;; 'company-clang' isn't needed with company-ycmd.
+  (delq 'company-clang company-backends))
+
+(use-package flycheck-ycmd
+  :ensure t
+  :init
+  (flycheck-ycmd-setup)
+  :config
+  (setq-default flycheck-disabled-checkers
+                '(c/c++-gcc c/c++-clang c/c++-cppcheck)))
 
 ;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
 ;; go get -u github.com/nsf/gocode
@@ -721,11 +765,12 @@ that uses 'font-lock-warning-face'."
    anzu-search-threshold 1000
    anzu-replace-to-string-separator " => "))
 
-(setq
- elfeed-feeds
- (quote
-  ("http://www.cardgamedb.com/forums/index.php?/rss/ccs/1c61-Game%20of%20Thrones/"))
- shr-blocked-images ".+")
+;; ("http://www.cardgamedb.com/forums/index.php?/rss/ccs/1c61-Game%20of%20Thrones/")
+;; (setq
+;;  elfeed-feeds
+;;  (quote
+;;   ("http://gaijinhunter.tumblr.com/rss"))
+;;  shr-blocked-images ".+")
 
 (use-package rainbow-delimiters
   :ensure t
@@ -873,6 +918,7 @@ that uses 'font-lock-warning-face'."
   (add-to-list 'sml/hidden-modes " GitGutter"))
 
 ;; Nice fonts:
+;; Hack https://github.com/chrissimpkins/Hack
 ;; Inconsolata-11
 ;; Droid Sans Mono-11
 ;; DejaVu Sans Mono-11
@@ -907,8 +953,15 @@ that uses 'font-lock-warning-face'."
   (setq gofmt-command "goimports"))
 ;; https://github.com/dougm/goflymake
 ;; go get -u github.com/dougm/goflymake
-(add-to-list 'load-path (substitute-in-file-name "$GOPATH/src/github.com/dougm/goflymake"))
-(require 'go-flycheck)
+;; go get -u golang.org/x/tools/cmd/goimports
+;; go get -u sourcegraph.com/sqs/goreturns
+;; go get -u github.com/rogpeppe/godef
+;; go get -u golang.org/x/tools/cmd/oracle
+;; go get -u golang.org/x/tools/cmd/gorename
+(load-file (concat (getenv "GOPATH") "/src/golang.org/x/tools/cmd/oracle/oracle.el"))
+
+(use-package go-flycheck
+  :load-path (lambda () (concat (getenv "HOME") "/go/src/github.com/dougm/goflymake")))
 
 (add-hook 'go-mode-hook (lambda ()
                           (set (make-local-variable 'company-backends) '(company-go))
@@ -923,7 +976,7 @@ that uses 'font-lock-warning-face'."
 
 ;; https://github.com/dominikh/go-errcheck.el
 ;; go get github.com/kisielk/errcheck
-(require 'go-errcheck)
+(use-package go-errcheck)
 
 ;; Add yasnippets-go:
 ;; Isn't needed since the default yasnippet directory contains some.
@@ -936,6 +989,8 @@ that uses 'font-lock-warning-face'."
             (add-hook 'before-save-hook 'gofmt-before-save)
             (setq tab-width 4)
             (setq indent-tabs-mode 1)))
+
+;; maybe use (setq gofmt-command "goreturns")
 
 ;; Empty scratch buffer
 (setq initial-scratch-message nil)
@@ -1062,8 +1117,9 @@ With prefix P, create local abbrev. Otherwise it will be global."
 
 (use-package aggressive-indent
   :ensure t
-  :init
-  (global-aggressive-indent-mode 1))
+  ;; :init
+  ;; (global-aggressive-indent-mode 1)
+  )
 
 (use-package smartscan
   :ensure t
@@ -1075,8 +1131,76 @@ With prefix P, create local abbrev. Otherwise it will be global."
   :bind (("M-w" . aya-create)
          ("M-W" . aya-expand)))
 
+;; Protocol buffer support
+(use-package protobuf-mode
+  :ensure t)
+
+(use-package flycheck-protobuf
+  :ensure t)
+
+;; Show/Hide images in eww
+(defvar-local endless/display-images t)
+
+(defun endless/toggle-image-display ()
+  "Toggle images display on current buffer."
+  (interactive)
+  (setq endless/display-images
+        (null endless/display-images))
+  (endless/backup-display-property endless/display-images))
+(defun endless/backup-display-property (invert &optional object)
+  "Move the 'display property at POS to 'display-backup.
+Only applies if display property is an image.
+If INVERT is non-nil, move from 'display-backup to 'display
+instead.
+Optional OBJECT specifies the string or buffer. Nil means current
+buffer."
+  (let* ((inhibit-read-only t)
+         (from (if invert 'display-backup 'display))
+         (to (if invert 'display 'display-backup))
+         (pos (point-min))
+         left prop)
+    (while (and pos (/= pos (point-max)))
+      (if (get-text-property pos from object)
+          (setq left pos)
+        (setq left (next-single-property-change pos from object)))
+      (if (or (null left) (= left (point-max)))
+          (setq pos nil)
+        (setq prop (get-text-property left from object))
+        (setq pos (or (next-single-property-change left from object)
+                      (point-max)))
+        (when (eq (car prop) 'image)
+          (add-text-properties left pos (list from nil to prop) object))))))
+
+;; For Javascript/React
+(use-package web-mode
+  :ensure t
+  :mode (("\\.phtml\\'" . web-mode)
+         ("\\.erb\\'" . web-mode)
+         ("\\.jsp\\'" . web-mode)
+         ("\\.as[cp]x\\'" . web-mode)
+         ("\\.erb\\'" . web-mode)
+         ("\\.html\\'" . web-mode)
+         ("\\.rhtml\\'" . web-mode)
+         ("\\.mustache\\'" . web-mode)))
+
+;; Use M-x sauron-start
+(use-package sauron
+  :ensure t
+  :init
+  (defun sauron-stretch ()
+    (sauron-add-event
+     'sauron-stretch    ;; origin
+     3                  ;; priority
+     "Go walk!"
+     '(lambda ()        ;; function called when activated
+        (run-with-timer (* 20 60) nil 'sauron-stretch))))
+  (run-with-timer (* 20 60) nil 'sauron-stretch)
+  :config
+  (setq sauron-hide-mode-line t))
+
 (server-start)
 
 (provide 'gmbuell)
+
 
 ;;; gmbuell.el ends here
