@@ -511,12 +511,8 @@ that uses 'font-lock-warning-face'."
 (use-package ycmd
   :ensure t
   :init
-  (set-variable 'ycmd-server-command '("/usr/grte/v4/bin/python2.7" "/usr/lib/youcompleteme/third_party/ycmd/ycmd"))
-  (set-variable 'ycmd-global-config "/usr/lib/youcompleteme/ycm_extra_conf.py")
-  (set-variable 'ycmd-extra-conf-whitelist '("/usr/lib/youcompleteme/ycm_extra_conf.py"))
-  (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
-  (set-variable 'url-show-status nil)
-  (ycmd-setup)
+  (set-variable 'ycmd-server-command '("python" "/home/gmbuell/github/ycmd/ycmd"))
+  (global-ycmd-mode)
   (use-package company-ycmd
     :ensure t
     :init
@@ -884,10 +880,10 @@ that uses 'font-lock-warning-face'."
 ;; ttf-dejavu
 ;; Only load the theme if we are in a graphical display.
 (when (display-graphic-p)
-  (use-package gotham-theme
+  (use-package solarized-theme
     :ensure t
     :init
-    (load-theme 'gotham t))
+    (load-theme 'solarized-dark t))
   (set-frame-font "DejaVu Sans Mono 11" t t))
 
 
@@ -906,7 +902,9 @@ that uses 'font-lock-warning-face'."
 ;; http://dominik.honnef.co/posts/2013/03/writing_go_in_emacs/
 ;; http://dominik.honnef.co/posts/2013/08/writing_go_in_emacs__cont__/
 (use-package go-mode
-  :ensure t)
+  :ensure t
+  :config
+  (setq gofmt-command "goimports"))
 ;; https://github.com/dougm/goflymake
 ;; go get -u github.com/dougm/goflymake
 (add-to-list 'load-path (substitute-in-file-name "$GOPATH/src/github.com/dougm/goflymake"))
