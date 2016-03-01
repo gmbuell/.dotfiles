@@ -917,7 +917,8 @@ that uses 'font-lock-warning-face'."
         sml/position-percentage-format nil
         sml/show-remote nil
         sml/size-indication-format "")
-  (add-to-list 'sml/hidden-modes " GitGutter ARev"))
+  (add-to-list 'sml/hidden-modes " GitGutter")
+  (add-to-list 'sml/hidden-modes " ARev"))
 
 ;; Nice fonts:
 ;; Hack https://github.com/chrissimpkins/Hack
@@ -928,10 +929,10 @@ that uses 'font-lock-warning-face'."
 ;; ttf-dejavu
 ;; Only load the theme if we are in a graphical display.
 (when (display-graphic-p)
-  (use-package solarized-theme
+  (use-package gotham-theme
     :ensure t
     :init
-    (load-theme 'solarized-dark t))
+    (load-theme 'gotham t))
   (set-frame-font "DejaVu Sans Mono 11" t t))
 
 
