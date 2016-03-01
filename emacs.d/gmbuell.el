@@ -933,7 +933,7 @@ that uses 'font-lock-warning-face'."
     :ensure t
     :init
     (load-theme 'gotham t))
-  (set-frame-font "DejaVu Sans Mono 11" t t))
+  (set-frame-font "Inconsolata 12" t t))
 
 
 ;; My pinky hurts. Lets try out ace-jump-mode.
