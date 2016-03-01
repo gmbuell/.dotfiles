@@ -46,6 +46,8 @@
 ;; Turn off mouse interface early in startup to avoid momentary display.
 (eval-when-compile
   (require 'use-package))
+(require 'diminish)
+(require 'bind-key)
 
 (dolist (mode '(menu-bar-mode tool-bar-mode scroll-bar-mode))
   (when (fboundp mode) (funcall mode -1)))
@@ -121,6 +123,7 @@
 
 (use-package iedit
   :ensure t
+  :bind ("C-;" . iedit-mode)
   :config
   (setq iedit-unmatched-lines-invisible-default t))
 
@@ -452,7 +455,9 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
   (add-hook 'prog-mode-hook 'flyspell-prog-mode)
   :config
   (setq flyspell-issue-message-flag nil
-        flyspell-issue-welcome-flag nil))
+        flyspell-issue-welcome-flag nil)
+  ;; Don't trample iedit mode.
+  (define-key flyspell-mode-map (kbd "C-;") nil))
 
 ;; Emacs expects sentences to end with double spaces. This is crazy.
 (setq sentence-end-double-space nil)
@@ -473,7 +478,6 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'python-mode (font-lock-width-keyword 80))
 (font-lock-add-keywords 'ess-mode (font-lock-width-keyword 80))
 (font-lock-add-keywords 'markdown-mode (font-lock-width-keyword 80))
-;; (font-lock-add-keywords 'go-mode (font-lock-width-keyword 80))
 
 (defun esk-eval-and-replace ()
   "Replace the preceding sexp with its value."
@@ -509,7 +513,7 @@ that uses 'font-lock-warning-face'."
                                                     (t item))) company-backends))
   ;; Decrease delay before autocompletion popup shows.
   (setq company-minimum-prefix-length 1
-        company-idle-delay .2
+        ;; company-idle-delay .2
         ;; Bigger popup window.
         company-tooltip-limit 20
         company-echo-delay 0
@@ -519,6 +523,7 @@ that uses 'font-lock-warning-face'."
         company-dabbrev-minimum-length 10
         company-dabbrev-code-everywhere t
         company-dabbrev-code-ignore-case t
+        ;; This might be madness
         company-dabbrev-code-modes (append company-dabbrev-code-modes `(minibuffer-inactive-mode))
         company-dabbrev-code-other-buffers 'code
         )
@@ -532,15 +537,19 @@ that uses 'font-lock-warning-face'."
 (add-hook 'minibuffer-setup-hook (lambda () (setq-local company-minimum-prefix-length 10)
                                             (setq-local company-idle-delay 3)))
 
+(defconst google-ycmd--extra-conf "/usr/lib/youcompleteme/ycm_extra_conf.py")
 (use-package ycmd
   :ensure t
   :init
   (set-variable 'ycmd-server-command '("/usr/grte/v4/bin/python2.7" "/usr/lib/youcompleteme/third_party/ycmd/ycmd"))
-  (set-variable 'ycmd-global-config "/usr/lib/youcompleteme/ycm_extra_conf.py")
-  (set-variable 'ycmd-extra-conf-whitelist '("/usr/lib/youcompleteme/ycm_extra_conf.py"))
+  (set-variable 'ycmd-global-config google-ycmd--extra-conf)
   (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
+  (setq ycmd-idle-change-delay 0.5)
+  (setq company-minimum-prefix-length 1)
   (set-variable 'url-show-status nil)
-  (global-ycmd-mode))
+  (global-ycmd-mode)
+  :config
+  (add-to-list 'ycmd-extra-conf-whitelist google-ycmd--extra-conf))
 
 (use-package ycmd-next-error
   :ensure ycmd)
@@ -583,9 +592,7 @@ that uses 'font-lock-warning-face'."
   (global-auto-revert-mode)
   (setq auto-revert-check-vc-info t)
   (setq vc-follow-symlinks t)
-  (setq magit-last-seen-setup-instructions "1.4.0")
-  :config
-  (add-to-list 'sml/hidden-modes magit-auto-revert-mode-lighter))
+  (setq magit-last-seen-setup-instructions "1.4.0"))
 
 (use-package multi-term
   :ensure t
@@ -904,7 +911,7 @@ that uses 'font-lock-warning-face'."
         sml/position-percentage-format nil
         sml/show-remote nil
         sml/size-indication-format "")
-  (add-to-list 'sml/hidden-modes " GitGutter"))
+  (add-to-list 'sml/hidden-modes " GitGutter ARev"))
 
 ;; Nice fonts:
 ;; Hack https://github.com/chrissimpkins/Hack
@@ -948,9 +955,10 @@ that uses 'font-lock-warning-face'."
 (load-file (concat (getenv "GOPATH") "/src/golang.org/x/tools/cmd/oracle/oracle.el"))
 
 (use-package go-flycheck
-  :load-path (lambda () (concat (getenv "HOME") "/go/src/github.com/dougm/goflymake")))
+  :load-path (lambda () (concat (getenv "GOPATH") "/src/github.com/dougm/goflymake")))
 
 (add-hook 'go-mode-hook (lambda ()
+                          ;; Might not need company-go with ycmd
                           (set (make-local-variable 'company-backends) '(company-go))
                           (company-mode)
                           (flycheck-mode)))
@@ -1168,7 +1176,10 @@ buffer."
          ("\\.erb\\'" . web-mode)
          ("\\.html\\'" . web-mode)
          ("\\.rhtml\\'" . web-mode)
-         ("\\.mustache\\'" . web-mode)))
+         ("\\.mustache\\'" . web-mode))
+  :config
+  (setq web-mode-code-indent-offset 2)
+  (web-mode-set-content-type "jsx"))
 
 ;; Use M-x sauron-start
 (use-package sauron
@@ -1184,6 +1195,23 @@ buffer."
   (run-with-timer (* 20 60) nil 'sauron-stretch)
   :config
   (setq sauron-hide-mode-line t))
+
+;; React stuff
+(use-package tern
+  :ensure t)
+(use-package company-tern
+  :ensure t)
+(use-package js-doc
+  :ensure t)
+(use-package js2-mode
+  :ensure t)
+(use-package js2-refactor
+  :ensure t)
+(use-package web-beautify
+  :ensure t)
+;; (web-mode-set-content-type "jsx")
+(use-package emmet-mode
+  :ensure t)
 
 (server-start)
 

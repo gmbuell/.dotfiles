@@ -23,7 +23,7 @@
 
 ;; Add package repositories
 (add-to-list 'package-archives
-             '("melpa" . "http://melpa.org/packages/") t)
+             '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives
              '("marmalade" . "https://marmalade-repo.org/packages/") t)
 
