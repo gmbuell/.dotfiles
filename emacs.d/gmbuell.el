@@ -174,7 +174,10 @@
   :ensure t
   :init
   (ido-mode t)
-  (ido-ubiquitous-mode)
+  (use-package ido-ubiquitous
+    :ensure t
+    :init
+    (ido-ubiquitous-mode))
   :config
   (ido-hacks-mode)
   (setq ido-enable-prefix nil
@@ -443,12 +446,15 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
      (progn
        (setq ispell-program-name "aspell")
        (setq ispell-list-command "list")
-       (use-package aspell))
+       (use-package aspell
+         :ensure t))
    (when (executable-find "ispell")
      (setq ispell-program-name "ispell")
-     (use-package ispell)))
+     (use-package ispell
+       :ensure t)))
 
 (use-package flyspell
+  :ensure t
   :init
   (add-hook 'text-mode-hook 'turn-on-flyspell)
   (add-hook 'markdown-mode-hook 'turn-on-flyspell)
@@ -922,11 +928,11 @@ that uses 'font-lock-warning-face'."
 ;; ttf-dejavu
 ;; Only load the theme if we are in a graphical display.
 (when (display-graphic-p)
-  (use-package gotham-theme
+  (use-package solarized-theme
     :ensure t
     :init
-    (load-theme 'gotham t))
-  (set-frame-font "Inconsolata 12" t t))
+    (load-theme 'solarized-dark t))
+  (set-frame-font "DejaVu Sans Mono 11" t t))
 
 
 ;; My pinky hurts. Lets try out ace-jump-mode.
@@ -944,7 +950,9 @@ that uses 'font-lock-warning-face'."
 ;; http://dominik.honnef.co/posts/2013/03/writing_go_in_emacs/
 ;; http://dominik.honnef.co/posts/2013/08/writing_go_in_emacs__cont__/
 (use-package go-mode
-  :ensure t)
+  :ensure t
+  :config
+  (setq gofmt-command "goimports"))
 ;; https://github.com/dougm/goflymake
 ;; go get -u github.com/dougm/goflymake
 ;; go get -u golang.org/x/tools/cmd/goimports
@@ -971,7 +979,8 @@ that uses 'font-lock-warning-face'."
 
 ;; https://github.com/dominikh/go-errcheck.el
 ;; go get github.com/kisielk/errcheck
-(use-package go-errcheck)
+(use-package go-errcheck
+  :ensure t)
 
 ;; Add yasnippets-go:
 ;; Isn't needed since the default yasnippet directory contains some.
@@ -1088,6 +1097,7 @@ With prefix P, create local abbrev. Otherwise it will be global."
  '((sh . t)))
 
 (use-package multiple-cursors
+  :ensure t
   :bind (
          ("C-S-c C-S-c" . mc/edit-lines)
          ("C->" . mc/mark-next-like-this)
