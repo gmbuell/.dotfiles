@@ -64,9 +64,6 @@ If Emacs has already finished initialization, also eval FORM immediately."
       (mapc 'load (directory-files esk-user-dir t "^[^#].*el$")))
     (when (file-exists-p esk-system-config) (load esk-system-config))))
 
-(provide 'init)
-
-;;; init.el ends here
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -77,3 +74,7 @@ If Emacs has already finished initialization, also eval FORM immediately."
     ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "c5a044ba03d43a725bd79700087dea813abcb6beb6be08c7eb3303ed90782482" "3a727bdc09a7a141e58925258b6e873c65ccf393b2240c51553098ca93957723" default))))
 
 (put 'narrow-to-region 'disabled nil)
+
+(provide 'init)
+
+;;; init.el ends here
