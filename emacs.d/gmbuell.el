@@ -136,21 +136,6 @@
   :ensure t
   :bind ("C-h C-m" . discover-my-major))
 
-(use-package helm-swoop
-  :ensure t
-  :bind (("M-i" . helm-swoop)
-         ("M-I" . helm-swoop-back-to-last-point)
-         ("C-c M-i" . helm-multi-swoop)
-         ("C-x M-i" . helm-multi-swoop-all))
-  :init
-  ;; When doing isearch, hand the word over to helm-swoop
-  (bind-key "M-i" 'helm-swoop-from-isearch isearch-mode-map)
-  :config
-  ;; Save buffer when helm-multi-swoop-edit complete
-  (setq helm-multi-swoop-edit-save t)
-  ;; From helm-swoop to helm-multi-swoop-all
-  (bind-key "M-i" 'helm-multi-swoop-all-from-helm-swoop helm-swoop-map))
-
 ;; We need nested minibuffers mostly due to helm replacing "M-y"
 (setq enable-recursive-minibuffers t)
 
@@ -170,40 +155,27 @@
   (add-to-list 'recentf-exclude "/.ido.last$")
   (add-to-list 'recentf-exclude "^\*Helm"))
 
-(use-package ido-hacks
-  :ensure t
-  :init
-  (ido-mode t)
-  (use-package ido-ubiquitous
+(ido-mode 1)
+(ido-everywhere 1)
+(use-package ido-ubiquitous
     :ensure t
     :init
-    (ido-ubiquitous-mode))
-  :config
-  (ido-hacks-mode)
-  (setq ido-enable-prefix nil
-        ido-enable-flex-matching nil
-        ido-auto-merge-work-directories-length nil
-        ido-create-new-buffer 'always
-        ido-use-filename-at-point 'guess
-        ido-use-virtual-buffers nil
-        ido-max-prospects 10
-        ido-use-faces nil  ;; Disabled to see flx highlights
-        )
-  (add-to-list 'ido-ignore-buffers "^\*Helm")
-  (add-to-list 'ido-ignore-buffers "^\*MULTI-TERM-DEDICATED\*"))
+    (ido-ubiquitous-mode 1))
+(setq magit-completing-read-function 'magit-ido-completing-read
+      ido-enable-flex-matching t
+      ido-use-filename-at-point 'guess
+      ido-create-new-buffer 'always
+      ido-auto-merge-work-directories-length nil
+      ido-use-virtual-buffers nil
+      ido-max-prospects 10
+      ido-use-faces nil  ;; Disabled to see flx highlights
+      )
+(add-to-list 'ido-ignore-buffers "^\*Helm")
+(add-to-list 'ido-ignore-buffers "^\*MULTI-TERM-DEDICATED\*")
 (use-package flx-ido
   :ensure t
   :init
-  (flx-ido-mode t))
-
-;; Ido uses "virtual buffers" so that you do not have to re-open files
-;; between emacs sessions. This can get out of hand sometimes and this
-;; command will clean everything up.
-(defun ido-clear-history ()
-  "Clear ido virtual buffers list."
-  (interactive)
-  (setq recentf-list '())
-  (setq ido-virtual-buffers '()))
+  (flx-ido-mode 1))
 
 ;; Smex is for smart completion of M-x commands.
 (use-package smex
@@ -215,32 +187,10 @@
   (global-set-key (kbd "M-x") 'smex)
   (global-set-key (kbd "M-X") 'smex-major-mode-commands))
 
-
-
 ;; Find File at Point. Makes sevaral commands smarter when the cursor
 ;; is on something relevant.
 (use-package ffap
-  :ensure t
-  :config
-  (defvar ffap-c-commment-regexp "^/\\*+"
-    "Matches an opening C-style comment, like \"/***\"."))
-
-;; I have no idea where this came from.
-;; (defadvice ffap-file-at-point (after avoid-c-comments activate)
-;;   "Don't return paths like \"/******\" unless they actually exist.
-
-;; This fixes the bug where ido would try to suggest a C-style
-;; comment as a filename."
-;;   (ignore-errors
-;;     (when (and ad-return-value
-;;                (string-match-p ffap-c-commment-regexp
-;;                                ad-return-value)
-;;                (not (ffap-file-exists-string ad-return-value)))
-;;       (setq ad-return-value nil))))
-
-;; Command to open files in another window. Useful for split buffer
-;; setups.
-(global-set-key (kbd "C-x M-f") 'ido-find-file-other-window)
+  :ensure t)
 
 ;; Helm configuration. Helm is a great interface for finding things.
 ;; Protip: Helm uses space as a separator. So if you use helm to
@@ -252,35 +202,13 @@
 (use-package helm-config
   :ensure helm
   :init
-  (add-hook 'eshell-mode-hook
-            #'(lambda ()
-                (define-key eshell-mode-map
-                  [remap eshell-pcomplete]
-                  'helm-esh-pcomplete)))
-  (add-hook 'eshell-mode-hook
-            #'(lambda ()
-                (bind-key "M-p" 'helm-eshell-history eshell-mode-map)))
-  (add-hook 'eshell-mode-hook
-            #'(lambda ()
-                (bind-key "<tab>" 'helm-esh-pcomplete eshell-mode-map)))
   (bind-key* "C-c C-b" 'helm-bookmarks)
-  (use-package helm-ls-git
-    :ensure t)
+  (bind-key* "C-c C-o" 'helm-occur)
   :bind (
-         ;; This is my main interface to opening/switching between files in the
-         ;; same git repository. It is particularly useful because the virtual
-         ;; buffers of ido mode can make finding a project specific file
-         ;; difficult.
-         ("C-c h" . helm-ls-git-ls)
-         ;; helm-ls-git-ls is specific to git projects. helm-browse-project
-         ;; might be more general. Ex.
-         ;; (global-set-key (kbd "C-c h") 'helm-browse-project)
          ("C-x C-b" . helm-buffers-list)
-         ("C-c C-o" . helm-occur)
-         ("C-c M-o" . helm-multi-occur)
          ("M-y" . helm-show-kill-ring)
          ;; Jump to a definition in the current file.
-         ("C-x C-i" . helm-imenu))
+         ("M-i" . helm-imenu))
   :config
   ;; Helm improvement. Make backspace quit when there is nothing
   ;; there instead of erroring.
@@ -293,13 +221,44 @@ On error (read-only), quit without selecting."
       (error
        (helm-keyboard-quit))))
   (bind-key "DEL" 'helm-backspace helm-map)
-  (set-default 'imenu-auto-rescan t))
+  )
+
+(use-package helm-descbinds
+  :ensure t
+  :init
+  (helm-descbinds-mode))
+
+(set-default 'imenu-auto-rescan t)
+
+(use-package helm-ls-git
+  :ensure t
+  :bind (
+         ;; This is my main interface to opening/switching between files in the
+         ;; same git repository.
+         ("C-c h" . helm-ls-git-ls)))
+;; helm-ls-git-ls is specific to git projects. helm-browse-project
+;; might be more general. Ex.
+;; (global-set-key (kbd "C-c h") 'helm-browse-project)
+
+;; To edit lines in helm-occur buffer
+;; After search,
+;; C-c C-p: Toggle read-only area.
+;; Use iedit to make changes C-;
+;; C-x C-s save
+(use-package wgrep
+  :ensure t)
 
 ;; for eshell
 (use-package pcomplete-extension
   :ensure t)
 
 (use-package eshell
+  :init
+  (global-set-key (kbd "C-c e") 'eshell-here)
+  ;; Add pcomplete to company-capf
+  (defun add-pcomplete-to-capf ()
+    (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
+  (add-hook 'eshell-mode-hook #'add-pcomplete-to-capf)
   :config
   (require 'em-smart)
   (setq eshell-where-to-jump 'begin
@@ -328,10 +287,8 @@ directory to make multiple eshell windows easier."
       (other-window 1)
       (eshell "new")
       (rename-buffer (concat "*eshell: " name "*"))
-
       (insert (concat "ls"))
       (eshell-send-input)))
-  (global-set-key (kbd "C-c e") 'eshell-here)
   (defun delete-single-window (&optional window)
     "Remove WINDOW from the display.  Default is `selected-window'.
 If WINDOW is the only one in its frame, then `delete-frame' too."
@@ -344,23 +301,26 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
           (delete-frame)
         (delete-window (selected-window)))))
   (defun eshell/x ()
-    (delete-single-window))
-  ;; Add pcomplete to company-capf
-  (defun add-pcomplete-to-capf ()
-    (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
-  (add-hook 'eshell-mode-hook #'add-pcomplete-to-capf)
-  ;; Re-use eshell
-  (defun af-eshell-here ()
-    "Go to eshell and set current directory to the buffer's directory"
-    (interactive)
-    (let ((dir (file-name-directory (or (buffer-file-name)
-                                        default-directory))))
-      (eshell)
-      (eshell/pushd ".")
-      (cd dir)
-      (goto-char (point-max))
-      (eshell-kill-input)
-      (eshell-send-input))))
+    (delete-single-window)))
+
+;; Re-use eshell
+(defun af-eshell-here ()
+  "Go to eshell and set current directory to the buffer's directory"
+  (interactive)
+  (let ((dir (file-name-directory (or (buffer-file-name)
+                                      default-directory))))
+    (eshell)
+    (eshell/pushd ".")
+    (cd dir)
+    (goto-char (point-max))
+    (eshell-kill-input)
+    (eshell-send-input)))
+
+(add-hook 'eshell-mode-hook
+          (lambda ()
+            (eshell-cmpl-initialize)
+            (define-key eshell-mode-map [remap eshell-pcomplete] 'helm-esh-pcomplete)
+            (define-key eshell-mode-map (kbd "M-p") 'helm-eshell-history)))
 
 (use-package esh-buf-stack
   :ensure t
@@ -380,78 +340,93 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
 (use-package f
   :ensure t)
 
-(defun pcmpl-blaze-target-cmd (target-type)
-  "The blaze query command to run to get a list of targets."
-  (cond ((string= target-type "test")
-         "blaze query 'kind(\".*_test rule\", ...)'")
-        ((string= target-type "all")
-         "blaze query 'kind(\"rule\", ...)'")
-        ((string= target-type "run")
-         "blaze query 'kind(\".*_binary rule\", ...)'")))
+;; (defun pcmpl-blaze-target-cmd (target-type)
+;;   "The blaze query command to run to get a list of targets."
+;;   (cond ((string= target-type "test")
+;;          "blaze query 'kind(\".*_test rule\", ...)'")
+;;         ((string= target-type "all")
+;;          "blaze query 'kind(\"rule\", ...)'")
+;;         ((string= target-type "run")
+;;          "blaze query 'kind(\".*_binary rule\", ...)'")))
 
-(defun pcmpl-blaze-get-targets (target-type)
-  "Return a list of `blaze' test targets."
-  (let ((extraction-regexp (concat "//"
-                                   (save-match-data
-                                     (string-match ".+/google3/\\(.+\\)" (eshell/pwd))
-                                     (match-string-no-properties 1 (eshell/pwd)))
-                                   "\\(:.+\\)")))
-    (with-temp-buffer
-      (insert (shell-command-to-string (pcmpl-blaze-target-cmd target-type)))
-      (goto-char (point-min))
-      (let ((target-list))
-        (while (re-search-forward extraction-regexp nil t)
-          (add-to-list 'target-list (match-string-no-properties 1)))
-        target-list))))
+;; (defun pcmpl-blaze-get-targets (target-type)
+;;   "Return a list of `blaze' test targets."
+;;   (let ((extraction-regexp (concat "//"
+;;                                    (save-match-data
+;;                                      (string-match ".+/google3/\\(.+\\)" (eshell/pwd))
+;;                                      (match-string-no-properties 1 (eshell/pwd)))
+;;                                    "\\(:.+\\)")))
+;;     (with-temp-buffer
+;;       (insert (shell-command-to-string (pcmpl-blaze-target-cmd target-type)))
+;;       (goto-char (point-min))
+;;       (let ((target-list))
+;;         (while (re-search-forward extraction-regexp nil t)
+;;           (add-to-list 'target-list (match-string-no-properties 1)))
+;;         target-list))))
 
-(defconst pcmpl-blaze-commands
-  '("build" "test" "run")
-  "List of `blaze' commands.")
-(defun pcomplete/blaze ()
-  "Completion for `blaze'."
-  ;; Completion for the command argument.
-  (pcomplete-here* pcmpl-blaze-commands)
+;; (defconst pcmpl-blaze-commands
+;;   '("build" "test" "run")
+;;   "List of `blaze' commands.")
+;; (defun pcomplete/blaze ()
+;;   "Completion for `blaze'."
+;;   ;; Completion for the command argument.
+;;   (pcomplete-here* pcmpl-blaze-commands)
 
-  ;; Complete targets
-  (cond
-   ((pcomplete-match "test")
-    (while (< pcomplete-index pcomplete-last)
-      (pcomplete-next-arg))
-    (pcomplete-here* (pcmpl-blaze-get-targets "test")))
-   ((pcomplete-match "run")
-    (while (< pcomplete-index pcomplete-last)
-      (pcomplete-next-arg))
-    (pcomplete-here* (pcmpl-blaze-get-targets "run")))))
+;;   ;; Complete targets
+;;   (cond
+;;    ((pcomplete-match "test")
+;;     (while (< pcomplete-index pcomplete-last)
+;;       (pcomplete-next-arg))
+;;     (pcomplete-here* (pcmpl-blaze-get-targets "test")))
+;;    ((pcomplete-match "run")
+;;     (while (< pcomplete-index pcomplete-last)
+;;       (pcomplete-next-arg))
+;;     (pcomplete-here* (pcmpl-blaze-get-targets "run")))))
 
-(defun pcomplete/iwyu.py ()
-  "Completion for `iwyu'."
-  ;; Complete targets
-  (while (< pcomplete-index pcomplete-last)
-    (pcomplete-next-arg))
-  (pcomplete-here* (pcmpl-blaze-get-targets "all")))
+;; (defun pcomplete/iwyu.py ()
+;;   "Completion for `iwyu'."
+;;   ;; Complete targets
+;;   (while (< pcomplete-index pcomplete-last)
+;;     (pcomplete-next-arg))
+;;   (pcomplete-here* (pcmpl-blaze-get-targets "all")))
 
-(defun pcomplete/fixdeps_main.par ()
-  "Completion for `fixdeps'."
-  ;; Complete targets
-  (while (< pcomplete-index pcomplete-last)
-    (pcomplete-next-arg))
-  (pcomplete-here* (pcmpl-blaze-get-targets "all")))
+;; (defun pcomplete/fixdeps_main.par ()
+;;   "Completion for `fixdeps'."
+;;   ;; Complete targets
+;;   (while (< pcomplete-index pcomplete-last)
+;;     (pcomplete-next-arg))
+;;   (pcomplete-here* (pcmpl-blaze-get-targets "all")))
 
 ;; Consider giving helm-adaptative-mode a try
 
 ;; Plain text settings
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
+(defun unfill-paragraph (&optional region)
+  "Takes a multi-line paragraph and makes it into a single line of text."
+  (interactive (progn (barf-if-buffer-read-only) '(t)))
+  (let ((fill-column (point-max)))
+    (fill-paragraph nil region)))
+(defun unfill-region (beg end)
+  "Unfill the region, joining text paragraphs into a single
+    logical line.  This is useful, e.g., for use with
+    `visual-line-mode'."
+  (interactive "*r")
+  (let ((fill-column (point-max)))
+    (fill-region beg end)))
 ;; Try and use aspell but fall back to ispell
-'(if (executable-find "aspell")
-     (progn
-       (setq ispell-program-name "aspell")
-       (setq ispell-list-command "list")
-       (use-package aspell
-         :ensure t))
-   (when (executable-find "ispell")
-     (setq ispell-program-name "ispell")
-     (use-package ispell
-       :ensure t)))
+(cond
+ ((executable-find "aspell")
+  (setq ispell-program-name "aspell")
+  (setq ispell-list-command "list")
+  ;; Correct CamelCase in programming mode.
+  (add-hook 'prog-mode-hook
+            (lambda ()
+              (setq-local ispell-extra-args
+                          '("--run-together" "--run-together-limit=4" "--run-together-min=3")))))
+ ((executable-find "hunspell")
+  (setq ispell-program-name "hunspell"))
+ ((executable-find "ispell")
+  (setq ispell-program-name "ispell")))
 
 (use-package flyspell
   :ensure t
@@ -513,35 +488,40 @@ that uses 'font-lock-warning-face'."
   :init
   (global-company-mode)
   :config
-  ;; Add company-yasnippet carefully.
-  (setq company-backends (-map (lambda (item) (cond ((eq 'company-dabbrev item)
-                                                     '(company-yasnippet company-dabbrev))
-                                                    (t item))) company-backends))
   ;; Decrease delay before autocompletion popup shows.
   (setq company-minimum-prefix-length 1
-        ;; company-idle-delay .2
+        company-idle-delay .2
         ;; Bigger popup window.
         company-tooltip-limit 20
         company-echo-delay 0
         company-show-numbers t
-        company-dabbrev-downcase nil
         company-dabbrev-ignore-case t
-        company-dabbrev-minimum-length 10
-        company-dabbrev-code-everywhere t
         company-dabbrev-code-ignore-case t
+        company-dabbrev-downcase nil
+        company-dabbrev-code-everywhere t
+        company-dabbrev-code-other-buffers t
+        company-dabbrev-other-buffers t
+        company-dabbrev-minimum-length 10
+        ;; company-dabbrev-code-everywhere t
         ;; This might be madness
-        company-dabbrev-code-modes (append company-dabbrev-code-modes `(minibuffer-inactive-mode))
-        company-dabbrev-code-other-buffers 'code
+        ;; company-dabbrev-code-modes (append company-dabbrev-code-modes `(minibuffer-inactive-mode))
+        ;; company-dabbrev-code-other-buffers 'code
         )
   )
-(use-package helm-company
-    :ensure t
-    :init
-   (bind-key "C-:" 'helm-company company-mode-map)
-   (bind-key "C-:" 'helm-company company-active-map))
-(add-hook 'minibuffer-setup-hook 'company-mode)
-(add-hook 'minibuffer-setup-hook (lambda () (setq-local company-minimum-prefix-length 10)
-                                            (setq-local company-idle-delay 3)))
+
+(use-package company-statistics
+  :ensure t
+  :init
+  (company-statistics-mode))
+;; (use-package helm-company
+;;     :ensure t
+;;     :init
+;;    (bind-key "C-:" 'helm-company company-mode-map)
+;;    (bind-key "C-:" 'helm-company company-active-map))
+
+;; (add-hook 'minibuffer-setup-hook 'company-mode)
+;; (add-hook 'minibuffer-setup-hook (lambda () (setq-local company-minimum-prefix-length 10)
+;;                                             (setq-local company-idle-delay 3)))
 
 (defconst google-ycmd--extra-conf "/usr/lib/youcompleteme/ycm_extra_conf.py")
 (use-package ycmd
@@ -550,8 +530,9 @@ that uses 'font-lock-warning-face'."
   (set-variable 'ycmd-server-command '("/usr/grte/v4/bin/python2.7" "/usr/lib/youcompleteme/third_party/ycmd/ycmd"))
   (set-variable 'ycmd-global-config google-ycmd--extra-conf)
   (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
+  (set-variable 'ycmd-request-message-level -1)
   (setq ycmd-idle-change-delay 0.5)
-  (setq company-minimum-prefix-length 1)
+  (setq company-minimum-prefix-length 2)
   (set-variable 'url-show-status nil)
   (global-ycmd-mode)
   :config
@@ -1004,22 +985,25 @@ that uses 'font-lock-warning-face'."
 ;; Correct words and add to abbrev for auto correction
 ;; (define-key ctl-x-map "\C-i" 'endless/ispell-word-then-abbrev)
 
-(defun endless/ispell-word-then-abbrev (p)
-  "Call `ispell-word'. Then create an abbrev for the correction made.
-With prefix P, create local abbrev. Otherwise it will be global."
-  (interactive "P")
-  (let ((bef (downcase (or (thing-at-point 'word) ""))) aft)
-    (call-interactively 'ispell-word)
-    (setq aft (downcase (or (thing-at-point 'word) "")))
-    (unless (string= aft bef)
-      (message "\"%s\" now expands to \"%s\" %sally"
-               bef aft (if p "loc" "glob"))
-      (define-abbrev
-        (if p local-abbrev-table global-abbrev-table)
-        bef aft))))
+;; 2016-03-17 Maybe I don't want to be using abbrev mode. It probably
+;; conflicts with yasnippet and who knows how many other things.
 
-(setq save-abbrevs t)
-(setq-default abbrev-mode t)
+;; (defun endless/ispell-word-then-abbrev (p)
+;;   "Call `ispell-word'. Then create an abbrev for the correction made.
+;; With prefix P, create local abbrev. Otherwise it will be global."
+;;   (interactive "P")
+;;   (let ((bef (downcase (or (thing-at-point 'word) ""))) aft)
+;;     (call-interactively 'ispell-word)
+;;     (setq aft (downcase (or (thing-at-point 'word) "")))
+;;     (unless (string= aft bef)
+;;       (message "\"%s\" now expands to \"%s\" %sally"
+;;                bef aft (if p "loc" "glob"))
+;;       (define-abbrev
+;;         (if p local-abbrev-table global-abbrev-table)
+;;         bef aft))))
+
+;; (setq save-abbrevs t)
+;; (setq-default abbrev-mode t)
 
 (use-package ace-window
   :ensure t
@@ -1060,18 +1044,32 @@ With prefix P, create local abbrev. Otherwise it will be global."
   ;; Add shortcut to recalculate table
   (bind-key "M-r" '(lambda () (interactive)(org-table-recalculate t)) org-mode-map))
 
+;; (use-package ov
+;;   :ensure t)
+;; (use-package better-jump
+;;   :ensure t)
+
 ;; Try out hydra:
 (use-package hydra
   :ensure t
-  :config
+  :init
   (defhydra hydra-error (global-map "M-g")
     "goto-error"
     ("h" first-error "first")
     ("j" next-error "next")
     ("k" previous-error "prev")
     ("v" recenter-top-bottom "recenter")
-    ("q" nil "quit")))
-
+    ("q" nil "quit"))
+  )
+;; (defhydra hydra-jump (global-map "M-j")
+;;     "hydra-jump"
+;;     ("j" bjump-word-jump "jump")
+;;     ("n" forward-word "next")
+;;     ("p" backward-word "prev")
+;;     ("v" recenter-top-bottom "recenter")
+;;     ("o" bjump-window-jump "window")
+;;     ("l" goto-line "line")
+;;     ("q" nil "quit"))
 (use-package multifiles
   :ensure t
   :bind ("C-!" . mf/mirror-region-in-multifile))
