@@ -520,8 +520,8 @@ that uses 'font-lock-warning-face'."
   :config
   ;; Maybe fix flycheck and company mode interaction. Is this even a
   ;; problem?
-  (when (not (display-graphic-p))
-    (setq flycheck-indication-mode nil))
+  ;; (when (not (display-graphic-p))
+  ;;   (setq flycheck-indication-mode nil))
   (setq flycheck-eslintrc "~/.eslintrc")
   ;; disable jshint since we prefer eslint checking
   (setq-default flycheck-disabled-checkers
@@ -542,7 +542,7 @@ that uses 'font-lock-warning-face'."
   :config
   ;; Decrease delay before autocompletion popup shows.
   (setq company-minimum-prefix-length 1
-        company-idle-delay .2
+        company-idle-delay 0
         ;; Bigger popup window.
         company-tooltip-limit 20
         company-echo-delay 0
@@ -581,6 +581,9 @@ that uses 'font-lock-warning-face'."
   (set-variable 'ycmd-request-message-level -1)
   (setq ycmd-idle-change-delay 0.5)
   (setq company-minimum-prefix-length 2)
+  ;; During startup, YCM copies the libclang.so from srcfs to local disk.
+  ;; This can take a couple of seconds.
+  (setq ycmd-startup-timeout 20000)
   (set-variable 'url-show-status nil)
   (global-ycmd-mode)
   :config
