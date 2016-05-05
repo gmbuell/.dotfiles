@@ -56,6 +56,7 @@
   (tooltip-mode -1)
   (mouse-wheel-mode t)
   (blink-cursor-mode -1))
+(setq ring-bell-function 'ignore)
 ;; can't do it at launch or Emacsclient won't always honor it
 (defun esk-turn-off-tool-bar ()
   (dolist (mode '(menu-bar-mode tool-bar-mode scroll-bar-mode))
@@ -208,7 +209,10 @@
          ("C-x C-b" . helm-buffers-list)
          ("M-y" . helm-show-kill-ring)
          ;; Jump to a definition in the current file.
-         ("M-i" . helm-imenu))
+         ;; ("M-i" . helm-imenu))
+         ("M-i" . helm-semantic-or-imenu)
+         ("C-c d" . helm-descbinds)
+         ("C-c [tab]" . helm-company))
   :config
   ;; Helm improvement. Make backspace quit when there is nothing
   ;; there instead of erroring.
@@ -229,6 +233,19 @@ On error (read-only), quit without selecting."
   (helm-descbinds-mode))
 
 (set-default 'imenu-auto-rescan t)
+;; Teach imenu to recognize TEST_F
+(add-hook 'c++-mode
+          (lambda ()
+            (when (s-ends-with? "_test.cc" buffer-file-name)
+              (setq-local
+               imenu-generic-expression
+               '(("Class" "^\\(template[        ]*<[^>]+>[      ]*\\)?\\(class\\|struct\\)[     ]+\\([[:alnum:]_]+\\(<[^>]+>\\)?\\)\\([         \n]\\|\\\\\n\\)*[:{]" 3)
+                 ("Test" "^ *TEST\\(?:_F\\)?([^,]+,\n? *\\(.+\\)) {$" 1))))))
+(use-package stickyfunc-enhance
+  :ensure t
+  :init
+  (add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
+  (semantic-mode 1))
 
 (use-package helm-ls-git
   :ensure t
@@ -240,7 +257,7 @@ On error (read-only), quit without selecting."
 ;; might be more general. Ex.
 ;; (global-set-key (kbd "C-c h") 'helm-browse-project)
 
-;; To edit lines in helm-occur buffer
+;; To edit lines in helm-grep buffer
 ;; After search,
 ;; C-c C-p: Toggle read-only area.
 ;; Use iedit to make changes C-;
@@ -248,12 +265,51 @@ On error (read-only), quit without selecting."
 (use-package wgrep
   :ensure t)
 
+;; (use-package projectile
+;;   :ensure t
+;;   :init
+;;   (projectile-global-mode)
+;;   :config
+;;   (setq projectile-indexing-method 'alien))
+;; (use-package persp-projectile
+;;   :ensure t
+;;   :bind (("C-x p" 'projectile-persp-switch-project))
+;;   :init
+;;   ;; (bind-key "s-s" 'projectile-persp-switch-project projectile-mode-map))
+;; (use-package helm-projectile
+;;   :ensure t
+;;   :init
+;;   (helm-projectile-on))
+
+;; Could use persp-mode instead?
+;; Perspective is per frame, persp-mode is across all frames.
+(use-package perspective
+  :ensure t
+  :init
+  (persp-mode))
+
 ;; for eshell
 (use-package pcomplete-extension
   :ensure t)
 
 (use-package eshell
   :init
+  (defun eshell-here ()
+    "Opens up a new shell in the directory associated with the
+current buffer's file. The eshell is renamed to match that
+directory to make multiple eshell windows easier."
+    (interactive)
+    (let* ((parent (if (buffer-file-name)
+                       (file-name-directory (buffer-file-name))
+                     default-directory))
+           (height (/ (window-total-height) 3))
+           (name   (car (last (split-string parent "/" t)))))
+      (split-window-vertically (- height))
+      (other-window 1)
+      (eshell "new")
+      (rename-buffer (concat "*eshell: " name "*"))
+      (insert (concat "ls"))
+      (eshell-send-input)))
   (global-set-key (kbd "C-c e") 'eshell-here)
   ;; Add pcomplete to company-capf
   (defun add-pcomplete-to-capf ()
@@ -273,22 +329,6 @@ On error (read-only), quit without selecting."
   (setenv "PATH" (concat (getenv "PATH") ":" (getenv "GOPATH") "/bin"))
   (setenv "PATH" (concat (getenv "PATH") ":" (getenv "HOME") "/gsutil"))
   (add-to-list 'exec-path (concat (getenv "GOPATH") "/bin"))
-  (defun eshell-here ()
-    "Opens up a new shell in the directory associated with the
-current buffer's file. The eshell is renamed to match that
-directory to make multiple eshell windows easier."
-    (interactive)
-    (let* ((parent (if (buffer-file-name)
-                       (file-name-directory (buffer-file-name))
-                     default-directory))
-           (height (/ (window-total-height) 3))
-           (name   (car (last (split-string parent "/" t)))))
-      (split-window-vertically (- height))
-      (other-window 1)
-      (eshell "new")
-      (rename-buffer (concat "*eshell: " name "*"))
-      (insert (concat "ls"))
-      (eshell-send-input)))
   (defun delete-single-window (&optional window)
     "Remove WINDOW from the display.  Default is `selected-window'.
 If WINDOW is the only one in its frame, then `delete-frame' too."
@@ -304,17 +344,17 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
     (delete-single-window)))
 
 ;; Re-use eshell
-(defun af-eshell-here ()
-  "Go to eshell and set current directory to the buffer's directory"
-  (interactive)
-  (let ((dir (file-name-directory (or (buffer-file-name)
-                                      default-directory))))
-    (eshell)
-    (eshell/pushd ".")
-    (cd dir)
-    (goto-char (point-max))
-    (eshell-kill-input)
-    (eshell-send-input)))
+;; (defun af-eshell-here ()
+;;   "Go to eshell and set current directory to the buffer's directory"
+;;   (interactive)
+;;   (let ((dir (file-name-directory (or (buffer-file-name)
+;;                                       default-directory))))
+;;     (eshell)
+;;     (eshell/pushd ".")
+;;     (cd dir)
+;;     (goto-char (point-max))
+;;     (eshell-kill-input)
+;;     (eshell-send-input)))
 
 (add-hook 'eshell-mode-hook
           (lambda ()
@@ -449,6 +489,7 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
 (column-number-mode t)
 
 ;; Turn on red highlighting for characters outside of the 80/100 char limit
+(set-default 'fill-column 80)
 (defun font-lock-width-keyword (width)
   "Return a font-lock style keyword for a string beyond width WIDTH
 that uses 'font-lock-warning-face'."
@@ -475,11 +516,22 @@ that uses 'font-lock-warning-face'."
   :ensure t
   :init
   (global-flycheck-mode)
+  (flycheck-add-mode 'javascript-eslint 'web-mode)
   :config
   ;; Maybe fix flycheck and company mode interaction. Is this even a
   ;; problem?
   (when (not (display-graphic-p))
-    (setq flycheck-indication-mode nil)))
+    (setq flycheck-indication-mode nil))
+  (setq flycheck-eslintrc "~/.eslintrc")
+  ;; disable jshint since we prefer eslint checking
+  (setq-default flycheck-disabled-checkers
+                (append flycheck-disabled-checkers
+                        '(javascript-jshint)))
+  ;; customize flycheck temp file prefix
+  (setq-default flycheck-temp-prefix ".flycheck")
+  (setq-default flycheck-disabled-checkers
+                (append flycheck-disabled-checkers
+                        '(json-jsonlist))))
 
 ;; Company mode for completions: http://company-mode.github.io/
 (use-package company
@@ -502,10 +554,6 @@ that uses 'font-lock-warning-face'."
         company-dabbrev-code-other-buffers t
         company-dabbrev-other-buffers t
         company-dabbrev-minimum-length 10
-        ;; company-dabbrev-code-everywhere t
-        ;; This might be madness
-        ;; company-dabbrev-code-modes (append company-dabbrev-code-modes `(minibuffer-inactive-mode))
-        ;; company-dabbrev-code-other-buffers 'code
         )
   )
 
@@ -754,6 +802,12 @@ that uses 'font-lock-warning-face'."
 ;;  (quote
 ;;   ("http://gaijinhunter.tumblr.com/rss"))
 ;;  shr-blocked-images ".+")
+(use-package elfeed
+  :ensure t
+  :init (setq elfeed-feeds
+              '("http://www.wired.com/category/gear/feed/",
+                "http://www.theverge.com/rss/partner/verge-circuitbreaker/index.xml")
+              shr-blocked-images ".+"))
 
 (use-package rainbow-delimiters
   :ensure t
@@ -934,7 +988,7 @@ that uses 'font-lock-warning-face'."
 (use-package go-mode
   :ensure t
   :config
-  (setq gofmt-command "goimports"))
+  (setq gofmt-command (concat (getenv "GOPATH") "/bin/goimports")))
 ;; https://github.com/dougm/goflymake
 ;; go get -u github.com/dougm/goflymake
 ;; go get -u golang.org/x/tools/cmd/goimports
@@ -1037,12 +1091,35 @@ that uses 'font-lock-warning-face'."
   :init
   (yas-global-mode 1))
 
+;; Disable abbrev-mode
+(setq-default abbrev-mode -1)
+(add-hook 'prog-mode-hook
+          (lambda ()
+            (abbrev-mode -1)))
+
 
 (use-package org
   :config
+  (setq org-confirm-babel-evaluate nil
+      org-src-fontify-natively t
+      org-src-tab-acts-natively t)
   (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
   ;; Add shortcut to recalculate table
-  (bind-key "M-r" '(lambda () (interactive)(org-table-recalculate t)) org-mode-map))
+  (bind-key "M-r" '(lambda () (interactive)(org-table-recalculate t)) org-mode-map)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((sh . t)
+     (comint . t)
+     (sql . t)
+     (dremel . t))))
+
+(add-hook 'sql-mode-hook
+          (lambda ()
+            (sql-set-product 'dremel)))
+
+(use-package ob-http
+  :ensure t)
+
 
 ;; (use-package ov
 ;;   :ensure t)
@@ -1090,10 +1167,6 @@ that uses 'font-lock-warning-face'."
                 letter-group
                 "\n"))
         (princ "\n\n")))))
-
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((sh . t)))
 
 (use-package multiple-cursors
   :ensure t
@@ -1185,10 +1258,24 @@ buffer."
          ("\\.erb\\'" . web-mode)
          ("\\.html\\'" . web-mode)
          ("\\.rhtml\\'" . web-mode)
-         ("\\.mustache\\'" . web-mode))
+         ("\\.mustache\\'" . web-mode)
+         ("\\.jsx\\'" . web-mode)
+         ("\\.js\\'" . web-mode))
+  :init
+  (add-hook 'web-mode-hook
+            (lambda ()
+              (web-mode-set-content-type "jsx")
+              (emmet-mode)))
   :config
   (setq web-mode-code-indent-offset 2)
-  (web-mode-set-content-type "jsx"))
+  (setq web-mode-markup-indent-offset 2)
+  (setq web-mode-css-indent-offset 2)
+  ;; for better jsx syntax-highlighting in web-mode
+  (defadvice web-mode-highlight-part (around tweak-jsx activate)
+    (if (equal web-mode-content-type "jsx")
+        (let ((web-mode-enable-part-face nil))
+          ad-do-it)
+      ad-do-it)))
 
 ;; Use M-x sauron-start
 (use-package sauron
@@ -1220,7 +1307,219 @@ buffer."
   :ensure t)
 ;; (web-mode-set-content-type "jsx")
 (use-package emmet-mode
+  :ensure t
+  :config
+  (setq emmet-expand-jsx-className? t))
+(use-package json-mode
   :ensure t)
+
+;; This would set $PATH correctly!
+;; Start it with (exec-path-from-shell-initialize)
+(use-package exec-path-from-shell
+  :ensure t)
+
+
+;;; Overlay logic
+(defun cider--delete-overlay (ov &rest _)
+  "Safely delete overlay OV.
+Never throws errors, and can be used in an overlay's modification-hooks."
+  (ignore-errors (delete-overlay ov)))
+
+(defun cider--make-overlay (l r type &rest props)
+  "Place an overlay between L and R and return it.
+TYPE is a symbol put on the overlay's cider-type property.  It is used to
+easily remove all overlays from a region with:
+    (remove-overlays start end 'cider-type TYPE)
+PROPS is a plist of properties and values to add to the overlay."
+  (let ((o (make-overlay l (or r l) (current-buffer))))
+    (overlay-put o 'cider-type type)
+    (overlay-put o 'cider-temporary t)
+    (while props (overlay-put o (pop props) (pop props)))
+    (push #'cider--delete-overlay (overlay-get o 'modification-hooks))
+    o))
+
+(defun cider--remove-result-overlay ()
+  "Remove result overlay from current buffer.
+This function also removes itself from `post-command-hook'."
+  (remove-hook 'post-command-hook #'cider--remove-result-overlay 'local)
+  (remove-overlays nil nil 'cider-type 'result))
+
+(defun cider--remove-result-overlay-after-command ()
+  "Add `cider--remove-result-overlay' locally to `post-command-hook'.
+This function also removes itself from `post-command-hook'."
+  (remove-hook 'post-command-hook #'cider--remove-result-overlay-after-command 'local)
+  (add-hook 'post-command-hook #'cider--remove-result-overlay nil 'local))
+
+(cl-defun cider--make-result-overlay (value &rest props &key where duration (type 'result)
+                                            (format (concat " " cider-eval-result-prefix "%s "))
+                                            (prepend-face 'cider-result-overlay-face)
+                                            &allow-other-keys)
+  "Place an overlay displaying VALUE at the end of line.
+VALUE is used as the overlay's after-string property, meaning it is
+displayed at the end of the overlay.  The overlay itself is placed from
+beginning to end of current line.
+Return nil if the overlay was not placed or if it might not be visible, and
+return the overlay otherwise.
+Return the overlay if it was placed successfully, and nil if it failed.
+This function takes some optional keyword arguments:
+  If WHERE is a number or a marker, apply the overlay over
+  the entire line at that place (defaulting to `point').  If
+  it is a cons cell, the car and cdr determine the start and
+  end of the overlay.
+  DURATION takes the same possible values as the
+  `cider-eval-result-duration' variable.
+  TYPE is passed to `cider--make-overlay' (defaults to `result').
+  FORMAT is a string passed to `format'.  It should have
+  exactly one %s construct (for VALUE).
+All arguments beyond these (PROPS) are properties to be used on the
+overlay."
+  (declare (indent 1))
+  (while (keywordp (car props))
+    (setq props (cdr (cdr props))))
+  ;; If the marker points to a dead buffer, don't do anything.
+  (let ((buffer (cond
+                 ((markerp where) (marker-buffer where))
+                 ((markerp (car-safe where)) (marker-buffer (car where)))
+                 (t (current-buffer)))))
+    (with-current-buffer buffer
+      (save-excursion
+        (when (number-or-marker-p where)
+          (goto-char where))
+        ;; Make sure the overlay is actually at the end of the sexp.
+        (skip-chars-backward "\r\n[:blank:]")
+        (let* ((beg (if (consp where)
+                        (car where)
+                      (line-beginning-position)))
+               (end (if (consp where)
+                        (cdr where)
+                      (line-end-position)))
+               (display-string (format format value))
+               (o nil))
+          (remove-overlays beg end 'cider-type type)
+          (funcall (if cider-overlays-use-font-lock
+                       #'font-lock-prepend-text-property
+                     #'put-text-property)
+                   0 (length display-string)
+                   'face prepend-face
+                   display-string)
+          ;; If the display spans multiple lines or is very long, display it at
+          ;; the beginning of the next line.
+          (when (or (string-match "\n." display-string)
+                    (> (string-width display-string)
+                       (- (window-width) (current-column))))
+            (setq display-string (concat " \n" display-string)))
+          ;; Put the cursor property only once we're done manipulating the
+          ;; string, since we want it to be at the first char.
+          (put-text-property 0 1 'cursor 0 display-string)
+          (setq o (apply #'cider--make-overlay
+                         beg end type
+                         'after-string display-string
+                         props))
+          (pcase duration
+            ((pred numberp) (run-at-time duration nil #'cider--delete-overlay o))
+            (`command
+             ;; If inside a command-loop, tell `cider--remove-result-overlay'
+             ;; to only remove after the *next* command.
+             (if this-command
+                 (add-hook 'post-command-hook
+                           #'cider--remove-result-overlay-after-command
+                           nil 'local)
+               (cider--remove-result-overlay-after-command))))
+          (-when-let ((win (get-buffer-window buffer)))
+            ;; Left edge is visible.
+            (when (and (<= (window-start win) (point))
+                       ;; In 24.3 `<=' is still a binary perdicate.
+                       (<= (point) (window-end win))
+                       ;; Right edge is visible. This is a little conservative
+                       ;; if the overlay contains line breaks.
+                       (or (< (+ (current-column) (string-width value))
+                              (window-width win))
+                           (not truncate-lines)))
+              o)))))))
+
+(defun endless/eval-overlay (value point)
+  (cider--make-result-overlay (format "%S" value)
+    :where point
+    :duration 'command)
+  ;; Preserve the return value.
+  value)
+
+(advice-add 'eval-region :around
+            (lambda (f beg end &rest r)
+              (endless/eval-overlay
+               (apply f beg end r)
+               end)))
+
+(advice-add 'eval-last-sexp :filter-return
+            (lambda (r)
+              (endless/eval-overlay r (point))))
+
+(advice-add 'eval-defun :filter-return
+            (lambda (r)
+              (endless/eval-overlay
+               r
+               (save-excursion
+                 (end-of-defun)
+                 (point)))))
+
+(use-package undo-tree
+  :ensure t
+  :init
+  (global-undo-tree-mode)
+  (global-set-key (kbd "C-z") 'undo)
+  (defalias 'redo 'undo-tree-redo)
+  (global-set-key (kbd "C-S-z") 'redo))
+
+(defalias 'sql-get-login 'ignore)
+(defun my-sql-save-history-hook ()
+  (let ((lval 'sql-input-ring-file-name)
+        (rval 'sql-product))
+    (if (symbol-value rval)
+        (let ((filename
+               (concat "~/.emacs.d/sql/"
+                       (symbol-name (symbol-value rval))
+                       "-history.sql")))
+          (set (make-local-variable lval) filename))
+      (error
+       (format "SQL history will not be saved because %s is nil"
+               (symbol-name rval))))))
+(add-hook 'sql-interactive-mode-hook 'my-sql-save-history-hook)
+
+(use-package sql-indent
+  :ensure t)
+
+;; A function to uppercase all dremel keywords in the buffer using FontLockMode to determine the keywords.
+(defun upcase-dremel-keywords ()
+    (interactive)
+    (save-excursion
+      (dolist (keywords sql-dremel-font-lock-keywords)
+        (goto-char (point-min))
+        (while (re-search-forward (car keywords) nil t)
+          (goto-char (+ 1 (match-beginning 0)))
+          (when (eql font-lock-keyword-face (face-at-point))
+            (backward-char)
+            (upcase-word 1)
+            (forward-char))))))
+
+;; Give term buffers infinite scroll.
+(add-hook 'term-mode-hook
+          (lambda () (setq term-buffer-maximum-size 0)))
+
+;; (use-package mmm-mode
+;;   :ensure t
+;;   :init
+;;   (setq mmm-global-mode 'maybe)
+;;   (mmm-add-classes
+;;    '((org-sql
+;;       :submode sql-mode
+;;       :face mmm-declaration-submode-face
+;;       :front "#\\+BEGIN_SRC dremel ?.+[\r\n]*"
+;;       :back "[\r\n]*#\\+END_SRC")))
+;;   (mmm-add-mode-ext-class 'org-mode nil 'org-sql)
+;;   :config
+;;   (setq mmm-parse-when-idle 't))
+
+(add-to-list 'org-src-lang-modes '("dremel" . sql))
 
 (server-start)
 
