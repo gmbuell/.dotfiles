@@ -62,13 +62,11 @@ If Emacs has already finished initialization, also eval FORM immediately."
 (esk-eval-after-init
  '(progn
     (when (file-exists-p esk-user-config) (load esk-user-config))
-    (when (file-exists-p esk-user-dir)
-      (mapc 'load (directory-files esk-user-dir t "^[^#].*el$")))
+    ;; (when (file-exists-p esk-user-dir)
+    ;;   (mapc 'load (directory-files esk-user-dir t "^[^#].*el$")))
     (when (file-exists-p esk-system-config) (load esk-system-config))))
 
 (put 'narrow-to-region 'disabled nil)
-
-(provide 'init)
 
 ;;; init.el ends here
 (custom-set-variables
@@ -79,9 +77,5 @@ If Emacs has already finished initialization, also eval FORM immediately."
  '(custom-safe-themes
    (quote
     ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+
+(provide 'init)

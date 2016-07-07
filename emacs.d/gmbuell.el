@@ -288,6 +288,12 @@ On error (read-only), quit without selecting."
   :init
   (persp-mode))
 
+
+(use-package golden-ratio
+  :ensure t
+  :init
+  (golden-ratio-mode 1))
+
 ;; for eshell
 (use-package pcomplete-extension
   :ensure t)
@@ -607,11 +613,6 @@ that uses 'font-lock-warning-face'."
   (setq-default flycheck-disabled-checkers
                 '(c/c++-gcc c/c++-clang c/c++-cppcheck)))
 
-;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
-;; go get -u github.com/nsf/gocode
-(use-package company-go
-  :ensure t)
-
 ;; Git integration
 ;; -------------------------------------------------------------------
 ;; Shows git diff information in the gutter.
@@ -711,6 +712,9 @@ that uses 'font-lock-warning-face'."
                       :foreground "#d26937")
   (set-face-attribute 'jabber-activity-personal-face nil
                       :foreground "#c23127"))
+
+(use-package ov
+  :ensure t)
 
 ;; Settings and modes to make text entry and display smarter.
 ;; -------------------------------------------------------------------
@@ -999,16 +1003,24 @@ that uses 'font-lock-warning-face'."
 ;; go get -u github.com/rogpeppe/godef
 ;; go get -u golang.org/x/tools/cmd/oracle
 ;; go get -u golang.org/x/tools/cmd/gorename
+;; go get -u github.com/golang/lint/golint
+(add-to-list 'load-path (concat (getenv "GOPATH")  "/src/github.com/golang/lint/misc/emacs"))
+(require 'golint)
 (load-file (concat (getenv "GOPATH") "/src/golang.org/x/tools/cmd/oracle/oracle.el"))
 
 (use-package go-flycheck
   :load-path (lambda () (concat (getenv "GOPATH") "/src/github.com/dougm/goflymake")))
 
-(add-hook 'go-mode-hook (lambda ()
-                          ;; Might not need company-go with ycmd
-                          (set (make-local-variable 'company-backends) '(company-go))
-                          (company-mode)
-                          (flycheck-mode)))
+;; https://github.com/nsf/gocode/tree/mast~/gocodeer/emacs-company
+;; go get -u github.com/nsf/gocode
+(use-package company-go
+  :ensure t
+  :init
+  (add-hook 'go-mode-hook (lambda ()
+                            ;; Might not need company-go with ycmd
+                            (set (make-local-variable 'company-backends) '(company-go company-ycmd))
+                            (company-mode)
+                            (flycheck-mode))))
 
 ;; https://github.com/syohex/emacs-go-eldoc
 (use-package go-eldoc
@@ -1102,6 +1114,7 @@ that uses 'font-lock-warning-face'."
 
 
 (use-package org
+  :ensure t
   :config
   (setq org-confirm-babel-evaluate nil
       org-src-fontify-natively t
@@ -1123,9 +1136,6 @@ that uses 'font-lock-warning-face'."
 (use-package ob-http
   :ensure t)
 
-
-;; (use-package ov
-;;   :ensure t)
 ;; (use-package better-jump
 ;;   :ensure t)
 
@@ -1195,11 +1205,11 @@ that uses 'font-lock-warning-face'."
       (insert file-name)
       )))
 
-(use-package aggressive-indent
-  :ensure t
-  ;; :init
-  ;; (global-aggressive-indent-mode 1)
-  )
+;; (use-package aggressive-indent
+;;   :ensure t
+;;   ;; :init
+;;   ;; (global-aggressive-indent-mode 1)
+;;   )
 
 (use-package smartscan
   :ensure t
@@ -1291,8 +1301,8 @@ buffer."
      "Go walk!"
      '(lambda ()        ;; function called when activated
         (run-with-timer (* 20 60) nil 'sauron-stretch))))
-  (run-with-timer (* 20 60) nil 'sauron-stretch)
   :config
+  (run-with-timer (* 20 60) nil 'sauron-stretch)
   (setq sauron-hide-mode-line t))
 
 ;; React stuff
@@ -1321,149 +1331,34 @@ buffer."
 (use-package exec-path-from-shell
   :ensure t)
 
+;; Cider has cool overlay code.
+;; (use-package cider
+;;   :ensure t)
 
-;;; Overlay logic
-(defun cider--delete-overlay (ov &rest _)
-  "Safely delete overlay OV.
-Never throws errors, and can be used in an overlay's modification-hooks."
-  (ignore-errors (delete-overlay ov)))
+;; (defun endless/eval-overlay (value point)
+;;   (cider--make-result-overlay (format "%S" value)
+;;     :where point
+;;     :duration 'command)
+;;   ;; Preserve the return value.
+;;   value)
 
-(defun cider--make-overlay (l r type &rest props)
-  "Place an overlay between L and R and return it.
-TYPE is a symbol put on the overlay's cider-type property.  It is used to
-easily remove all overlays from a region with:
-    (remove-overlays start end 'cider-type TYPE)
-PROPS is a plist of properties and values to add to the overlay."
-  (let ((o (make-overlay l (or r l) (current-buffer))))
-    (overlay-put o 'cider-type type)
-    (overlay-put o 'cider-temporary t)
-    (while props (overlay-put o (pop props) (pop props)))
-    (push #'cider--delete-overlay (overlay-get o 'modification-hooks))
-    o))
+;; (advice-add 'eval-region :around
+;;             (lambda (f beg end &rest r)
+;;               (endless/eval-overlay
+;;                (apply f beg end r)
+;;                end)))
 
-(defun cider--remove-result-overlay ()
-  "Remove result overlay from current buffer.
-This function also removes itself from `post-command-hook'."
-  (remove-hook 'post-command-hook #'cider--remove-result-overlay 'local)
-  (remove-overlays nil nil 'cider-type 'result))
+;; (advice-add 'eval-last-sexp :filter-return
+;;             (lambda (r)
+;;               (endless/eval-overlay r (point))))
 
-(defun cider--remove-result-overlay-after-command ()
-  "Add `cider--remove-result-overlay' locally to `post-command-hook'.
-This function also removes itself from `post-command-hook'."
-  (remove-hook 'post-command-hook #'cider--remove-result-overlay-after-command 'local)
-  (add-hook 'post-command-hook #'cider--remove-result-overlay nil 'local))
-
-(cl-defun cider--make-result-overlay (value &rest props &key where duration (type 'result)
-                                            (format (concat " " cider-eval-result-prefix "%s "))
-                                            (prepend-face 'cider-result-overlay-face)
-                                            &allow-other-keys)
-  "Place an overlay displaying VALUE at the end of line.
-VALUE is used as the overlay's after-string property, meaning it is
-displayed at the end of the overlay.  The overlay itself is placed from
-beginning to end of current line.
-Return nil if the overlay was not placed or if it might not be visible, and
-return the overlay otherwise.
-Return the overlay if it was placed successfully, and nil if it failed.
-This function takes some optional keyword arguments:
-  If WHERE is a number or a marker, apply the overlay over
-  the entire line at that place (defaulting to `point').  If
-  it is a cons cell, the car and cdr determine the start and
-  end of the overlay.
-  DURATION takes the same possible values as the
-  `cider-eval-result-duration' variable.
-  TYPE is passed to `cider--make-overlay' (defaults to `result').
-  FORMAT is a string passed to `format'.  It should have
-  exactly one %s construct (for VALUE).
-All arguments beyond these (PROPS) are properties to be used on the
-overlay."
-  (declare (indent 1))
-  (while (keywordp (car props))
-    (setq props (cdr (cdr props))))
-  ;; If the marker points to a dead buffer, don't do anything.
-  (let ((buffer (cond
-                 ((markerp where) (marker-buffer where))
-                 ((markerp (car-safe where)) (marker-buffer (car where)))
-                 (t (current-buffer)))))
-    (with-current-buffer buffer
-      (save-excursion
-        (when (number-or-marker-p where)
-          (goto-char where))
-        ;; Make sure the overlay is actually at the end of the sexp.
-        (skip-chars-backward "\r\n[:blank:]")
-        (let* ((beg (if (consp where)
-                        (car where)
-                      (line-beginning-position)))
-               (end (if (consp where)
-                        (cdr where)
-                      (line-end-position)))
-               (display-string (format format value))
-               (o nil))
-          (remove-overlays beg end 'cider-type type)
-          (funcall (if cider-overlays-use-font-lock
-                       #'font-lock-prepend-text-property
-                     #'put-text-property)
-                   0 (length display-string)
-                   'face prepend-face
-                   display-string)
-          ;; If the display spans multiple lines or is very long, display it at
-          ;; the beginning of the next line.
-          (when (or (string-match "\n." display-string)
-                    (> (string-width display-string)
-                       (- (window-width) (current-column))))
-            (setq display-string (concat " \n" display-string)))
-          ;; Put the cursor property only once we're done manipulating the
-          ;; string, since we want it to be at the first char.
-          (put-text-property 0 1 'cursor 0 display-string)
-          (setq o (apply #'cider--make-overlay
-                         beg end type
-                         'after-string display-string
-                         props))
-          (pcase duration
-            ((pred numberp) (run-at-time duration nil #'cider--delete-overlay o))
-            (`command
-             ;; If inside a command-loop, tell `cider--remove-result-overlay'
-             ;; to only remove after the *next* command.
-             (if this-command
-                 (add-hook 'post-command-hook
-                           #'cider--remove-result-overlay-after-command
-                           nil 'local)
-               (cider--remove-result-overlay-after-command))))
-          (-when-let ((win (get-buffer-window buffer)))
-            ;; Left edge is visible.
-            (when (and (<= (window-start win) (point))
-                       ;; In 24.3 `<=' is still a binary perdicate.
-                       (<= (point) (window-end win))
-                       ;; Right edge is visible. This is a little conservative
-                       ;; if the overlay contains line breaks.
-                       (or (< (+ (current-column) (string-width value))
-                              (window-width win))
-                           (not truncate-lines)))
-              o)))))))
-
-(defun endless/eval-overlay (value point)
-  (cider--make-result-overlay (format "%S" value)
-    :where point
-    :duration 'command)
-  ;; Preserve the return value.
-  value)
-
-(advice-add 'eval-region :around
-            (lambda (f beg end &rest r)
-              (endless/eval-overlay
-               (apply f beg end r)
-               end)))
-
-(advice-add 'eval-last-sexp :filter-return
-            (lambda (r)
-              (endless/eval-overlay r (point))))
-
-(advice-add 'eval-defun :filter-return
-            (lambda (r)
-              (endless/eval-overlay
-               r
-               (save-excursion
-                 (end-of-defun)
-                 (point)))))
+;; (advice-add 'eval-defun :filter-return
+;;             (lambda (r)
+;;               (endless/eval-overlay
+;;                r
+;;                (save-excursion
+;;                  (end-of-defun)
+;;                  (point)))))
 
 (use-package undo-tree
   :ensure t
