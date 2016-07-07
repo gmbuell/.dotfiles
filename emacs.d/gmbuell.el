@@ -583,7 +583,7 @@ that uses 'font-lock-warning-face'."
   :init
   (set-variable 'ycmd-server-command '("/usr/grte/v4/bin/python2.7" "/usr/lib/youcompleteme/third_party/ycmd/ycmd"))
   (set-variable 'ycmd-global-config google-ycmd--extra-conf)
-  (set-variable 'ycmd-parse-conditions '(save new-line mode-enabled))
+  (set-variable 'ycmd-parse-conditions '(save new-line))
   (set-variable 'ycmd-request-message-level -1)
   (setq ycmd-idle-change-delay 0.5)
   (setq company-minimum-prefix-length 2)
