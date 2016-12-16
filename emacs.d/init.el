@@ -50,7 +50,7 @@ If Emacs has already finished initialization, also eval FORM immediately."
       (eval form))))
 
 ;; You can keep system- or user-specific customizations here
-(defvar esk-system-config (concat user-emacs-directory system-name ".el")
+(defvar esk-system-config (concat user-emacs-directory (system-name) ".el")
   "The system-specific customization file. Ex. ~/.emacs.d/buelldev.el")
 (defvar esk-user-config (concat user-emacs-directory user-login-name ".el")
   "The user specific customization file. Ex. ~/.emacs.d/gmbuell.el")
@@ -76,6 +76,16 @@ If Emacs has already finished initialization, also eval FORM immediately."
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    (quote
-    ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))))
+    ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default)))
+ '(frame-background-mode (quote light))
+ '(package-selected-packages
+   (quote
+    (xterm-color wand imenu-list color-theme-solarized unicode-fonts ereader sql-indent exec-path-from-shell json-mode emmet-mode web-beautify js2-refactor js2-mode js-doc company-tern tern sauron web-mode wgrep volatile-highlights use-package stickyfunc-enhance smex smartscan smartparens smart-mode-line rainbow-delimiters protobuf-mode perspective pcomplete-extension pcmpl-pip pcmpl-git ov ob-http multiple-cursors multifiles multi-term markdown-mode magit jabber iedit ido-ubiquitous hydra highlight-symbol helm-ls-git helm-descbinds gotham-theme golden-ratio go-errcheck go-eldoc git-gutter framemove flycheck-ycmd flx-ido expand-region esh-buf-stack elfeed discover-my-major deft company-ycmd company-statistics company-go coffee-mode clang-format back-button auto-yasnippet anzu ace-window ace-jump-mode))))
 
 (provide 'init)
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )

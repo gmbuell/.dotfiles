@@ -100,8 +100,8 @@
   :ensure t
   :init
   (setq-default save-place t)
-  (setq x-select-enable-clipboard t
-        x-select-enable-primary t
+  (setq select-enable-clipboard t
+        select-enable-primary t
         save-interprogram-paste-before-kill t
         apropos-do-all t
         mouse-yank-at-point t
@@ -292,7 +292,10 @@ On error (read-only), quit without selecting."
 (use-package golden-ratio
   :ensure t
   :init
-  (golden-ratio-mode 1))
+  (golden-ratio-mode 1)
+  (add-to-list 'golden-ratio-exclude-modes "ediff-mode")
+  (add-to-list 'golden-ratio-exclude-modes "imenu-list-major-mode")
+  (add-to-list 'golden-ratio-exclude-modes "magit-status-mode"))
 
 ;; for eshell
 (use-package pcomplete-extension
@@ -320,7 +323,11 @@ directory to make multiple eshell windows easier."
   ;; Add pcomplete to company-capf
   (defun add-pcomplete-to-capf ()
     (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
-  (add-hook 'eshell-mode-hook #'add-pcomplete-to-capf)
+  ;; This can make commands painful. Ex. ls brings up a long list of ls.+
+  ;; (add-hook 'eshell-mode-hook #'add-pcomplete-to-capf)
+  (add-hook 'eshell-mode-hook
+            (lambda ()
+              (setq xterm-color-preserve-properties t)))
   :config
   (require 'em-smart)
   (setq eshell-where-to-jump 'begin
@@ -328,13 +335,18 @@ directory to make multiple eshell windows easier."
         eshell-smart-space-goes-to-end t
         eshell-buffer-shorthand t
         pcomplete-ignore-case t
-        eshell-save-history-on-exit t)
+        eshell-save-history-on-exit t
+        eshell-hist-ignoredups t)
+  (setenv "TERM" "xterm-256color")
   (setenv "EDITOR" "emacsclient")
   (setenv "VISUAL" "emacsclient")
   (setenv "GOPATH" (concat (getenv "HOME") "/go"))
   (setenv "PATH" (concat (getenv "PATH") ":" (getenv "GOPATH") "/bin"))
   (setenv "PATH" (concat (getenv "PATH") ":" (getenv "HOME") "/gsutil"))
+  (setenv "PAGER" "cat")
   (add-to-list 'exec-path (concat (getenv "GOPATH") "/bin"))
+  (add-to-list 'eshell-preoutput-filter-functions 'xterm-color-filter)
+  (setq eshell-output-filter-functions (remove 'eshell-handle-ansi-color eshell-output-filter-functions))
   (defun delete-single-window (&optional window)
     "Remove WINDOW from the display.  Default is `selected-window'.
 If WINDOW is the only one in its frame, then `delete-frame' too."
@@ -347,7 +359,9 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
           (delete-frame)
         (delete-window (selected-window)))))
   (defun eshell/x ()
-    (delete-single-window)))
+    (delete-single-window))
+  (defun eshell/d (&rest args)
+    (dired (pop args) ".")))
 
 ;; Re-use eshell
 ;; (defun af-eshell-here ()
@@ -362,6 +376,7 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
 ;;     (eshell-kill-input)
 ;;     (eshell-send-input)))
 
+;; Helm support for eshell
 (add-hook 'eshell-mode-hook
           (lambda ()
             (eshell-cmpl-initialize)
@@ -370,7 +385,7 @@ If WINDOW is the only one in its frame, then `delete-frame' too."
 
 (use-package esh-buf-stack
   :ensure t
-  :config
+  :init
   (setup-eshell-buf-stack)
   (add-hook 'eshell-mode-hook
             (lambda ()
@@ -601,17 +616,20 @@ that uses 'font-lock-warning-face'."
 (use-package company-ycmd
   :ensure t
   :init
+  ;; This should put ycmd at the front.
   (company-ycmd-setup)
   ;; 'company-clang' isn't needed with company-ycmd.
-  (delq 'company-clang company-backends))
+  ;; (delq 'company-clang company-backends))
+  )
 
 (use-package flycheck-ycmd
   :ensure t
   :init
   (flycheck-ycmd-setup)
   :config
-  (setq-default flycheck-disabled-checkers
-                '(c/c++-gcc c/c++-clang c/c++-cppcheck)))
+  ;; (setq-default flycheck-disabled-checkers
+  ;; '(c/c++-gcc c/c++-clang c/c++-cppcheck))
+  )
 
 ;; Git integration
 ;; -------------------------------------------------------------------
@@ -646,12 +664,18 @@ that uses 'font-lock-warning-face'."
    multi-term-program-switches "--login"
    multi-term-dedicated-skip-other-window-p t))
 
-(use-package ansi-color
+(use-package xterm-color
   :ensure t
   :init
-  (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
-  (setq comint-scroll-to-bottom-on-input t)
-  (setq comint-prompt-read-only t))
+  (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter)
+  (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions)))
+
+;; (use-package ansi-color
+;;   :ensure t
+;;   :init
+;;   (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on))
+(setq comint-prompt-read-only t)
+(setq comint-scroll-to-bottom-on-input t)
 
 ;; Sets up Shift + arrow keys for moving between frames and windows.
 ;; This is particularly useful for multi-monitor setups.
@@ -673,7 +697,7 @@ that uses 'font-lock-warning-face'."
     (when (not (file-exists-p deft-directory))
       (make-directory deft-directory t)))
   (setq deft-text-mode 'org-mode)
-  (setq deft-extension "org")
+  (setq deft-use-filter-string-for-filename t)
   (setq deft-use-filename-as-title t))
 
 ;; eww browsing inside emacs. Much better than w3m!
@@ -971,10 +995,17 @@ that uses 'font-lock-warning-face'."
 ;; ttf-dejavu
 ;; Only load the theme if we are in a graphical display.
 (when (display-graphic-p)
-  (use-package gotham-theme
+  ;; (use-package gotham-theme
+  ;;   :ensure t
+  ;;   :init
+  ;;   (load-theme 'gotham t))
+  (use-package color-theme
+    :ensure t)
+  (use-package color-theme-solarized
     :ensure t
     :init
-    (load-theme 'gotham t))
+    (customize-set-variable 'frame-background-mode 'light)
+    (load-theme 'solarized t))
   (set-frame-font "Inconsolata 12" t t))
 
 
@@ -1001,12 +1032,10 @@ that uses 'font-lock-warning-face'."
 ;; go get -u golang.org/x/tools/cmd/goimports
 ;; go get -u sourcegraph.com/sqs/goreturns
 ;; go get -u github.com/rogpeppe/godef
-;; go get -u golang.org/x/tools/cmd/oracle
 ;; go get -u golang.org/x/tools/cmd/gorename
 ;; go get -u github.com/golang/lint/golint
-(add-to-list 'load-path (concat (getenv "GOPATH")  "/src/github.com/golang/lint/misc/emacs"))
+(load-file (concat (getenv "GOPATH")  "/src/github.com/golang/lint/misc/emacs/golint.el"))
 (require 'golint)
-(load-file (concat (getenv "GOPATH") "/src/golang.org/x/tools/cmd/oracle/oracle.el"))
 
 (use-package go-flycheck
   :load-path (lambda () (concat (getenv "GOPATH") "/src/github.com/dougm/goflymake")))
@@ -1018,7 +1047,8 @@ that uses 'font-lock-warning-face'."
   :init
   (add-hook 'go-mode-hook (lambda ()
                             ;; Might not need company-go with ycmd
-                            (set (make-local-variable 'company-backends) '(company-go company-ycmd))
+                            ;; (set (make-local-variable 'company-backends) '(company-go company-ycmd))
+                            (set (make-local-variable 'company-backends) '(company-go))
                             (company-mode)
                             (flycheck-mode))))
 
@@ -1225,9 +1255,6 @@ that uses 'font-lock-warning-face'."
 (use-package protobuf-mode
   :ensure t)
 
-(use-package flycheck-protobuf
-  :ensure t)
-
 ;; Show/Hide images in eww
 (defvar-local endless/display-images t)
 
@@ -1277,7 +1304,8 @@ buffer."
   :init
   (add-hook 'web-mode-hook
             (lambda ()
-              (web-mode-set-content-type "jsx")
+              ;; This is good for react but bad for normal html.
+              ;; (web-mode-set-content-type "jsx")
               (emmet-mode)))
   :config
   (setq web-mode-code-indent-offset 2)
@@ -1318,7 +1346,6 @@ buffer."
   :ensure t)
 (use-package web-beautify
   :ensure t)
-;; (web-mode-set-content-type "jsx")
 (use-package emmet-mode
   :ensure t
   :config
@@ -1329,7 +1356,10 @@ buffer."
 ;; This would set $PATH correctly!
 ;; Start it with (exec-path-from-shell-initialize)
 (use-package exec-path-from-shell
-  :ensure t)
+  :ensure t
+  :init
+  (when (memq window-system '(mac ns))
+    (exec-path-from-shell-initialize)))
 
 ;; Cider has cool overlay code.
 ;; (use-package cider
@@ -1360,13 +1390,13 @@ buffer."
 ;;                  (end-of-defun)
 ;;                  (point)))))
 
-(use-package undo-tree
-  :ensure t
-  :init
-  (global-undo-tree-mode)
-  (global-set-key (kbd "C-z") 'undo)
-  (defalias 'redo 'undo-tree-redo)
-  (global-set-key (kbd "C-S-z") 'redo))
+;; (use-package undo-tree
+;;   :ensure t
+;;   :init
+;;   (global-undo-tree-mode)
+;;   (global-set-key (kbd "C-z") 'undo)
+;;   (defalias 'redo 'undo-tree-redo)
+;;   (global-set-key (kbd "C-S-z") 'redo))
 
 (defalias 'sql-get-login 'ignore)
 (defun my-sql-save-history-hook ()
@@ -1418,6 +1448,27 @@ buffer."
 ;;   (setq mmm-parse-when-idle 't))
 
 (add-to-list 'org-src-lang-modes '("dremel" . sql))
+
+;; beancount
+(use-package beancount :load-path "~/beancount/src/elisp"
+  :init
+  (add-to-list 'auto-mode-alist '("\\.beancount\\'" . beancount-mode)))
+
+(use-package ereader
+  :ensure t)
+
+(use-package unicode-fonts
+  :ensure t
+  :init
+  (unicode-fonts-setup))
+
+(use-package imenu-list
+  :ensure t
+  ;; :init
+  ;; (imenu-list-minor-mode))
+
+(use-package wand
+  :ensure t)
 
 (server-start)
 
