@@ -1,10 +1,15 @@
+;; Don't load site default
+(setq inhibit-default-init t)
+;; Also need to start emacs with --no-site-file because that happens before this
+;; init.
+
 (setq gc-cons-threshold 100000000)
 (require 'package)
 (add-to-list 'package-archives (cons "melpa" "https://melpa.org/packages/") t)
 (add-to-list 'package-archives
              '("org" . "http://orgmode.org/elpa/") t)
 (package-initialize)
-(package-refresh-contents)
+;; (package-refresh-contents)
 
 ;; Bootstrap 'use-package'.
 (unless (package-installed-p 'use-package)
@@ -14,13 +19,21 @@
 ;; Always load newest byte code
 (setq load-prefer-newer t)
 
-(require 'use-package)
-(setq use-package-verbose t)
+(eval-when-compile
+  (require 'use-package)
+  (setq use-package-verbose t))
+(use-package diminish
+  :ensure t)
+(use-package bind-key
+  :ensure t)
+
 (use-package auto-package-update
   :ensure t
   :config
-  ;;  Delete residual old versions
+  ;;  Delete residual old versions.
   (setq auto-package-update-delete-old-versions t)
+  ;; Update every week.
+  (setq auto-package-update-interval 7)
   ;; Do not bother me when updates have taken place.
   (setq auto-package-update-hide-results t)
   ;;Update installed packages at startup if there is an update pending.
@@ -29,30 +42,15 @@
 ;; Add quelpa for an additional way of adding packages
 (use-package quelpa
   :ensure t
-  :init
-  (setq quelpa-upgrade-p t))
+  :config
+  ;;(setq quelpa-upgrade-p t)
+  (setq quelpa-upgrade-interval 7)
+  :init (quelpa-upgrade-all-maybe))
 (quelpa
  '(quelpa-use-package
    :fetcher git
    :url "https://github.com/quelpa/quelpa-use-package.git"))
 (require 'quelpa-use-package)
-
-;; (eval-when-compile
-;;   (require 'use-package))
-(use-package diminish
-  :ensure t)
-(use-package bind-key
-  :ensure t)
-
-;; Disable graphical garbage
-(when (and (fboundp 'tool-bar-mode) (not (eq tool-bar-mode -1)))
-  (tool-bar-mode -1))
-(when (and (fboundp 'menu-bar-mode) (not (eq menu-bar-mode -1)))
-  (menu-bar-mode -1))
-(when (and (fboundp 'scroll-bar-mode) (not (eq scroll-bar-mode -1)))
-   (scroll-bar-mode -1))
-(when (and (fboundp 'tooltip-mode) (not (eq tooltip-mode -1)))
-  (tooltip-mode -1))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -64,7 +62,7 @@
     ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default)))
  '(package-selected-packages
    (quote
-    (wgrep region-bindings-mode mosey ivy-hydra flycheck-inline breadcrumb fold-this phi-replace phi-search flycheck-eglot shell-pop ycmd-next-error company-quickhelp dired-x dired uniquify dumb-jump pretty-hydra posframe hydra-posframe quelpa-use-package quelpa clipetty nov ivy-xref ycmd-eldoc monky edit-server multifiles discover-my-major help-fns+ golden-ratio beginend flycheck-golangci-lint godoctor company-go rainbow-delimiters easy-kill eglot which-key use-package term-projectile stickyfunc-enhance srefactor smex smartscan smartparens smart-mode-line protobuf-mode origami multiple-cursors magit js2-mode highlight-symbol headlong google-c-style go-errcheck go-eldoc git-gutter ghub function-args flycheck-ycmd find-file-in-project expand-region eterm-256color diminish deft counsel-projectile company-ycmd company-statistics color-theme-solarized base16-theme avy auto-yasnippet)))
+    (aio nov discover-my-major beginend dumb-jump breadcrumb pretty-hydra origami eterm-256color flycheck-golangci-lint godoctor go-eldoc company-go flycheck-ycmd ycmd protobuf-mode rainbow-delimiters easy-kill auto-yasnippet multifiles phi-search fold-this region-bindings-mode multiple-cursors ivy-xref eglot google-c-style flycheck-inline function-args company-quickhelp counsel-projectile find-file-in-project projectile avy expand-region headlong smartscan base16-theme smart-mode-line mosey smartparens deft highlight-symbol monky vc-defer vc-hgcmd magit git-gutter counsel swiper ivy-hydra ivy flx smex clipetty quelpa-use-package quelpa auto-package-update use-package zenburn-theme yasnippet-snippets yaml-mode which-key undo-tree tabbar session rust-mode puppet-mode pod-mode muttrc-mode mutt-alias lv lsp-ui initsplit ido-completing-read+ htmlize graphviz-dot-mode goto-chg gitignore-mode gitconfig-mode gitattributes-mode git-modes folding ess eproject diminish csv-mode company-lsp browse-kill-ring boxquote bm bar-cursor apache-mode)))
  '(sp-override-key-bindings
    (quote
     (("C-<right>" . sp-slurp-hybrid-sexp)
@@ -76,19 +74,30 @@
  ;; If there is more than one, they won't work right.
  )
 
+;; Disable graphical garbage
+(when (and (fboundp 'tool-bar-mode) (not (eq tool-bar-mode -1)))
+  (tool-bar-mode -1))
+(when (and (fboundp 'menu-bar-mode) (not (eq menu-bar-mode -1)))
+  (menu-bar-mode -1))
+(when (and (fboundp 'scroll-bar-mode) (not (eq scroll-bar-mode -1)))
+   (scroll-bar-mode -1))
+(when (and (fboundp 'tooltip-mode) (not (eq tooltip-mode -1)))
+  (tooltip-mode -1))
+
 ;; ---------------------------------------------------------------------------
 ;; Navigation
 ;; ---------------------------------------------------------------------------
 ;; Auto refresh
-;; Global auto revert seems to hang things?
-;; (global-auto-revert-mode 1)
-(global-auto-revert-mode -1)
-;; (add-hook 'prog-mode-hook
-;;           (lambda ()
-;;             (auto-revert-mode 1)))
+;; Global auto revert might hang things?
+(global-auto-revert-mode 1)
+;; (global-auto-revert-mode -1)
 (add-to-list 'global-auto-revert-ignore-modes 'Buffer-menu-mode)
+(setq auto-revert-check-vc-info t)
+;; Slow down auto revert.
+(setq auto-revert-interval 10)
 
 (use-package dired
+  :commands dired
   :config
   ;; Make dired "guess" target directory for some operations, like copy to
   ;; directory visited in other split buffer.
@@ -96,7 +105,13 @@
   ;; Also auto refresh dired, but be quiet about it
   (setq global-auto-revert-non-file-buffers t
         auto-revert-verbose nil)
-  (require 'dired-x)
+  ;; Simplify listing
+  (add-hook 'dired-mode-hook 'dired-hide-details-mode))
+
+(use-package dired-x
+  :after (dired)
+  :commands dired-jump
+  :config
   (setq dired-omit-mode t))
 
 ;; Regexp for useful and useless buffers for smarter buffer switching
@@ -152,9 +167,6 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'python-mode (font-lock-width-keyword 80))
 (font-lock-add-keywords 'ess-mode (font-lock-width-keyword 80))
 
-;; persistent abbreviation file
-(setq abbrev-file-name (concat user-emacs-directory "abbrev_defs"))
-
 ;; Save clipboard contents into kill-ring before replace them
 (setq save-interprogram-paste-before-kill t)
 
@@ -207,23 +219,28 @@ that uses 'font-lock-warning-face'."
 
 (setq inhibit-startup-message t)
 (setq inhibit-splash-screen t)
-(require 'bookmark)
+
+;; Now onto packages
+;; ====================================================
+
+(use-package bookmark)
 
 ;; (setq whitespace-style '(face trailing lines-tail tabs)
 ;;       whitespace-line-column 80
 ;;       save-place-file (concat user-emacs-directory "places"))
 
 ;; Smex is for smart completion of M-x commands.
+;; Note: Currently using counsel-M-x instead.
 (use-package smex
   :ensure t
   ;; :bind  (("M-x" . smex)
   ;;         ("M-X" . smex-major-mode-commands))
+  :config
+  (setq-default smex-history-length 32
+                smex-save-file (concat user-emacs-directory
+                                       ".smex-items"))
   :init
-  (progn
-    (setq-default smex-history-length 32
-                  smex-save-file (concat user-emacs-directory
-                                         ".smex-items"))
-    (smex-initialize)))
+  (smex-initialize))
 
 ;; Enable virtual buffers
 (recentf-mode 1)
@@ -240,28 +257,30 @@ that uses 'font-lock-warning-face'."
 (use-package ivy
   :ensure t
   :diminish ivy-mode
-  :bind (("C-c C-r" . ivy-resume))
-  :init (progn
-          (ivy-mode 1)
-          (setq ivy-extra-directories nil)
-          (setq ivy-use-virtual-buffers t)
-          (setq enable-recursive-minibuffers t)
-          ;; FYI, M-r will disable fuzzy matching for a single search.
-          ;; I've used ivy--regex-fuzzy in the past but it's a disaster too many places.
-          (setq ivy-re-builders-alist
-                '((counsel-M-x . ivy--regex-fuzzy)
-                  (counsel-find-file . ivy--regex-fuzzy)
-                  (ivy-switch-buffer . ivy--regex-fuzzy)
-                  (counsel-git . ivy--regex-fuzzy)
-                  (t . ivy--regex-plus)))
-          ;; Get rid of initial ^ to make everything fuzzy.
-          (setq ivy-initial-inputs-alist nil)
-          ;; This solves the long standing issue of e.g. creating a file or a directory
-          ;; foo when a file foobar already exists. Previously, the only solution was to
-          ;; use C-M-j. It's still available, but now you can also select your input with
-          ;; C-p and press RET.
-          (setq ivy-use-selectable-prompt t)
-          ))
+  :bind (("C-c C-r" . ivy-resume)
+         :map ivy-minibuffer-map
+         ("C-m" . ivy-alt-done))
+  :config
+  (setq ivy-extra-directories nil)
+  (setq ivy-use-virtual-buffers t)
+  (setq enable-recursive-minibuffers t)
+  ;; FYI, M-r will disable fuzzy matching for a single search.
+  ;; I've used ivy--regex-fuzzy in the past but it's a disaster too many places.
+  (setq ivy-re-builders-alist
+        '((counsel-M-x . ivy--regex-fuzzy)
+          (counsel-find-file . ivy--regex-fuzzy)
+          (ivy-switch-buffer . ivy--regex-fuzzy)
+          (counsel-git . ivy--regex-fuzzy)
+          (t . ivy--regex-plus)))
+  ;; Get rid of initial ^ to make everything fuzzy.
+  (setq ivy-initial-inputs-alist nil)
+  ;; This solves the long standing issue of e.g. creating a file or a directory
+  ;; foo when a file foobar already exists. Previously, the only solution was to
+  ;; use C-M-j. It's still available, but now you can also select your input with
+  ;; C-p and press RET.
+  (setq ivy-use-selectable-prompt t)
+  :init
+  (ivy-mode 1))
 
 (use-package ivy-hydra
   :after (ivy)
@@ -283,14 +302,11 @@ that uses 'font-lock-warning-face'."
   :diminish counsel-mode
   :bind (;; ("M-i" . counsel-semantic-or-imenu)
          ;; Using function-args instead.
-         ("C-c h" . counsel-git))
+         ("C-c h" . counsel-git)
+         :map minibuffer-local-map
+         ("C-r" . counsel-minibuffer-history))
   :init
-  (counsel-mode 1)
-  ;; :bind (("M-x" . counsel-M-x)
-  ;;        ("C-x C-f" . counsel-find-file)
-  ;;        :map minibuffer-local-map
-  ;;        ("C-r" . counsel-minibuffer-history))
-  )
+  (counsel-mode 1))
 
 ;; Lets try using ripgrep (rg) for everything
 (setq counsel-git-cmd "rg --files -0")
@@ -344,22 +360,80 @@ Git gutter:
 (use-package magit
   :ensure t
   :bind ("C-c g" . magit-status)
-  :init
-  ;; (global-auto-revert-mode)
+  :config
   (setq auto-revert-check-vc-info t)
   (setq vc-follow-symlinks t))
+
+;; smerge-mode instead of ediff
+(use-package smerge-mode
+  :after hydra
+  :config
+  (defhydra unpackaged/smerge-hydra
+    (:color pink :hint nil :post (smerge-auto-leave))
+    "
+^Move^       ^Keep^               ^Diff^                 ^Other^
+^^-----------^^-------------------^^---------------------^^-------
+_n_ext       _b_ase               _<_: upper/base        _C_ombine
+_p_rev       _u_pper              _=_: upper/lower       _r_esolve
+^^           _l_ower              _>_: base/lower        _k_ill current
+^^           _a_ll                _R_efine
+^^           _RET_: current       _E_diff
+"
+    ("n" smerge-next)
+    ("p" smerge-prev)
+    ("b" smerge-keep-base)
+    ("u" smerge-keep-upper)
+    ("l" smerge-keep-lower)
+    ("a" smerge-keep-all)
+    ("RET" smerge-keep-current)
+    ("\C-m" smerge-keep-current)
+    ("<" smerge-diff-base-upper)
+    ("=" smerge-diff-upper-lower)
+    (">" smerge-diff-base-lower)
+    ("R" smerge-refine)
+    ("E" smerge-ediff)
+    ("C" smerge-combine-with-next)
+    ("r" smerge-resolve)
+    ("k" smerge-kill-current)
+    ("ZZ" (lambda ()
+            (interactive)
+            (save-buffer)
+            (bury-buffer))
+     "Save and bury buffer" :color blue)
+    ("q" nil "cancel" :color blue))
+  :hook (magit-diff-visit-file . (lambda ()
+                                   (when smerge-mode
+                                     (unpackaged/smerge-hydra/body)))))
+
+;; Hg/Fig setup
+;; Use chg instead of hg since it's faster.
+(setq vc-hg-program "chg")
+(use-package vc-hgcmd
+  :ensure t)
+
+;; Tell emacs not to try and do anything fancy with version control besides git
+;; or hg.
+(setq vc-handled-backends '(Git Hgcmd))
+(use-package vc-defer
+  :quelpa (vc-defer :fetcher git :url
+                         "https://github.com/google/vc-defer")
+  :config
+  (add-to-list 'vc-defer-backends 'Git)
+  (add-to-list 'vc-defer-backends 'Hgcmd)
+  ;; Maybe should have?
+  ;; (add-to-list 'vc-defer-backends 'Hg)
+  (vc-defer-mode))
 
 (use-package monky
   :ensure t
   ;; :bind ("C-c g" . monky-status)
-  :init
+  :config
   ;; By default monky spawns a seperate hg process for every command.
   ;; This will be slow if the repo contains lot of changes.
   ;; if `monky-process-type' is set to cmdserver then monky will spawn a single
   ;; cmdserver and communicate over pipe.
   ;; Available only on mercurial versions 1.9 or higher
-  ;;(setq monky-process-type 'cmdserver)
-  )
+  (setq monky-process-type 'cmdserver))
 
 ;; Replace all the search keys with regex versions.
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
@@ -372,8 +446,7 @@ Git gutter:
 
 (use-package saveplace
   :ensure t
-  :init
-  (save-place-mode +1)
+  :config
   (setq select-enable-clipboard t
         select-enable-primary t
         save-interprogram-paste-before-kill t
@@ -381,7 +454,9 @@ Git gutter:
         mouse-yank-at-point t
         save-place-file (concat user-emacs-directory "places")
         backup-directory-alist `(("." . ,(concat user-emacs-directory
-                                                "backups")))))
+                                                 "backups"))))
+  :init
+  (save-place-mode +1))
 
 ;; From http://steckerhalter.co.vu/steckemacs.html
 ;; Make isearch-forward put the cursor at the start of the search, not the end.
@@ -391,12 +466,14 @@ Git gutter:
 
 (use-package highlight-symbol
   :ensure t
-  :init
-  (add-hook 'prog-mode-hook #'highlight-symbol-mode)
   :config
-  (setq highlight-symbol-on-navigation-p t))
+  (setq highlight-symbol-on-navigation-p t)
+  :init
+  (add-hook 'prog-mode-hook #'highlight-symbol-mode))
 
-(add-hook 'prog-mode (lambda () (add-hook 'before-save-hook 'delete-trailing-whitespace t)))
+;; (add-hook 'prog-mode (lambda () (add-hook 'before-save-hook 'delete-trailing-whitespace t)))
+;; Actually, just always do this
+(add-hook 'before-save-hook 'delete-trailing-whitespace t)
 
 (set-default 'imenu-auto-rescan t)
 ;; Teach imenu to recognize TEST_F
@@ -408,32 +485,44 @@ Git gutter:
                '(("Class" "^\\(template[        ]*<[^>]+>[      ]*\\)?\\(class\\|struct\\)[     ]+\\([[:alnum:]_]+\\(<[^>]+>\\)?\\)\\([         \n]\\|\\\\\n\\)*[:{]" 3)
                  ("Test" "^ *TEST\\(?:_F\\)?([^,]+,\n? *\\(.+\\)) {$" 1))))))
 
-(use-package stickyfunc-enhance
-  :after (semantic)
-  :ensure t
+;; Semantic causes hangs in google3
+;; (use-package stickyfunc-enhance
+;;   :after (semantic)
+;;   :ensure t
+;;   :init
+;;   (add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
+;;   ;;(add-hook 'prog-mode-hook #'semantic-mode))
+;;  )
+
+;; Try which-func mode instead
+(use-package which-func
   :init
-  (add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
-  ;;(add-hook 'prog-mode-hook #'semantic-mode))
- )
+  (which-function-mode)
+  (setq-default header-line-format
+                '((which-func-mode ("" which-func-format " "))))
+  (setq mode-line-misc-info
+        ;; We remove Which Function Mode from the mode line, because it's mostly
+        ;; invisible here anyway.
+        (assq-delete-all 'which-func-mode mode-line-misc-info)))
 
 ;; (use-package cedet)
 
-(use-package semantic
-  :init
-  ;; select which submodes we want to activate
-;;  (add-to-list 'semantic-default-submodes 'global-semantic-mru-bookmark-mode)
-;;  (add-to-list 'semantic-default-submodes 'global-semanticdb-minor-mode)
-;;  (add-to-list 'semantic-default-submodes 'global-semantic-idle-scheduler-mode)
-  ;;(add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
-;;  (add-to-list 'semantic-default-submodes 'global-cedet-m3-minor-mode)
-;;  (add-to-list 'semantic-default-submodes 'global-semantic-highlight-func-mode)
-  ;; Activate semantic
-;;  (semantic-mode 1)
-;;  (semanticdb-enable-gnu-global-databases 'c-mode t)
-;;  (semanticdb-enable-gnu-global-databases 'c++-mode t)
-;;  (when (cedet-ectag-version-check t)
-;;    (semantic-load-enable-primary-ectags-support))
-)
+;; (use-package semantic
+;;   :init
+;;   ;; select which submodes we want to activate
+;; ;;  (add-to-list 'semantic-default-submodes 'global-semantic-mru-bookmark-mode)
+;; ;;  (add-to-list 'semantic-default-submodes 'global-semanticdb-minor-mode)
+;; ;;  (add-to-list 'semantic-default-submodes 'global-semantic-idle-scheduler-mode)
+;;   ;;(add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
+;; ;;  (add-to-list 'semantic-default-submodes 'global-cedet-m3-minor-mode)
+;; ;;  (add-to-list 'semantic-default-submodes 'global-semantic-highlight-func-mode)
+;;   ;; Activate semantic
+;; ;;  (semantic-mode 1)
+;; ;;  (semanticdb-enable-gnu-global-databases 'c-mode t)
+;; ;;  (semanticdb-enable-gnu-global-databases 'c++-mode t)
+;; ;;  (when (cedet-ectag-version-check t)
+;; ;;    (semantic-load-enable-primary-ectags-support))
+;; )
 
 ;; srefactor-refactor-at-point
 ;; (use-package srefactor
@@ -449,7 +538,7 @@ Git gutter:
 ;; http://jblevins.org/projects/deft/
 (use-package deft
   :ensure t
-  :init
+  :config
   (progn
     ;; Set the deft directory to Dropbox/notes if it exists.
     (when (file-exists-p "~/Dropbox")
@@ -481,8 +570,8 @@ Git gutter:
 
 (use-package which-key
   :ensure t
-  :config
-  (which-key-mode +1))
+  :init
+  (which-key-mode))
 
 (use-package smartparens-config
   :ensure smartparens
@@ -513,6 +602,7 @@ Git gutter:
   (global-set-key (kbd "<deletechar>") 'backward-kill-word))
 
 ;; Look at https://github.com/Fuco1/smartparens/issues/209 for ideas for other ways to use smartparns for movement.
+;; Also consider using goal column?
 (use-package mosey
   :ensure t
   :init
@@ -525,9 +615,7 @@ Git gutter:
               end-of-line)
     :prefix "c")
   :bind* (("C-a" . mosey-backward-bounce)
-         ("C-e" . mosey-forward-bounce)
-         )
-  )
+          ("C-e" . mosey-forward-bounce)))
 
 ;; smart-mode-line
 ;; https://github.com/Bruce-Connor/smart-mode-line
@@ -564,6 +652,10 @@ Git gutter:
 ;; spacemacs
 ;; railscasts
 ;; chalk
+
+(defadvice custom-theme-load-confirm (around no-query-safe-thme activate)
+  t)
+
 (use-package base16-theme
   ;; :if window-system
   :ensure t
@@ -580,12 +672,16 @@ Git gutter:
 (use-package yasnippet
   :ensure t
   :diminish yas-minor-mode
+  :config
+  (setq yas-triggers-in-field t)
   :init
-  (yas-global-mode 1)
-  (setq yas-triggers-in-field t))
+  (yas-global-mode 1))
 
+;; persistent abbreviation file
+(setq abbrev-file-name (concat user-emacs-directory "abbrev_defs"))
 ;; Disable abbrev-mode
 (setq-default abbrev-mode -1)
+;; Make sure it stays disabled
 (add-hook 'prog-mode-hook
           (lambda ()
             (abbrev-mode -1)))
@@ -608,9 +704,6 @@ Git gutter:
 ;;      ;;(dremel . t)
 ;;      )))
 
-;; Faster tramp startup
-;;(setq tramp-default-method "ssh")
-
 
 ;; M-n and M-p move between symbols
 ;; M-' to replace all symbols in the buffer matching the one under point
@@ -629,14 +722,6 @@ Git gutter:
   :ensure t
   :defer t)
 
-(defadvice custom-theme-load-confirm (around no-query-safe-thme activate)
-  t)
-
-(use-package dired
-  :commands dired)
-(use-package dired-x
-  :commands dired-jump)
-
 (use-package expand-region
   :ensure t
   :bind (("C-=" . er/expand-region)))
@@ -647,21 +732,22 @@ Git gutter:
          ("C-c SPC" . avy-goto-word-1)
          ;;("C-c C-j" . avy-resume)
          )
-  :init (progn
-          (avy-setup-default)
-          (setq avy-style 'at)
-          (setq avy-background t)
-          (setq avy-keys (number-sequence ?a ?z))))
+  :init
+  (avy-setup-default)
+  (setq avy-style 'at)
+  (setq avy-background t)
+  (setq avy-keys (number-sequence ?a ?z)))
 
 ;; Project managment
 ;; Also look into bufler for this
 ;; https://github.com/alphapapa/bufler.el#compared-to-ibuffer
 (use-package projectile
   :ensure t
-  :init (progn
-          (projectile-global-mode)
-          (setq projectile-indexing-method 'alien)
-          (setq projectile-completion-system 'ivy)))
+  :config
+  (setq projectile-indexing-method 'alien)
+  (setq projectile-completion-system 'ivy)
+  :init
+  (projectile-global-mode))
 (setq projectile-git-command "fd . -t f -0")
 (setq projectile-generic-command "fd . -t f -0")
 (use-package find-file-in-project
@@ -688,7 +774,7 @@ Git gutter:
 
 (projectile-register-project-type 'google3 '("WORKSPACE"))
 
-(refresh-projectile)
+(add-hook 'after-init-hook 'refresh-projectile)
 
 (defvar company-mode/enable-yas t
   "Enable yasnippet for all backends.")
@@ -718,12 +804,12 @@ In that case, insert the number."
 (use-package company
   :ensure t
   ;;:bind ([remap indent-for-tab-command] . company-indent-or-complete-common)
-  :bind (:map prog-mode-map
-         ("TAB" . company-indent-or-complete-common))
+  :bind* (:map prog-mode-map
+               ("TAB" . company-indent-or-complete-common))
   :init
   (global-company-mode)
   (setq company-tooltip-limit 9)                      ; bigger popup window
-  (setq company-idle-delay .5)                         ; decrease delay before autocompletion popup shows
+  (setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
   (setq company-echo-delay 0)                          ; remove annoying blinking
   (setq company-require-match nil)                     ;  Allow exiting the completion
   (setq company-show-numbers t)
@@ -741,10 +827,6 @@ In that case, insert the number."
                           (company-abort)
                           (self-insert-command 1)))
     (define-key map (kbd "<return>") nil))
-  ;; (setq company-backends
-  ;;       (quote
-  ;;        ((company-ycmd company-capf) company-semantic company-files
-  ;;         (company-dabbrev-code company-gtags company-etags))))
   ;; If completing on . or -> is too aggressive:
   ;; (setq company-begin-commands '(self-insert-command))
   ;; Remove company-clang since we don't use it.
@@ -758,11 +840,12 @@ In that case, insert the number."
   :ensure t
   :init (add-hook 'after-init-hook 'company-quickhelp-mode))
 
-(use-package company-statistics
-  :after (company)
-  :ensure t
-  :init
-  (company-statistics-mode))
+;; This might be crap. The backends might already give good completion ordering.
+;; (use-package company-statistics
+;;   :after (company)
+;;   :ensure t
+;;   :init
+;;   (company-statistics-mode))
 
 ;; C++
 (use-package function-args
@@ -772,13 +855,13 @@ In that case, insert the number."
   (fa-config-default)
   (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
   (set-default 'semantic-case-fold t)
-  ;; (semantic-add-system-include "/google/src/components/head/google3" 'c++-mode)
   )
-;; 
+;;
 
 (use-package flycheck
   :ensure t
-  :init (global-flycheck-mode))
+  :init
+  (global-flycheck-mode))
 
 (defhydra hydra-flycheck
     (:pre (flycheck-list-errors)
@@ -811,14 +894,22 @@ In that case, insert the number."
   :after (company yasnippet)
   :ensure t
   :init
-  (add-hook 'prog-mode-hook 'eglot-ensure)
+  (add-hook 'c-mode-hook 'eglot-ensure)
+  (add-hook 'c++-mode-hook 'eglot-ensure)
+  (add-hook 'go-mode-hook 'eglot-ensure)
+  (add-hook 'python-mode-hook 'eglot-ensure)
+  (add-hook 'protobuf-mode-hook 'eglot-ensure)
   :config
   (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
+  (add-hook 'eglot--managed-mode-hook (lambda () (flymake-mode -1)))
   ;; kythe is deprecated but it works on unsubmitted code.
   (add-to-list
    'eglot-server-programs
    '((c++-mode c-mode java-mode python-mode protobuf-mode)
-     . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3"))))
+     . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3")))
+  ;; If we have an index.idx file, use clangd
+  (if (file-exists-p "/usr/local/google/home/gmbuell/index.idx")
+      (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-index-file=/usr/local/google/home/gmbuell/index.idx")))))
 
 (use-package ivy-xref
   :after (ivy)
@@ -849,7 +940,16 @@ In that case, insert the number."
          ("C-S-c C-S-c" . mc/edit-lines)
          ("C->" . mc/mark-next-like-this)
          ("C-<" . mc/mark-previous-like-this)
-         ("C-c C-<" . mc/mark-all-symbols-like-this-in-defun)))
+         ("C-c C-<" . mc/mark-all-symbols-like-this-in-defun))
+  ;; Alternative bindings because hterm sucks at passing through keys
+  :bind* (
+          ("M-m e" . mc/edit-lines)
+          ("M-m n" . mc/mark-next-like-this)
+          ("M-m p" . mc/mark-previous-like-this)
+          ("M-m a" . mc/mark-all-symbols-like-this-in-defun)
+          ("M-m A" . mc/mark-all-symbols-like-this)
+          ("M-m h" . mc-hide-unmatched-lines-mode)
+          ))
 
 (use-package region-bindings-mode
   :after (multiple-cursors)
@@ -872,21 +972,14 @@ In that case, insert the number."
   :bind (
          ("C-c C-f" . fold-active-region-all)))
 
-;; phi search works with multiple cursors
-;; But has weird behavior around trying to move while in a search
+;; phi search works with multiple cursors But has weird behavior around trying
+;; to move while in a search. Fortunately, multiple cursors mode seems to use it
+;; automatically even if not set as default.
 (use-package phi-search
   :ensure t)
 (use-package phi-replace
   ;; Doesn't have it's own package.
   :after (phi-search))
-;;   :bind (
-;;          ("C-s" . phi-search)
-;;          ("C-r" . phi-search-backward)))
-;; (use-package phi-replace
-;;   ;; Doesn't have it's own package.
-;;   :after (phi-search)
-;;   :bind (
-;;          ("M-%" . phi-replace-query)))
 
 (use-package multifiles
   :ensure t
@@ -912,20 +1005,13 @@ In that case, insert the number."
 (use-package protobuf-mode
   :ensure t)
 
-(use-package google-borg-helpers :load-path "/usr/share/emacs/site-lisp/emacs-google-config/third_party/elisp/google_borg_helpers/")
-(use-package borg-mode :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/")
-
-;; (use-package google3-eglot :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/"
-;;   :after (eglot company)
-;;   :init
-;;   (google3-eglot-setup))
-
-;; (use-package google-kythe :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/kythe"
-;;   :after (eglot))
-;; (use-package google-lsp :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/"
-;;   :after (eglot company)
-;;   :init
-;;   (google-lsp-init))
+(if (file-exists-p "/usr/share/emacs/site-lisp/emacs-google-config")
+    (progn
+      (use-package google-borg-helpers :load-path "/usr/share/emacs/site-lisp/emacs-google-config/third_party/elisp/google_borg_helpers/")
+      ;; Needed by borg-mode
+      (use-package aio
+        :ensure t)
+      (use-package borg-mode :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/")))
 
 ;; My custom hacked CiderLSP support
 ;; (add-to-list
@@ -944,15 +1030,13 @@ In that case, insert the number."
           "/usr/lib/youcompleteme/third_party/ycmd/ycmd"))
   (add-to-list 'ycmd-extra-conf-whitelist "/usr/lib/youcompleteme/ycm_extra_conf.py")
   (setq ycmd-startup-timeout 20000)
-  ;; (setq ycmd-idle-change-delay 0.5)
-  (setq company-minimum-prefix-length 2))
+  )
 
 (use-package company-ycmd
   :load-path "/usr/local/google/home/gmbuell/.emacs.d/lisp/"
   :after (ycmd company)
-  ;; :ensure t
   :init
-  (company-ycmd-setup))
+  (add-to-list 'company-backends 'company-ycmd))
 
 (use-package flycheck-ycmd
   :after (ycmd flycheck)
@@ -964,7 +1048,8 @@ In that case, insert the number."
   :load-path "/usr/local/google/home/gmbuell/.emacs.d/lisp/"
   :after (eglot flycheck)
   :init
-  (add-to-list 'eglot-stay-out-of 'company))
+  ;; (add-to-list 'eglot-stay-out-of 'company)
+  )
 
 ;; This appears to make the minibuffer very busy
 ;; (use-package ycmd-eldoc
@@ -972,9 +1057,9 @@ In that case, insert the number."
 ;;   :init (add-hook 'ycmd-mode-hook 'ycmd-eldoc-setup))
 
 (use-package ycmd-next-error
-  :after (ycmd))
-
-(defhydra hydra-next-error
+  :after (ycmd)
+  :init
+  (defhydra hydra-next-error
   (global-map "C-x")
   "
 Compilation errors:
@@ -990,16 +1075,7 @@ _k_: previous error    _l_: last error
              (next-error))
          (user-error nil))
    nil :bind nil)
-  ("q" nil            nil :color blue))
-
-
-;; (use-package p4
-;;   :ensure t)
-;; (use-package p4-google :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/")
-;; (use-package citc :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/")
-;; (use-package google3-build-capf :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/"
-;;   :init
-;;   (google3-build-capf-enable-completions))
+  ("q" nil            nil :color blue)))
 
 (setq auto-mode-alist
       (nconc
@@ -1143,9 +1219,9 @@ No association with rules for now.")
       1 'font-lock-function-name-face)))
   (google3-build-mode-setup-imenu))
 
-(setenv "GOPATH" "/usr/local/google/home/gmbuell/go")
-(setenv "PATH" (concat (getenv "PATH") ":" "/usr/local/google/home/gmbuell/go/bin"))
-(setq exec-path (append exec-path (list (expand-file-name "/usr/local/google/home/gmbuell/go/bin"))))
+(setenv "GOPATH" (concat (getenv "HOME") "/go"))
+(setenv "PATH" (concat (getenv "PATH") ":" (getenv "HOME") "/go/bin"))
+(setq exec-path (append exec-path (list (expand-file-name (concat (getenv "HOME") "/go/bin")))))
 
 ;; Golang
 (use-package company-go
@@ -1172,7 +1248,6 @@ No association with rules for now.")
   :ensure t
   :init
   :hook (go-mode . flycheck-golangci-lint-setup))
-
 
 ;; Shell setup
 (use-package eterm-256color
@@ -1253,23 +1328,24 @@ No association with rules for now.")
 (use-package origami
   :ensure t
   :bind (("C-c <tab>" . origami-forward-toggle-node))
-  :config (global-origami-mode))
-(use-package hydra
-  :ensure t
-  :bind (("C-c r" . hydra-pause-resume)))
-(defhydra hydra-origami (:color red)
-  "
+  :config (global-origami-mode)
+  :init
+  (defhydra hydra-origami (:color red)
+    "
   _o_pen node    _n_ext fold       toggle _f_orward
   _c_lose node   _p_revious fold   toggle _a_ll
   "
-  ("o" origami-open-node)
-  ("c" origami-close-node)
-  ("n" origami-next-fold)
-  ("p" origami-previous-fold)
-  ("f" origami-forward-toggle-node)
-  ("a" origami-toggle-all-nodes))
+    ("o" origami-open-node)
+    ("c" origami-close-node)
+    ("n" origami-next-fold)
+    ("p" origami-previous-fold)
+    ("f" origami-forward-toggle-node)
+    ("a" origami-toggle-all-nodes)))
+(use-package hydra
+  :ensure t
+  :bind (("C-c r" . hydra-pause-resume)))
 
-;; Show hydras overlyaed in the middle of the frame
+;; Show hydras overlayed in the middle of the frame
 (use-package hydra-posframe
   ;; Only enable if we are running graphical mode.
   :if window-system
@@ -1322,9 +1398,9 @@ Breadcrumb bookmarks:
          ("M-g z" . dumb-jump-go-prefer-external-other-window))
   :config
   (setq dumb-jump-selector 'ivy)
-  (setq dumb-jump-force-searcher 'rg))
-
-(defhydra dumb-jump-hydra (:color blue :columns 3)
+  (setq dumb-jump-force-searcher 'rg)
+  :init
+  (defhydra dumb-jump-hydra (:color blue :columns 3)
     "Dumb Jump"
     ("j" dumb-jump-go "Go")
     ("o" dumb-jump-go-other-window "Other window")
@@ -1332,8 +1408,7 @@ Breadcrumb bookmarks:
     ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
     ("i" dumb-jump-go-prompt "Prompt")
     ("l" dumb-jump-quick-look "Quick look")
-    ("b" dumb-jump-back "Back"))
-
+    ("b" dumb-jump-back "Back")))
 
 (defun modi/multi-pop-to-mark (orig-fun &rest args)
   "Call ORIG-FUN until the cursor moves.
@@ -1371,10 +1446,8 @@ Try the repeated popping up to 10 times."
 ;;   ;;(setq golden-ratio-auto-scale t)
 ;;   )
 
-(use-package which-key
-  :ensure t
-  :init
-  (which-key-mode))
+;; Make .sh files executable upon save.
+(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
 (use-package help-fns+
   :bind ("C-h M-k" . describe-keymap)) ; For autoloading.
@@ -1392,3 +1465,4 @@ Try the repeated popping up to 10 times."
 
 (require 'server)
 (unless (server-running-p) (server-start))
+(setenv "EDITOR" "emacsclient")
