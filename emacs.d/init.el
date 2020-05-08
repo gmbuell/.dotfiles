@@ -9,11 +9,11 @@
 (add-to-list 'package-archives
              '("org" . "http://orgmode.org/elpa/") t)
 (package-initialize)
-;; (package-refresh-contents)
+(package-refresh-contents)
 
 ;; Bootstrap 'use-package'.
 (unless (package-installed-p 'use-package)
-  (package-refresh-contents)
+  ;; (package-refresh-contents)
   (package-install 'use-package))
 
 ;; Always load newest byte code
@@ -58,15 +58,12 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   (quote
-    ("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default)))
+   '("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(package-selected-packages
-   (quote
-    (aio nov discover-my-major beginend dumb-jump breadcrumb pretty-hydra origami eterm-256color flycheck-golangci-lint godoctor go-eldoc company-go flycheck-ycmd ycmd protobuf-mode rainbow-delimiters easy-kill auto-yasnippet multifiles phi-search fold-this region-bindings-mode multiple-cursors ivy-xref eglot google-c-style flycheck-inline function-args company-quickhelp counsel-projectile find-file-in-project projectile avy expand-region headlong smartscan base16-theme smart-mode-line mosey smartparens deft highlight-symbol monky vc-defer vc-hgcmd magit git-gutter counsel swiper ivy-hydra ivy flx smex clipetty quelpa-use-package quelpa auto-package-update use-package zenburn-theme yasnippet-snippets yaml-mode which-key undo-tree tabbar session rust-mode puppet-mode pod-mode muttrc-mode mutt-alias lv lsp-ui initsplit ido-completing-read+ htmlize graphviz-dot-mode goto-chg gitignore-mode gitconfig-mode gitattributes-mode git-modes folding ess eproject diminish csv-mode company-lsp browse-kill-ring boxquote bm bar-cursor apache-mode)))
+   '(link-hint modern-cpp-font-lock markdown-mode markdown nov discover-my-major beginend dumb-jump breadcrumb pretty-hydra origami eterm-256color godoctor go-eldoc company-go ycmd aio protobuf-mode rainbow-delimiters easy-kill auto-yasnippet multifiles phi-search fold-this region-bindings-mode multiple-cursors ivy-xref eglot google-c-style function-args company-quickhelp company f counsel-projectile find-file-in-project projectile avy expand-region headlong smartscan yasnippet base16-theme smart-mode-line mosey smartparens which-key deft highlight-symbol monky vc-defer vc-hgcmd magit git-gutter counsel swiper ivy-hydra ivy flx smex hydra clipetty quelpa-use-package quelpa auto-package-update diminish use-package))
  '(sp-override-key-bindings
-   (quote
-    (("C-<right>" . sp-slurp-hybrid-sexp)
-     ("C-<left>" . sp-dedent-adjust-sexp)))))
+   '(("C-<right>" . sp-slurp-hybrid-sexp)
+     ("C-<left>" . sp-dedent-adjust-sexp))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -147,7 +144,7 @@
 
 ;; use only spaces and no tabs
 (setq-default indent-tabs-mode nil
-              tab-width 4)
+              tab-width 2)
 (set-default 'indicate-empty-lines t)
 
 ;; Text
@@ -166,6 +163,28 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'java-mode (font-lock-width-keyword 100))
 (font-lock-add-keywords 'python-mode (font-lock-width-keyword 80))
 (font-lock-add-keywords 'ess-mode (font-lock-width-keyword 80))
+
+;; C++ style
+;; Not sure if we want google-c-style enabled or not. It's old emacs.
+;; (use-package google-c-style
+;;   :ensure t
+;;   :init (progn
+;;           (add-hook 'c-mode-common-hook 'google-set-c-style)
+;;           (add-hook 'c-mode-common-hook 'google-make-newline-indent)))
+(use-package cc-mode
+  :ensure t)
+
+;; Headers are c++, not c
+(add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
+
+;; Stop indenting in namespaces
+(c-set-offset 'innamespace 0)
+
+;; Get syntax hilighting for modern c++
+(use-package modern-cpp-font-lock
+  :ensure t
+  :init (modern-c++-font-lock-global-mode t))
+
 
 ;; Save clipboard contents into kill-ring before replace them
 (setq save-interprogram-paste-before-kill t)
@@ -223,24 +242,14 @@ that uses 'font-lock-warning-face'."
 ;; Now onto packages
 ;; ====================================================
 
-(use-package bookmark)
+;; Load hydra early since I've got defhydras scattered throughout.
+(use-package hydra
+  :ensure t
+  :bind (("C-c r" . hydra-pause-resume)))
 
 ;; (setq whitespace-style '(face trailing lines-tail tabs)
 ;;       whitespace-line-column 80
 ;;       save-place-file (concat user-emacs-directory "places"))
-
-;; Smex is for smart completion of M-x commands.
-;; Note: Currently using counsel-M-x instead.
-(use-package smex
-  :ensure t
-  ;; :bind  (("M-x" . smex)
-  ;;         ("M-X" . smex-major-mode-commands))
-  :config
-  (setq-default smex-history-length 32
-                smex-save-file (concat user-emacs-directory
-                                       ".smex-items"))
-  :init
-  (smex-initialize))
 
 ;; Enable virtual buffers
 (recentf-mode 1)
@@ -283,7 +292,7 @@ that uses 'font-lock-warning-face'."
   (ivy-mode 1))
 
 (use-package ivy-hydra
-  :after (ivy)
+  :after (ivy hydra)
   :ensure t)
 
 ;; Consider also occur mode
@@ -300,8 +309,7 @@ that uses 'font-lock-warning-face'."
 (use-package counsel
   :ensure t
   :diminish counsel-mode
-  :bind (;; ("M-i" . counsel-semantic-or-imenu)
-         ;; Using function-args instead.
+  :bind (("M-i" . counsel-semantic-or-imenu)
          ("C-c h" . counsel-git)
          :map minibuffer-local-map
          ("C-r" . counsel-minibuffer-history))
@@ -364,6 +372,14 @@ Git gutter:
   (setq auto-revert-check-vc-info t)
   (setq vc-follow-symlinks t))
 
+(defun my/google3-early-exit (orig-fun &rest args)
+  (if (string-prefix-p "/google/src/cloud/" (buffer-file-name))
+      (progn (message "my/google3-early-exit overrode.") nil)
+    (apply orig-fun args)))
+
+(advice-add 'magit-toplevel :around #'my/google3-early-exit)
+(advice-add 'magit-inside-worktree-p :around #'my/google3-early-exit)
+
 ;; smerge-mode instead of ediff
 (use-package smerge-mode
   :after hydra
@@ -414,15 +430,17 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; Tell emacs not to try and do anything fancy with version control besides git
 ;; or hg.
 (setq vc-handled-backends '(Git Hgcmd))
-(use-package vc-defer
-  :quelpa (vc-defer :fetcher git :url
-                         "https://github.com/google/vc-defer")
-  :config
-  (add-to-list 'vc-defer-backends 'Git)
-  (add-to-list 'vc-defer-backends 'Hgcmd)
-  ;; Maybe should have?
-  ;; (add-to-list 'vc-defer-backends 'Hg)
-  (vc-defer-mode))
+;; (use-package vc-defer
+;;   :quelpa (vc-defer :fetcher git :url
+;;                          "https://github.com/google/vc-defer")
+;;   :config
+;;   (add-to-list 'vc-defer-backends 'Git)
+;;   (add-to-list 'vc-defer-backends 'Hgcmd)
+;;   ;; Maybe should have?
+;;   ;; (add-to-list 'vc-defer-backends 'Hg)
+;;   (vc-defer-mode)
+;;   :init
+;;   (advice-add 'vc-root-dir :around 'vc-defer--deduce-fileset-around))
 
 (use-package monky
   :ensure t
@@ -485,54 +503,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                '(("Class" "^\\(template[        ]*<[^>]+>[      ]*\\)?\\(class\\|struct\\)[     ]+\\([[:alnum:]_]+\\(<[^>]+>\\)?\\)\\([         \n]\\|\\\\\n\\)*[:{]" 3)
                  ("Test" "^ *TEST\\(?:_F\\)?([^,]+,\n? *\\(.+\\)) {$" 1))))))
 
-;; Semantic causes hangs in google3
-;; (use-package stickyfunc-enhance
-;;   :after (semantic)
-;;   :ensure t
-;;   :init
-;;   (add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
-;;   ;;(add-hook 'prog-mode-hook #'semantic-mode))
-;;  )
-
-;; Try which-func mode instead
 (use-package which-func
+  :diminish which-func-mode
   :init
   (which-function-mode)
   (setq-default header-line-format
-                '((which-func-mode ("" which-func-format " "))))
-  (setq mode-line-misc-info
-        ;; We remove Which Function Mode from the mode line, because it's mostly
-        ;; invisible here anyway.
-        (assq-delete-all 'which-func-mode mode-line-misc-info)))
+                '((which-func-mode ("" which-func-format " ")))))
 
-;; (use-package cedet)
-
-;; (use-package semantic
-;;   :init
-;;   ;; select which submodes we want to activate
-;; ;;  (add-to-list 'semantic-default-submodes 'global-semantic-mru-bookmark-mode)
-;; ;;  (add-to-list 'semantic-default-submodes 'global-semanticdb-minor-mode)
-;; ;;  (add-to-list 'semantic-default-submodes 'global-semantic-idle-scheduler-mode)
-;;   ;;(add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
-;; ;;  (add-to-list 'semantic-default-submodes 'global-cedet-m3-minor-mode)
-;; ;;  (add-to-list 'semantic-default-submodes 'global-semantic-highlight-func-mode)
-;;   ;; Activate semantic
-;; ;;  (semantic-mode 1)
-;; ;;  (semanticdb-enable-gnu-global-databases 'c-mode t)
-;; ;;  (semanticdb-enable-gnu-global-databases 'c++-mode t)
-;; ;;  (when (cedet-ectag-version-check t)
-;; ;;    (semantic-load-enable-primary-ectags-support))
-;; )
-
-;; srefactor-refactor-at-point
-;; (use-package srefactor
-;;   :after (semantic)
-;;   :ensure t
-;;   :bind (:map c-mode-map
-;;               ("M-RET" . srefactor-refactor-at-point)
-;;               :map c++-mode-map
-;;               ("M-RET" . srefactor-refactor-at-point)
-;;               ))
+(use-package markdown-mode
+  :ensure t)
 
 ;; Deft is my preferred note-taking setup. See:
 ;; http://jblevins.org/projects/deft/
@@ -564,9 +543,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
              (indent-for-tab-command))
     (progn (sp-kill-hybrid-sexp arg)
            (indent-for-tab-command))))
-
-(use-package cc-mode
-  :ensure t)
 
 (use-package which-key
   :ensure t
@@ -653,7 +629,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; railscasts
 ;; chalk
 
-(defadvice custom-theme-load-confirm (around no-query-safe-thme activate)
+(defadvice custom-theme-load-confirm (around no-query-safe-theme activate)
   t)
 
 (use-package base16-theme
@@ -728,8 +704,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package avy
   :ensure t
-  :bind (("C-:" . avy-goto-word-1)
-         ("C-c SPC" . avy-goto-word-1)
+  :bind (("C-c SPC" . avy-goto-word-1)
          ;;("C-c C-j" . avy-resume)
          )
   :init
@@ -799,8 +774,6 @@ In that case, insert the number."
         (self-insert-command 1)
       (company-complete-number (string-to-number k)))))
 
-
-
 (use-package company
   :ensure t
   ;;:bind ([remap indent-for-tab-command] . company-indent-or-complete-common)
@@ -809,14 +782,12 @@ In that case, insert the number."
   :init
   (global-company-mode)
   (setq company-tooltip-limit 9)                      ; bigger popup window
-  (setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
-  (setq company-echo-delay 0)                          ; remove annoying blinking
+  (setq company-idle-delay .2)                         ; decrease delay before autocompletion popup shows
+  (setq company-minimum-prefix-length 2)
+  (setq company-echo-delay (if (display-graphic-p) nil 0))  ; Maybe this should just be always 0?
   (setq company-require-match nil)                     ;  Allow exiting the completion
   (setq company-show-numbers t)
-  (setq company-backends
-        (quote
-         ((company-ycmd company-capf)
-          company-dabbrev-code)))
+  (setq company-backends '(company-capf))
   (let ((map company-active-map))
     (mapc
      (lambda (x)
@@ -830,15 +801,16 @@ In that case, insert the number."
   ;; If completing on . or -> is too aggressive:
   ;; (setq company-begin-commands '(self-insert-command))
   ;; Remove company-clang since we don't use it.
-  ;;(delq 'company-clang company-backends)
-  ;; dabbrev is probably evil when there are reasonable completion methods setup.
-  ;;(delq 'company-dabbrev company-backends)
   )
 (setq tab-always-indent 'complete)
 
-(use-package company-quickhelp
-  :ensure t
-  :init (add-hook 'after-init-hook 'company-quickhelp-mode))
+;; Doesn't work in terminal mode. For documentation popups on idle.
+;; (use-package pos-tip
+;;   :ensure t)
+;; (use-package company-quickhelp
+;;   :after (pos-tip)
+;;   :ensure t
+;;   :init (add-hook 'after-init-hook 'company-quickhelp-mode))
 
 ;; This might be crap. The backends might already give good completion ordering.
 ;; (use-package company-statistics
@@ -847,48 +819,35 @@ In that case, insert the number."
 ;;   :init
 ;;   (company-statistics-mode))
 
-;; C++
-(use-package function-args
-  :ensure t
-  :bind (("M-i" . moo-jump-local))
-  :init
-  (fa-config-default)
-  (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
-  (set-default 'semantic-case-fold t)
-  )
-;;
+;; Trying to embrace the eglot way and go full flymake
+;; (use-package flycheck
+;;   :ensure t
+;;   :init
+;;   (global-flycheck-mode))
 
-(use-package flycheck
-  :ensure t
-  :init
-  (global-flycheck-mode))
+;; (defhydra hydra-flycheck
+;;     (:pre (flycheck-list-errors)
+;;      :post (quit-windows-on "*Flycheck errors*")
+;;      :hint nil)
+;;   "Errors"
+;;   ("f" flycheck-error-list-set-filter "Filter")
+;;   ("j" flycheck-next-error "Next")
+;;   ("k" flycheck-previous-error "Previous")
+;;   ("gg" flycheck-first-error "First")
+;;   ("G" (progn (goto-char (point-max)) (flycheck-previous-error)) "Last")
+;;   ("q" nil))
 
-(defhydra hydra-flycheck
-    (:pre (flycheck-list-errors)
-     :post (quit-windows-on "*Flycheck errors*")
-     :hint nil)
-  "Errors"
-  ("f" flycheck-error-list-set-filter "Filter")
-  ("j" flycheck-next-error "Next")
-  ("k" flycheck-previous-error "Previous")
-  ("gg" flycheck-first-error "First")
-  ("G" (progn (goto-char (point-max)) (flycheck-previous-error)) "Last")
-  ("q" nil))
+;; (use-package flycheck-inline
+;;   :after (flycheck)
+;;   :ensure t
+;;   :init
+;;   (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
 
-(use-package flycheck-inline
-  :after (flycheck)
-  :ensure t
-  :init
-  (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
-
-(use-package google-c-style
-  :ensure t
-  :init (progn
-          (add-hook 'c-mode-common-hook 'google-set-c-style)
-          (add-hook 'c-mode-common-hook 'google-make-newline-indent)))
-
-;; Stop indenting in namespaces
-(c-set-offset 'innamespace 0)
+(use-package flymake
+  :custom
+  (flymake-fringe-indicator-position 'right-fringe)
+  :config
+  (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake))
 
 (use-package eglot
   :after (company yasnippet)
@@ -900,16 +859,14 @@ In that case, insert the number."
   (add-hook 'python-mode-hook 'eglot-ensure)
   (add-hook 'protobuf-mode-hook 'eglot-ensure)
   :config
-  (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
-  (add-hook 'eglot--managed-mode-hook (lambda () (flymake-mode -1)))
   ;; kythe is deprecated but it works on unsubmitted code.
+  ;; But no autocomplete
   (add-to-list
    'eglot-server-programs
-   '((c++-mode c-mode java-mode python-mode protobuf-mode)
+   ;; '((c++-mode c-mode java-mode python-mode protobuf-mode)
+   '((python-mode protobuf-mode)
      . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3")))
-  ;; If we have an index.idx file, use clangd
-  (if (file-exists-p "/usr/local/google/home/gmbuell/index.idx")
-      (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-index-file=/usr/local/google/home/gmbuell/index.idx")))))
+  (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-cross-file-rename"))))
 
 (use-package ivy-xref
   :after (ivy)
@@ -936,11 +893,6 @@ In that case, insert the number."
 ;; Also via swiper https://oremacs.com/2015/10/14/swiper-mc/
 (use-package multiple-cursors
   :ensure t
-  :bind (
-         ("C-S-c C-S-c" . mc/edit-lines)
-         ("C->" . mc/mark-next-like-this)
-         ("C-<" . mc/mark-previous-like-this)
-         ("C-c C-<" . mc/mark-all-symbols-like-this-in-defun))
   ;; Alternative bindings because hterm sucks at passing through keys
   :bind* (
           ("M-m e" . mc/edit-lines)
@@ -951,8 +903,15 @@ In that case, insert the number."
           ("M-m h" . mc-hide-unmatched-lines-mode)
           ))
 
+(use-package multifiles
+  :ensure t
+  :bind ("C-!" . mf/mirror-region-in-multifile))
+
+(use-package fold-this
+  :ensure t)
+
 (use-package region-bindings-mode
-  :after (multiple-cursors)
+  :after (multiple-cursors multifiles fold-this)
   :ensure t
   :bind (:map region-bindings-mode-map
               ("a" . mc/mark-all-like-this)
@@ -963,14 +922,11 @@ In that case, insert the number."
               ("P" . mc/unmark-previous-like-this)
               ("N" . mc/unmark-next-like-this)
               ("u" . er/contract-region)
-              ("h" . mc-hide-unmatched-lines-mode))
+              ("h" . mc-hide-unmatched-lines-mode)
+              ("M" . mf/mirror-region-in-multifile)
+              ("F" . fold-active-region-all))
   :init
   (region-bindings-mode-enable))
-
-(use-package fold-this
-  :ensure t
-  :bind (
-         ("C-c C-f" . fold-active-region-all)))
 
 ;; phi search works with multiple cursors But has weird behavior around trying
 ;; to move while in a search. Fortunately, multiple cursors mode seems to use it
@@ -981,20 +937,16 @@ In that case, insert the number."
   ;; Doesn't have it's own package.
   :after (phi-search))
 
-(use-package multifiles
-  :ensure t
-  :bind ("C-!" . mf/mirror-region-in-multifile))
-
 (use-package auto-yasnippet
   :after (yasnippet)
   :ensure t
   :bind (("M-w" . aya-create)
          ("M-W" . aya-expand)))
 
-(use-package easy-kill
-  :ensure t
-  :config
-  (global-set-key [remap kill-ring-save] 'easy-kill))
+;; Doesn't currently do anything because I've remapped M-w which is usually
+;; kill-ring-save.
+;; (use-package easy-kill :ensure t :config (global-set-key
+;; [remap kill-ring-save] 'easy-kill))
 
 (use-package rainbow-delimiters
   :ensure t
@@ -1019,47 +971,8 @@ In that case, insert the number."
 ;;    '((c++-mode c-mode java-mode python-mode protobuf-mode)
 ;;      . ("/google/bin/releases/editor-devtools/ciderlsp" "--noforward_sync_responses" "--request_options=enable_placeholders" "--tooltag=emacs-eglot")))
 
-(use-package ycmd
-  :ensure t
-  :init
-  (global-ycmd-mode)
-  :config
-  (setq ycmd-global-config "/usr/lib/youcompleteme/ycm_extra_conf.py")
-  (setq ycmd-server-command
-        '("/usr/grte/v4/bin/python2.7"
-          "/usr/lib/youcompleteme/third_party/ycmd/ycmd"))
-  (add-to-list 'ycmd-extra-conf-whitelist "/usr/lib/youcompleteme/ycm_extra_conf.py")
-  (setq ycmd-startup-timeout 20000)
-  )
 
-(use-package company-ycmd
-  :load-path "/usr/local/google/home/gmbuell/.emacs.d/lisp/"
-  :after (ycmd company)
-  :init
-  (add-to-list 'company-backends 'company-ycmd))
-
-(use-package flycheck-ycmd
-  :after (ycmd flycheck)
-  :ensure t
-  :init
-  (flycheck-ycmd-setup))
-
-(use-package flycheck-eglot
-  :load-path "/usr/local/google/home/gmbuell/.emacs.d/lisp/"
-  :after (eglot flycheck)
-  :init
-  ;; (add-to-list 'eglot-stay-out-of 'company)
-  )
-
-;; This appears to make the minibuffer very busy
-;; (use-package ycmd-eldoc
-;;   :after (ycmd eldoc)
-;;   :init (add-hook 'ycmd-mode-hook 'ycmd-eldoc-setup))
-
-(use-package ycmd-next-error
-  :after (ycmd)
-  :init
-  (defhydra hydra-next-error
+(defhydra hydra-next-error
   (global-map "C-x")
   "
 Compilation errors:
@@ -1075,7 +988,7 @@ _k_: previous error    _l_: last error
              (next-error))
          (user-error nil))
    nil :bind nil)
-  ("q" nil            nil :color blue)))
+  ("q" nil            nil :color blue))
 
 (setq auto-mode-alist
       (nconc
@@ -1224,30 +1137,11 @@ No association with rules for now.")
 (setq exec-path (append exec-path (list (expand-file-name (concat (getenv "HOME") "/go/bin")))))
 
 ;; Golang
-(use-package company-go
-  :after (company go-mode)
-  :ensure t)
-
 (use-package go-mode
   :ensure t
   :init
   (add-to-list 'auto-mode-alist '("\\.go\\'" . go-mode))
   )
-
-(use-package go-flycheck :load-path "/usr/local/google/home/gmbuell/go/src/github.com/dougm/goflymake")
-
-(use-package go-eldoc
-  :ensure t
-  :init
-  (add-hook 'go-mode-hook 'go-eldoc-setup))
-
-(use-package godoctor
-  :ensure t)
-
-(use-package flycheck-golangci-lint
-  :ensure t
-  :init
-  :hook (go-mode . flycheck-golangci-lint-setup))
 
 ;; Shell setup
 (use-package eterm-256color
@@ -1296,7 +1190,12 @@ No association with rules for now.")
   :ensure t
   :init
   (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter)
-  (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions)))
+  (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions))
+  (setq compilation-environment '("TERM=xterm-256color"))
+  (defun my/advice-compilation-filter (f proc string)
+    (funcall f proc (xterm-color-filter string)))
+  (advice-add 'compilation-filter :around #'my/advice-compilation-filter))
+
 
 (defun get-buffers-matching-mode (mode)
   "Returns a list of buffers where their major-mode is equal to MODE"
@@ -1323,11 +1222,17 @@ No association with rules for now.")
   (let ((result (caar (last (s-match-strings-all "https?://[^[:space:]\n.]+" (buffer-whole-string (car (get-buffers-matching-mode 'term-mode))))))))
     (kill-new result)
     result))
-(bind-key "C-c l" 'get-last-term-url)
+;; (bind-key "C-c l" 'get-last-term-url)
+;; Instead try link-hint
+(use-package link-hint
+  :ensure t
+  :bind
+  ("C-c l o" . link-hint-open-link)
+  ("C-c l c" . link-hint-copy-link))
 
 (use-package origami
   :ensure t
-  :bind (("C-c <tab>" . origami-forward-toggle-node))
+  :bind (("C-c TAB" . origami-forward-toggle-node))
   :config (global-origami-mode)
   :init
   (defhydra hydra-origami (:color red)
@@ -1341,9 +1246,6 @@ No association with rules for now.")
     ("p" origami-previous-fold)
     ("f" origami-forward-toggle-node)
     ("a" origami-toggle-all-nodes)))
-(use-package hydra
-  :ensure t
-  :bind (("C-c r" . hydra-pause-resume)))
 
 ;; Show hydras overlayed in the middle of the frame
 (use-package hydra-posframe
@@ -1457,6 +1359,10 @@ Try the repeated popping up to 10 times."
   :bind ("C-h C-m" . discover-my-major))
 
 (prefer-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(setq-default buffer-file-coding-system 'utf-8)
 
 (use-package nov
   :ensure t
@@ -1465,4 +1371,4 @@ Try the repeated popping up to 10 times."
 
 (require 'server)
 (unless (server-running-p) (server-start))
-(setenv "EDITOR" "emacsclient")
+(setenv "EDITOR" "TERM=xterm-24bits emacsclient -nw")
