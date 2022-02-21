@@ -3,6 +3,9 @@
 ;; Also need to start emacs with --no-site-file because that happens before this
 ;; init.
 
+(setq comp-deferred-compilation t)
+(setq package-native-compile t)
+
 (setq gc-cons-threshold 100000000)
 (require 'package)
 (add-to-list 'package-archives (cons "melpa" "https://melpa.org/packages/") t)
@@ -10,6 +13,8 @@
              '("org" . "http://orgmode.org/elpa/") t)
 (package-initialize)
 (package-refresh-contents)
+
+(add-to-list 'load-path "~/.emacs.d/lisp/")
 
 ;; Bootstrap 'use-package'.
 (unless (package-installed-p 'use-package)
@@ -27,17 +32,17 @@
 (use-package bind-key
   :ensure t)
 
-(use-package auto-package-update
-  :ensure t
-  :config
-  ;;  Delete residual old versions.
-  (setq auto-package-update-delete-old-versions t)
-  ;; Update every week.
-  (setq auto-package-update-interval 7)
-  ;; Do not bother me when updates have taken place.
-  (setq auto-package-update-hide-results t)
-  ;;Update installed packages at startup if there is an update pending.
-  :init (auto-package-update-maybe))
+;; (use-package auto-package-update
+;;   :ensure t
+;;   :config
+;;   ;;  Delete residual old versions.
+;;   (setq auto-package-update-delete-old-versions t)
+;;   ;; Update every week.
+;;   (setq auto-package-update-interval 7)
+;;   ;; Do not bother me when updates have taken place.
+;;   (setq auto-package-update-hide-results t)
+;;   ;;Update installed packages at startup if there is an update pending.
+;;   :init (auto-package-update-maybe))
 
 ;; Add quelpa for an additional way of adding packages
 (use-package quelpa
@@ -59,11 +64,13 @@
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    '("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
+ '(git-gutter:handled-backends '(git hg bzr svn))
  '(package-selected-packages
-   '(link-hint modern-cpp-font-lock markdown-mode markdown nov discover-my-major beginend dumb-jump breadcrumb pretty-hydra origami eterm-256color godoctor go-eldoc company-go ycmd aio protobuf-mode rainbow-delimiters easy-kill auto-yasnippet multifiles phi-search fold-this region-bindings-mode multiple-cursors ivy-xref eglot google-c-style function-args company-quickhelp company f counsel-projectile find-file-in-project projectile avy expand-region headlong smartscan yasnippet base16-theme smart-mode-line mosey smartparens which-key deft highlight-symbol monky vc-defer vc-hgcmd magit git-gutter counsel swiper ivy-hydra ivy flx smex hydra clipetty quelpa-use-package quelpa auto-package-update diminish use-package))
+   '(company-try-hard tree-sitter tree-sitter-langs cape bash-completion vertico icicles vcomplete elmo mct shelldon iflipb dogears historian amx airline-themes powerline solaire-mode all-the-icons neotree embark-consult embark marginalia orderless ample-theme molokai-theme railscasts-theme alect-themes cyberpunk-theme color-theme-sanityinc-tomorrow ujelly-theme gruvbox-theme monokai-theme monokai bazel company-graphviz-dot graphviz-dot-mode go-mode treemacs-magit treemacs-projectile treemacs winum link-hint modern-cpp-font-lock markdown-mode markdown nov discover-my-major beginend dumb-jump breadcrumb pretty-hydra origami eterm-256color godoctor go-eldoc company-go ycmd aio protobuf-mode rainbow-delimiters easy-kill auto-yasnippet multifiles phi-search fold-this region-bindings-mode multiple-cursors ivy-xref eglot google-c-style function-args company-quickhelp company f counsel-projectile find-file-in-project projectile avy expand-region headlong smartscan yasnippet base16-theme smart-mode-line mosey smartparens which-key deft highlight-symbol monky vc-defer vc-hgcmd magit git-gutter counsel swiper ivy-hydra ivy flx smex hydra clipetty quelpa-use-package quelpa auto-package-update diminish use-package))
  '(sp-override-key-bindings
    '(("C-<right>" . sp-slurp-hybrid-sexp)
-     ("C-<left>" . sp-dedent-adjust-sexp))))
+     ("C-<left>" . sp-dedent-adjust-sexp)))
+ '(warning-suppress-log-types '((comp))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -102,6 +109,8 @@
   ;; Also auto refresh dired, but be quiet about it
   (setq global-auto-revert-non-file-buffers t
         auto-revert-verbose nil)
+  ;; Make dired re-use buffers when pushing RET or ^
+  (setq dired-kill-when-opening-new-dired-buffer t)
   ;; Simplify listing
   (add-hook 'dired-mode-hook 'dired-hide-details-mode))
 
@@ -185,6 +194,14 @@ that uses 'font-lock-warning-face'."
   :ensure t
   :init (modern-c++-font-lock-global-mode t))
 
+(use-package tree-sitter
+  :ensure t
+  :init
+  (global-tree-sitter-mode)
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+(use-package tree-sitter-langs
+  :ensure t)
+
 
 ;; Save clipboard contents into kill-ring before replace them
 (setq save-interprogram-paste-before-kill t)
@@ -245,6 +262,7 @@ that uses 'font-lock-warning-face'."
 ;; Load hydra early since I've got defhydras scattered throughout.
 (use-package hydra
   :ensure t
+  :demand t
   :bind (("C-c r" . hydra-pause-resume)))
 
 ;; (setq whitespace-style '(face trailing lines-tail tabs)
@@ -258,42 +276,42 @@ that uses 'font-lock-warning-face'."
                         ".*png$" ".*cache$"))
 
 ;; For fuzzy searching.
-(use-package flx
-  :ensure t)
+;; (use-package flx
+;;   :ensure t)
 
 ;; Look at these release notes to see other cool ivy stuff
 ;; https://oremacs.com/2016/04/26/ivy-0.8.0/
-(use-package ivy
-  :ensure t
-  :diminish ivy-mode
-  :bind (("C-c C-r" . ivy-resume)
-         :map ivy-minibuffer-map
-         ("C-m" . ivy-alt-done))
-  :config
-  (setq ivy-extra-directories nil)
-  (setq ivy-use-virtual-buffers t)
-  (setq enable-recursive-minibuffers t)
-  ;; FYI, M-r will disable fuzzy matching for a single search.
-  ;; I've used ivy--regex-fuzzy in the past but it's a disaster too many places.
-  (setq ivy-re-builders-alist
-        '((counsel-M-x . ivy--regex-fuzzy)
-          (counsel-find-file . ivy--regex-fuzzy)
-          (ivy-switch-buffer . ivy--regex-fuzzy)
-          (counsel-git . ivy--regex-fuzzy)
-          (t . ivy--regex-plus)))
-  ;; Get rid of initial ^ to make everything fuzzy.
-  (setq ivy-initial-inputs-alist nil)
-  ;; This solves the long standing issue of e.g. creating a file or a directory
-  ;; foo when a file foobar already exists. Previously, the only solution was to
-  ;; use C-M-j. It's still available, but now you can also select your input with
-  ;; C-p and press RET.
-  (setq ivy-use-selectable-prompt t)
-  :init
-  (ivy-mode 1))
+;; (use-package ivy
+;;   :ensure t
+;;   :diminish ivy-mode
+;;   :bind (("C-c C-r" . ivy-resume)
+;;          :map ivy-minibuffer-map
+;;          ("C-m" . ivy-alt-done))
+;;   :config
+;;   (setq ivy-extra-directories nil)
+;;   (setq ivy-use-virtual-buffers t)
+;;   (setq enable-recursive-minibuffers t)
+;;   ;; FYI, M-r will disable fuzzy matching for a single search.
+;;   ;; I've used ivy--regex-fuzzy in the past but it's a disaster too many places.
+;;   (setq ivy-re-builders-alist
+;;         '((counsel-M-x . ivy--regex-fuzzy)
+;;           (counsel-find-file . ivy--regex-fuzzy)
+;;           (ivy-switch-buffer . ivy--regex-fuzzy)
+;;           (counsel-git . ivy--regex-fuzzy)
+;;           (t . ivy--regex-plus)))
+;;   ;; Get rid of initial ^ to make everything fuzzy.
+;;   (setq ivy-initial-inputs-alist nil)
+;;   ;; This solves the long standing issue of e.g. creating a file or a directory
+;;   ;; foo when a file foobar already exists. Previously, the only solution was to
+;;   ;; use C-M-j. It's still available, but now you can also select your input with
+;;   ;; C-p and press RET.
+;;   (setq ivy-use-selectable-prompt t)
+;;   :init
+;;   (ivy-mode 1))
 
-(use-package ivy-hydra
-  :after (ivy hydra)
-  :ensure t)
+;; (use-package ivy-hydra
+;;   :after (ivy hydra)
+;;   :ensure t)
 
 ;; Consider also occur mode
 ;; https://github.com/sawan/emacs-config/blob/013af97a03e5dd7493d50f35c9c4724fa7de88f5/emacs24.el#L477-L483
@@ -301,38 +319,41 @@ that uses 'font-lock-warning-face'."
 ;; https://oremacs.com/2015/01/26/occur-dwim/
 ;; https://github.com/abo-abo/hydra/wiki/Emacs
 
-(use-package swiper
-  :ensure t
-  ;; :bind (("C-s" . counsel-grep-or-swiper))
-  ;; :bind (("C-s" . swiper-isearch))
-  )
-(use-package counsel
-  :ensure t
-  :diminish counsel-mode
-  :bind (("M-i" . counsel-semantic-or-imenu)
-         ("C-c h" . counsel-git)
-         :map minibuffer-local-map
-         ("C-r" . counsel-minibuffer-history))
-  :init
-  (counsel-mode 1))
+;; (use-package swiper
+;;   :ensure t
+;;   ;; :bind (("C-s" . counsel-grep-or-swiper))
+;;   ;; :bind (("C-s" . swiper-isearch))
+;;   )
+;; (use-package counsel
+;;   :ensure t
+;;   :diminish counsel-mode
+;;   :bind (("M-i" . counsel-semantic-or-imenu)
+;;          ;; ("C-c h" . counsel-git)
+;;          :map minibuffer-local-map
+;;          ("C-r" . counsel-minibuffer-history))
+;;   :init
+;;   (counsel-mode 1))
 
 ;; Lets try using ripgrep (rg) for everything
-(setq counsel-git-cmd "rg --files -0")
-(setq counsel-rg-base-command
-      "rg -i -M 120 --no-heading --line-number --color never %s .")
-(setq counsel-grep-base-command
-      "rg -i -M 120 --no-heading --line-number --color never %s .")
+;; (setq counsel-git-cmd "rg --files -0")
+;; (setq counsel-rg-base-command
+;;       "rg -i -M 120 --no-heading --line-number --color never %s .")
+;; (setq counsel-grep-base-command
+;;       "rg -i -M 120 --no-heading --line-number --color never %s .")
 ;; I've also seen this command recommended. Not sure if it works.
 ;; (setq counsel-grep-base-command
 ;;     "rg -i -M 120 --no-heading --line-number --color never %s %s")
 
 ;; Git integration
 ;; -------------------------------------------------------------------
-;; Shows git diff information in the gutter.
+;; Shows git (and hg!) diff information in the gutter.
 (use-package git-gutter
   :ensure t
   :init
-  (global-git-gutter-mode t))
+  (global-git-gutter-mode t)
+  :config
+  (custom-set-variables
+   '(git-gutter:handled-backends '(git hg bzr svn))))
 
 (defhydra hydra-git-gutter (:body-pre (git-gutter-mode 1)
                             :hint nil)
@@ -382,7 +403,7 @@ Git gutter:
 
 ;; smerge-mode instead of ediff
 (use-package smerge-mode
-  :after hydra
+  :requires hydra
   :config
   (defhydra unpackaged/smerge-hydra
     (:color pink :hint nil :post (smerge-auto-leave))
@@ -424,12 +445,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; Hg/Fig setup
 ;; Use chg instead of hg since it's faster.
 (setq vc-hg-program "chg")
-(use-package vc-hgcmd
-  :ensure t)
 
 ;; Tell emacs not to try and do anything fancy with version control besides git
 ;; or hg.
-(setq vc-handled-backends '(Git Hgcmd))
+(setq vc-handled-backends '(Git Hg))
 ;; (use-package vc-defer
 ;;   :quelpa (vc-defer :fetcher git :url
 ;;                          "https://github.com/google/vc-defer")
@@ -441,17 +460,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;;   (vc-defer-mode)
 ;;   :init
 ;;   (advice-add 'vc-root-dir :around 'vc-defer--deduce-fileset-around))
-
-(use-package monky
-  :ensure t
-  ;; :bind ("C-c g" . monky-status)
-  :config
-  ;; By default monky spawns a seperate hg process for every command.
-  ;; This will be slow if the repo contains lot of changes.
-  ;; if `monky-process-type' is set to cmdserver then monky will spawn a single
-  ;; cmdserver and communicate over pipe.
-  ;; Available only on mercurial versions 1.9 or higher
-  (setq monky-process-type 'cmdserver))
 
 ;; Replace all the search keys with regex versions.
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
@@ -533,6 +541,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (require 'subr-x)
 
+(use-package which-key
+  :ensure t
+  :init
+  (which-key-mode))
+
 ;; Smartparens
 (defun gmbuell-smart-kill-line (arg)
   "If the line is only whitespace or the command is prefixed with C-u,
@@ -543,11 +556,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
              (indent-for-tab-command))
     (progn (sp-kill-hybrid-sexp arg)
            (indent-for-tab-command))))
-
-(use-package which-key
-  :ensure t
-  :init
-  (which-key-mode))
 
 (use-package smartparens-config
   :ensure smartparens
@@ -585,6 +593,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (defmosey '(beginning-of-line
               back-to-indentation
               sp-backward-sexp  ; Moves across lines
+              sp-end-of-sexp    ;; Might be bad
               sp-forward-sexp   ; Moves across lines
               mosey-goto-end-of-code
               mosey-goto-beginning-of-comment-text
@@ -628,16 +637,58 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; spacemacs
 ;; railscasts
 ;; chalk
+;; (use-package ujelly-theme
+;;   :ensure t
+;;   :init
+;;   (load-theme 'ujelly t))
+
+;; (use-package monokai-theme
+;;   :ensure t
+;;   :init
+;;   (load-theme 'monokai t))
+
+;; (use-package all-the-icons
+;;   :ensure t)
+;; (use-package neotree
+;;   :ensure t)
+;; (use-package powerline
+;;   :ensure t)
+;; (use-package airline-themes
+;;   :ensure t)
+
+(use-package doom-themes
+  :ensure t
+  :config
+  ;; Global settings (defaults)
+  (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
+        doom-themes-enable-italic t) ; if nil, italics is universally disabled
+  (load-theme 'doom-molokai t)
+
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+  ;; Enable custom neotree theme (all-the-icons must be installed!)
+  ;; (doom-themes-neotree-config)
+  ;; or for treemacs users
+  ;; (setq doom-themes-treemacs-theme "doom-atom") ; use "doom-colors" for less minimal icon theme
+  ;; (doom-themes-treemacs-config)
+  ;; Corrects (and improves) org-mode's native fontification.
+  (doom-themes-org-config))
+
+;; (use-package solaire-mode
+;;   :ensure t
+;;   :init
+;;   (solaire-global-mode +1))
 
 (defadvice custom-theme-load-confirm (around no-query-safe-theme activate)
   t)
 
-(use-package base16-theme
-  ;; :if window-system
-  :ensure t
-  :init
-  (setq base16-theme-256-color-source 'colors)
-  (load-theme 'base16-monokai t))
+;; (use-package base16-theme
+;;   ;; :if window-system
+;;   :ensure t
+;;   :init
+;;   (setq base16-theme-256-color-source 'colors)
+;;   (load-theme 'base16-monokai t))
+
 (when (display-graphic-p)
   (set-frame-font "Inconsolata 12" t t))
 
@@ -692,15 +743,120 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package uniquify
   :init (setq uniquify-buffer-name-style 'forward))
 
-;; Completion
-;; Exits the minibuffer as soon as there is a unique candidate
-(use-package headlong
-  :ensure t
-  :defer t)
+;; (use-package icomplete
+;;   :init
+;;   (fido-vertical-mode +1)
+;;   :config
+;;   ;; I wish this worked but it doesn't.
+;;   ;; (setq icomplete-in-buffer t)
+;;   (setq icomplete-tidy-shadowed-file-names t)
+;;   (setq icomplete-matches-format nil))
 
-(use-package expand-region
+(use-package vertico
   :ensure t
-  :bind (("C-=" . er/expand-region)))
+  :init
+  (vertico-mode)
+  :config
+  (setq completion-in-region-function
+      (lambda (&rest args)
+        (apply (if vertico-mode
+                   #'consult-completion-in-region
+                 #'completion--in-region)
+               args)))
+  )
+
+;; Completion
+;; headlong might be useful for bookmark jumping
+
+;; Could also try out restricto as an alternative
+;; https://github.com/oantolin/restricto
+(use-package orderless
+  :ensure t
+  :custom (completion-styles '(orderless)))
+  ;; :config
+  ;; Allow space in minibuffer completions
+  ;; (let ((map minibuffer-local-completion-map))
+  ;;   (define-key map (kbd "SPC") nil)))
+
+(defun flex-if-twiddle (pattern _index _total)
+  (when (string-suffix-p "~" pattern)
+    `(orderless-flex . ,(substring pattern 0 -1))))
+
+(defun first-initialism (pattern index _total)
+  (if (= index 0) 'orderless-initialism))
+
+(defun without-if-bang (pattern _index _total)
+  (cond
+   ((equal "!" pattern)
+    '(orderless-literal . ""))
+   ((string-prefix-p "!" pattern)
+    `(orderless-without-literal . ,(substring pattern 1)))))
+
+;; (setq orderless-matching-styles '(orderless-regexp)
+;;       orderless-style-dispatchers '(first-initialism
+;;                                     flex-if-twiddle
+;;                                     without-if-bang))
+
+;; Try savehist for minibuffer history
+(setq history-length 10000)
+(setq history-delete-duplicates t)
+(setq savehist-save-minibuffer-history t)
+(add-hook 'after-init-hook #'savehist-mode)
+
+(use-package embark
+  :ensure t
+  ;; :bind.
+  ;; (("C-." . embark-act)         ;; pick some comfortable binding
+  ;;  ("C-;" . embark-dwim)        ;; good alternative: M-.
+  ;;  ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+
+  :init
+  ;; Optionally replace the key help with a completing-read interface
+  (setq prefix-help-command #'embark-prefix-help-command)
+
+  :config
+  ;; Hide the mode line of the Embark live/completions buffers
+  (add-to-list 'display-buffer-alist
+               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                 nil
+                 (window-parameters (mode-line-format . none)))))
+
+(use-package consult
+  :ensure t
+  :init
+  (setq completion-in-region-function #'consult-completion-in-region))
+
+(defvar consult--source-dogears
+  (list :name     "Dogears"
+        :narrow   ?d
+        :category 'dogears
+        :items    (lambda ()
+                    (mapcar
+                     (lambda (place)
+                       (propertize (dogears--format-record place)
+                                   'consult--candidate place))
+                     dogears-list))
+        :action   (lambda (cand)
+                    (dogears-go (get-text-property 0 'consult--candidate cand)))))
+
+(defun consult-dogears ()
+  (interactive)
+  (consult--multi '(consult--source-dogears)))
+
+;; Consult users will also want the embark-consult package.
+(use-package embark-consult
+  :ensure t
+  :after (embark consult)
+  :demand t ; only necessary if you have the hook below
+  ;; if you want to have consult previews as you move around an
+  ;; auto-updating embark collect buffer
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+
+(use-package marginalia
+  :ensure t
+  :init
+  (marginalia-mode))
 
 (use-package avy
   :ensure t
@@ -718,21 +874,135 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; https://github.com/alphapapa/bufler.el#compared-to-ibuffer
 (use-package projectile
   :ensure t
+  :bind* (("C-c h" . projectile-find-file)
+         ("C-x p b" . projectile-switch-to-buffer)
+         ("C-x p p" . projectile-switch-project))
   :config
   (setq projectile-indexing-method 'alien)
-  (setq projectile-completion-system 'ivy)
+  (setq projectile-git-command "fd . -t f -0")
+  (setq projectile-generic-command "fd . -t f -0")
+  (setq projectile-hg-command "fd . -t f -0")
+  (setq projectile-globally-ignored-buffers spacemacs-useless-buffers-regexp)
+  ;; (setq projectile-completion-system 'ivy)
+  ;; Maybe enable cache for local file system
+  ;; (setq projectile-file-exists-local-cache-expire (* 5 60))
   :init
   (projectile-global-mode))
-(setq projectile-git-command "fd . -t f -0")
-(setq projectile-generic-command "fd . -t f -0")
 (use-package find-file-in-project
   :ensure t
   :commands find-file-in-project)
-(use-package counsel-projectile
-  :after (counsel projectile)
-  :ensure t
-  :init (counsel-projectile-mode)
-  :config (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
+;; (use-package counsel-projectile
+;;   :after (counsel projectile)
+;;   :ensure t
+;;   :init (counsel-projectile-mode)
+;;   :config (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
+
+;; (use-package winum
+;;   :ensure t
+;;   :init
+;;   (setq winum-keymap
+;;         (let ((map (make-sparse-keymap)))
+;;           (define-key map (kbd "C-`") 'winum-select-window-by-number)
+;;           (define-key map (kbd "M-0") 'winum-select-window-0-or-10)
+;;           (define-key map (kbd "M-1") 'winum-select-window-1)
+;;           (define-key map (kbd "M-2") 'winum-select-window-2)
+;;           (define-key map (kbd "M-3") 'winum-select-window-3)
+;;           (define-key map (kbd "M-4") 'winum-select-window-4)
+;;           (define-key map (kbd "M-5") 'winum-select-window-5)
+;;           (define-key map (kbd "M-6") 'winum-select-window-6)
+;;           (define-key map (kbd "M-7") 'winum-select-window-7)
+;;           (define-key map (kbd "M-8") 'winum-select-window-8)
+;;           map))
+;;   (winum-mode)
+;;   :config
+;;   (set-face-attribute 'winum-face nil :weight 'bold)
+;;   (setq window-numbering-scope            'global
+;;         winum-reverse-frame-list          nil
+;;         winum-auto-assign-0-to-minibuffer t
+;;         winum-assign-func                 'my-winum-assign-func
+;;         winum-auto-setup-mode-line        t
+;;         winum-format                      " %s "
+;;         winum-mode-line-position          1
+;;         winum-ignored-buffers             '(" *which-key*")
+;;         winum-ignored-buffers-regexp      '(" \\*Treemacs-.*")))
+
+;; (use-package treemacs
+;;   :ensure t
+;;   :defer t
+;;   :init
+;;   (with-eval-after-load 'winum
+;;     (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+;;   :config
+;;   (progn
+;;     (setq treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
+;;           treemacs-deferred-git-apply-delay      0.5
+;;           treemacs-directory-name-transformer    #'identity
+;;           treemacs-display-in-side-window        t
+;;           treemacs-eldoc-display                 t
+;;           treemacs-file-event-delay              5000
+;;           treemacs-file-extension-regex          treemacs-last-period-regex-value
+;;           treemacs-file-follow-delay             0.2
+;;           treemacs-file-name-transformer         #'identity
+;;           treemacs-follow-after-init             t
+;;           treemacs-git-command-pipe              ""
+;;           treemacs-goto-tag-strategy             'refetch-index
+;;           treemacs-indentation                   2
+;;           treemacs-indentation-string            " "
+;;           treemacs-is-never-other-window         nil
+;;           treemacs-max-git-entries               5000
+;;           treemacs-missing-project-action        'ask
+;;           treemacs-move-forward-on-expand        nil
+;;           treemacs-no-png-images                 nil
+;;           treemacs-no-delete-other-windows       t
+;;           treemacs-project-follow-cleanup        nil
+;;           treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+;;           treemacs-position                      'left
+;;           treemacs-recenter-distance             0.1
+;;           treemacs-recenter-after-file-follow    nil
+;;           treemacs-recenter-after-tag-follow     nil
+;;           treemacs-recenter-after-project-jump   'always
+;;           treemacs-recenter-after-project-expand 'on-distance
+;;           treemacs-show-cursor                   nil
+;;           treemacs-show-hidden-files             t
+;;           treemacs-silent-filewatch              nil
+;;           treemacs-silent-refresh                nil
+;;           treemacs-sorting                       'alphabetic-asc
+;;           treemacs-space-between-root-nodes      t
+;;           treemacs-tag-follow-cleanup            t
+;;           treemacs-tag-follow-delay              1.5
+;;           treemacs-user-mode-line-format         nil
+;;           treemacs-user-header-line-format       nil
+;;           treemacs-width                         35)
+
+;;     ;; The default width and height of the icons is 22 pixels. If you are
+;;     ;; using a Hi-DPI display, uncomment this to double the icon size.
+;;     ;;(treemacs-resize-icons 44)
+
+;;     (treemacs-follow-mode t)
+;;     (treemacs-filewatch-mode t)
+;;     (treemacs-fringe-indicator-mode t)
+;;     (pcase (cons (not (null (executable-find "git")))
+;;                  (not (null treemacs-python-executable)))
+;;       (`(t . t)
+;;        (treemacs-git-mode 'deferred))
+;;       (`(t . _)
+;;        (treemacs-git-mode 'simple))))
+;;   :bind
+;;   (:map global-map
+;;         ("M-0"       . treemacs-select-window)
+;;         ("C-x t 1"   . treemacs-delete-other-windows)
+;;         ("C-x t t"   . treemacs)
+;;         ("C-x t B"   . treemacs-bookmark)
+;;         ("C-x t C-t" . treemacs-find-file)
+;;         ("C-x t M-t" . treemacs-find-tag)))
+
+;; (use-package treemacs-projectile
+;;   :requires treemacs projectile
+;;   :ensure t)
+
+;; (use-package treemacs-magit
+;;   :requires treemacs magit
+;;   :ensure t)
 
 (use-package f
   :ensure t)
@@ -742,25 +1012,25 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   "Reset projectile known projects to citc and git5 clients."
   (projectile-clear-known-projects)
   (mapc #'projectile-add-known-project
-        (f-glob "~/Code/*/google3"))
-  (mapc #'projectile-add-known-project
-        (seq-remove (apply-partially 's-contains? "git5") (f-glob "/google/src/cloud/gmbuell/*/google3")))
+        (f-glob "~/fig/*/google3"))
+  ;;(mapc #'projectile-add-known-project
+  ;;      (seq-remove (apply-partially 's-contains? "git5") (f-glob "/google/src/cloud/gmbuell/*/google3")))
   (projectile-save-known-projects))
 
 (projectile-register-project-type 'google3 '("WORKSPACE"))
 
 (add-hook 'after-init-hook 'refresh-projectile)
 
-(defvar company-mode/enable-yas t
-  "Enable yasnippet for all backends.")
+;; (defvar company-mode/enable-yas t
+;;   "Enable yasnippet for all backends.")
 
-(defun company-mode/backend-with-yas (backend)
-  (if (or (not company-mode/enable-yas) (and (listp backend) (member 'company-yasnippet backend)))
-      backend
-    (append (if (consp backend) backend (list backend))
-            '(:with company-yasnippet))))
+;; (defun company-mode/backend-with-yas (backend)
+;;   (if (or (not company-mode/enable-yas) (and (listp backend) (member 'company-yasnippet backend)))
+;;       backend
+;;     (append (if (consp backend) backend (list backend))
+;;             '(:with company-yasnippet))))
 
-;; Allow company completions by selecting the completion number
+;; ;; Allow company completions by selecting the completion number
 (defun ora-company-number ()
   "Forward to `company-complete-number'.
 
@@ -774,35 +1044,60 @@ In that case, insert the number."
         (self-insert-command 1)
       (company-complete-number (string-to-number k)))))
 
-(use-package company
-  :ensure t
-  ;;:bind ([remap indent-for-tab-command] . company-indent-or-complete-common)
-  :bind* (:map prog-mode-map
-               ("TAB" . company-indent-or-complete-common))
-  :init
-  (global-company-mode)
-  (setq company-tooltip-limit 9)                      ; bigger popup window
-  (setq company-idle-delay .2)                         ; decrease delay before autocompletion popup shows
-  (setq company-minimum-prefix-length 2)
-  (setq company-echo-delay (if (display-graphic-p) nil 0))  ; Maybe this should just be always 0?
-  (setq company-require-match nil)                     ;  Allow exiting the completion
-  (setq company-show-numbers t)
-  (setq company-backends '(company-capf))
-  (let ((map company-active-map))
-    (mapc
-     (lambda (x)
-       (define-key map (format "%d" x) 'ora-company-number))
-     (number-sequence 0 9))
-    (define-key map " " (lambda ()
-                          (interactive)
-                          (company-abort)
-                          (self-insert-command 1)))
-    (define-key map (kbd "<return>") nil))
-  ;; If completing on . or -> is too aggressive:
-  ;; (setq company-begin-commands '(self-insert-command))
-  ;; Remove company-clang since we don't use it.
-  )
+;; (use-package company
+;;   :ensure t
+;;   ;;:bind ([remap indent-for-tab-command] . company-indent-or-complete-common)
+;;   :bind* (:map prog-mode-map
+;;                ("TAB" . company-indent-or-complete-common))
+;;   :init
+;;   (global-company-mode)
+;;   (setq company-tooltip-limit 9)                      ; bigger popup window
+;;   (setq company-idle-delay .2)                         ; decrease delay before autocompletion popup shows
+;;   (setq company-minimum-prefix-length 3)
+;;   (setq company-echo-delay (if (display-graphic-p) nil 0))  ; Maybe this should just be always 0?
+;;   (setq company-require-match nil)                     ;  Allow exiting the completion
+;;   (setq company-show-numbers t)
+;;   (setq company-backends '((company-capf :with company-dabbrev-code))) ;; company-dabbrev-code
+;;   (let ((map company-active-map))
+;;     (mapc
+;;      (lambda (x)
+;;        (define-key map (format "%d" x) 'ora-company-number))
+;;      (number-sequence 0 9))
+;;     (define-key map " " (lambda ()
+;;                           (interactive)
+;;                           (company-abort)
+;;                           (self-insert-command 1)))
+;;     (define-key map (kbd "<return>") nil))
+;;   ;; If completing on . or -> is too aggressive:
+;;   (setq company-begin-commands '(self-insert-command))
+;;   ;; Remove company-clang since we don't use it.
+;;   )
+
+;; (use-package company-try-hard
+;;   :ensure t
+;;   :bind* (("C-z" . company-try-hard)
+;;           :map company-active-map
+;;           ("C-z" . company-try-hard)))
+
 (setq tab-always-indent 'complete)
+(defun gmbuell-indent-or-complete-common (arg)
+  "Indent the current line or region, or complete the common part."
+  (interactive "P")
+  (cond
+   ((use-region-p)
+    (indent-region (region-beginning) (region-end)))
+   ((memq indent-line-function
+          '(indent-relative indent-relative-maybe))
+    (completion-at-point))
+   ((let ((old-point (point))
+          (old-tick (buffer-chars-modified-tick))
+          (tab-always-indent t))
+      (indent-for-tab-command arg)
+      (when (and (eq old-point (point))
+                 (eq old-tick (buffer-chars-modified-tick)))
+        (completion-at-point))))))
+
+(bind-key "TAB" 'gmbuell-indent-or-complete-common c++-mode-map)
 
 ;; Doesn't work in terminal mode. For documentation popups on idle.
 ;; (use-package pos-tip
@@ -819,7 +1114,7 @@ In that case, insert the number."
 ;;   :init
 ;;   (company-statistics-mode))
 
-;; Trying to embrace the eglot way and go full flymake
+;; Trying to embrace thee glot way and go full flymake
 ;; (use-package flycheck
 ;;   :ensure t
 ;;   :init
@@ -847,10 +1142,12 @@ In that case, insert the number."
   :custom
   (flymake-fringe-indicator-position 'right-fringe)
   :config
-  (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake))
+  (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
+  :init
+  (add-hook 'find-file-hook 'flymake-find-file-hook))
 
 (use-package eglot
-  :after (company yasnippet)
+  :requires (yasnippet) ;; company
   :ensure t
   :init
   (add-hook 'c-mode-hook 'eglot-ensure)
@@ -859,40 +1156,81 @@ In that case, insert the number."
   (add-hook 'python-mode-hook 'eglot-ensure)
   (add-hook 'protobuf-mode-hook 'eglot-ensure)
   :config
+  (add-to-list
+   'eglot-server-programs
+   '((python-mode)
+     . ("/google/bin/releases/editor-devtools/ciderlsp" "--noforward_sync_responses" "--request_options=enable_placeholders" "--tooltag=emacs-eglot")))
   ;; kythe is deprecated but it works on unsubmitted code.
   ;; But no autocomplete
   (add-to-list
    'eglot-server-programs
    ;; '((c++-mode c-mode java-mode python-mode protobuf-mode)
-   '((python-mode protobuf-mode)
+   '((protobuf-mode mendel-mode borg-mode google3-build-mode)
      . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3")))
-  (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-cross-file-rename"))))
+  ;; "-index-file=/usr/local/google/home/gmbuell/index.idx"
+  (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-cross-file-rename")))
+  )
 
-(use-package ivy-xref
-  :after (ivy)
+;; eldoc is very noisy
+(global-eldoc-mode -1)
+(add-hook 'prog-mode-hook
+          (lambda ()
+            (eldoc-mode -1)))
+
+;; Also use dabbrev for completion
+(defun add-cape-dabbrev ()
+  (add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
+  )
+(use-package cape
   :ensure t
+  :demand t
   :init
-  ;; xref initialization is different in Emacs 27 - there are two different
-  ;; variables which can be set rather than just one
-  (when (>= emacs-major-version 27)
-    (setq xref-show-definitions-function #'ivy-xref-show-defs))
-  ;; Necessary in Emacs <27. In Emacs 27 it will affect all xref-based
-  ;; commands other than xref-find-definitions (e.g. project-find-regexp)
-  ;; as well
-  (setq xref-show-xrefs-function #'ivy-xref-show-xrefs))
+  ;; Add `completion-at-point-functions', used by `completion-at-point'.
+  ;;(add-to-list 'completion-at-point-functions #'cape-file)
+  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+  ;;(add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
+  (add-hook 'c++-mode-hook #'add-cape-dabbrev)
+  (add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
+  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
+  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
+  ;;(add-to-list 'completion-at-point-functions #'cape-line)
+)
+
+;; (use-package ivy-xref
+;;   :after (ivy)
+;;   :ensure t
+;;   :init
+;;   ;; xref initialization is different in Emacs 27 - there are two different
+;;   ;; variables which can be set rather than just one
+;;   (when (>= emacs-major-version 27)
+;;     (setq xref-show-definitions-function #'ivy-xref-show-defs))
+;;   ;; Necessary in Emacs <27. In Emacs 27 it will affect all xref-based
+;;   ;; commands other than xref-find-definitions (e.g. project-find-regexp)
+;;   ;; as well
+;;   (setq xref-show-xrefs-function #'ivy-xref-show-xrefs))
 
 (require 'nadvice)
 (defun do-nothing (orig-fun &rest args)
   t)
 
-;; This shows function arguments in the minibuffer which is very noisy.
-;; (use-package eldoc)
+(use-package region-bindings-mode
+  :ensure t)
+(require 'region-bindings-mode)
+(region-bindings-mode-enable)
 
 ;; It may be possible to use avy to set marks for multiple cursors.
 ;; I.e. avy-push-mark
 ;; Also via swiper https://oremacs.com/2015/10/14/swiper-mc/
 (use-package multiple-cursors
   :ensure t
+  :demand t
   ;; Alternative bindings because hterm sucks at passing through keys
   :bind* (
           ("M-m e" . mc/edit-lines)
@@ -901,19 +1239,7 @@ In that case, insert the number."
           ("M-m a" . mc/mark-all-symbols-like-this-in-defun)
           ("M-m A" . mc/mark-all-symbols-like-this)
           ("M-m h" . mc-hide-unmatched-lines-mode)
-          ))
-
-(use-package multifiles
-  :ensure t
-  :bind ("C-!" . mf/mirror-region-in-multifile))
-
-(use-package fold-this
-  :ensure t)
-
-(use-package region-bindings-mode
-  :after (multiple-cursors multifiles fold-this)
-  :ensure t
-  :bind (:map region-bindings-mode-map
+          :map region-bindings-mode-map
               ("a" . mc/mark-all-like-this)
               ("p" . mc/mark-previous-like-this)
               ("n" . mc/mark-next-like-this)
@@ -921,24 +1247,42 @@ In that case, insert the number."
               ("f" . mc/skip-to-next-like-this)
               ("P" . mc/unmark-previous-like-this)
               ("N" . mc/unmark-next-like-this)
-              ("u" . er/contract-region)
               ("h" . mc-hide-unmatched-lines-mode)
-              ("M" . mf/mirror-region-in-multifile)
-              ("F" . fold-active-region-all))
-  :init
-  (region-bindings-mode-enable))
+          ))
+
+(use-package multifiles
+  :ensure t
+  :demand t
+  :bind (:map region-bindings-mode-map
+              ("M" . mf/mirror-region-in-multifile)))
+
+(use-package fold-this
+  :ensure t
+  :demand t
+  :bind (:map region-bindings-mode-map
+              ("F" . fold-active-region-all)))
+
+(use-package expand-region
+  :ensure t
+  :bind (("C-=" . er/expand-region)
+         :map region-bindings-mode-map
+         ("u" . er/contract-region)))
 
 ;; phi search works with multiple cursors But has weird behavior around trying
 ;; to move while in a search. Fortunately, multiple cursors mode seems to use it
 ;; automatically even if not set as default.
 (use-package phi-search
-  :ensure t)
+  :ensure t
+  :demand t)
 (use-package phi-replace
   ;; Doesn't have it's own package.
-  :after (phi-search))
+  :requires (phi-search)
+  :demand t)
 
+;; Consider also placeholder
+;; https://github.com/oantolin/placeholder
 (use-package auto-yasnippet
-  :after (yasnippet)
+  :requires (yasnippet)
   :ensure t
   :bind (("M-w" . aya-create)
          ("M-W" . aya-expand)))
@@ -989,30 +1333,6 @@ _k_: previous error    _l_: last error
          (user-error nil))
    nil :bind nil)
   ("q" nil            nil :color blue))
-
-(setq auto-mode-alist
-      (nconc
-       (list
-        (cons "\\.pyplan\\'" 'python-mode)
-        ;; MPM package definition files are Python syntax.
-        (cons "/pkgdef\\'" 'python-mode)
-        ;; (cons "/BUILD\\'" 'google3-build-mode)
-        (cons "\\.proto\\'" 'protobuf-mode)
-        (cons "\\.protodevel\\'" 'protobuf-mode)
-        ;; Mendel files
-        (cons "mendel/.*\\.gcl\\'" 'mendel-mode)
-        (cons "gws.*\\.gcl\\'" 'mendel-mode)
-        ;; Various Borg-related files
-        (cons "\\.bcl\\'" 'borg-mode)
-        (cons "\\.borg\\'" 'borg-mode)
-        (cons "\\.btcfg\\'" 'borg-mode)
-        (cons "\\.gcl\\'" 'borg-mode)
-        (cons "\\.gclx\\'" 'borg-mode)
-        (cons "\\.mcl\\'" 'borg-mode)
-        (cons "\\.mw\\'" 'borg-mode)
-        ;; Dremel query files
-        (cons "\\.dremel\\'" 'sql-mode))
-       auto-mode-alist))
 
 ;; Hacked together BUILD mode
 (require 'python)
@@ -1132,6 +1452,33 @@ No association with rules for now.")
       1 'font-lock-function-name-face)))
   (google3-build-mode-setup-imenu))
 
+(use-package bazel
+  :ensure t)
+
+(setq auto-mode-alist
+      (nconc
+       (list
+        (cons "\\.pyplan\\'" 'python-mode)
+        ;; MPM package definition files are Python syntax.
+        (cons "/pkgdef\\'" 'python-mode)
+        (cons "/BUILD\\'" 'google3-build-mode)
+        (cons "\\.proto\\'" 'protobuf-mode)
+        (cons "\\.protodevel\\'" 'protobuf-mode)
+        ;; Mendel files
+        (cons "mendel/.*\\.gcl\\'" 'mendel-mode)
+        (cons "gws.*\\.gcl\\'" 'mendel-mode)
+        ;; Various Borg-related files
+        (cons "\\.bcl\\'" 'borg-mode)
+        (cons "\\.borg\\'" 'borg-mode)
+        (cons "\\.btcfg\\'" 'borg-mode)
+        (cons "\\.gcl\\'" 'borg-mode)
+        (cons "\\.gclx\\'" 'borg-mode)
+        (cons "\\.mcl\\'" 'borg-mode)
+        (cons "\\.mw\\'" 'borg-mode)
+        ;; Dremel query files
+        (cons "\\.dremel\\'" 'sql-mode))
+       auto-mode-alist))
+
 (setenv "GOPATH" (concat (getenv "HOME") "/go"))
 (setenv "PATH" (concat (getenv "PATH") ":" (getenv "HOME") "/go/bin"))
 (setq exec-path (append exec-path (list (expand-file-name (concat (getenv "HOME") "/go/bin")))))
@@ -1148,20 +1495,36 @@ No association with rules for now.")
   :ensure t
   :init (add-hook 'term-mode-hook #'eterm-256color-mode))
 
-(use-package shell-pop
-  :defer t
-  :custom
-  ;; This binding toggles popping up a shell, or moving cursour to the shell pop-up.
-  (shell-pop-universal-key "C-t")
+;; Probably try shelldon instead of this
+;; https://github.com/Overdr0ne/shelldon
+(setq enable-recursive-minibuffers t)
+(use-package bash-completion
+  :ensure t
+  :init (bash-completion-setup))
+(use-package shelldon
+  :ensure t
+  :bind* (("C-t" . shelldon)
+          ("M-t" . shelldon-output-hist))
+  :init
+  (setq shell-command-prompt-show-cwd t)
+  (add-hook 'shelldon-mode-hook 'ansi-color-for-comint-mode-on)
+  (add-to-list 'comint-output-filter-functions 'ansi-color-process-output)
+  (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t))
 
-  ;; Percentage for shell-buffer window size.
-  (shell-pop-window-size 30)
+;; (use-package shell-pop
+;;   :defer t
+;;   :custom
+;;   ;; This binding toggles popping up a shell, or moving cursour to the shell pop-up.
+;;   (shell-pop-universal-key "C-t")
 
-  ;; Position of the popped buffer: top, bottom, left, right, full.
-  (shell-pop-window-position "bottom")
+;;   ;; Percentage for shell-buffer window size.
+;;   (shell-pop-window-size 30)
 
-  ;; Please use an awesome shell.
-  (shell-pop-term-shell "/bin/bash"))
+;;   ;; Position of the popped buffer: top, bottom, left, right, full.
+;;   (shell-pop-window-position "bottom")
+
+;;   ;; Please use an awesome shell.
+;;   (shell-pop-term-shell "/bin/bash"))
 
 ;; https://github.com/szermatt/emacs-bash-completion
 ;; (use-package bash-completion
@@ -1258,6 +1621,7 @@ No association with rules for now.")
 
 ;; Neato doc strings for hydras
 (use-package pretty-hydra
+  :requires hydra
   :ensure t)
 
 (defhydra hydra-goto-line (goto-map ""
@@ -1271,7 +1635,8 @@ No association with rules for now.")
 
 (use-package breadcrumb
   :quelpa (breadcrumb :fetcher git :url
-                      "https://github.com/pheaver/breadcrumb.git"))
+                      "https://github.com/pheaver/breadcrumb.git")
+  :demand t)
 (defhydra hydra-breadcrumb
   (:exit t)
   "
@@ -1289,6 +1654,20 @@ Breadcrumb bookmarks:
   ("c" bc-clear nil)
   ("q" nil nil))
 
+(use-package dogears
+  :quelpa (dogears :fetcher github :repo "alphapapa/dogears.el"
+                   :files (:defaults (:exclude "helm-dogears.el")))
+  :bind (:map global-map
+              ("M-g d" . dogears-go)
+              ("M-g M-b" . dogears-back)
+              ("M-g M-f" . dogears-forward)
+              ("M-g M-d" . dogears-list)
+              ("M-g M-D" . dogears-sidebar))
+  :init
+  (add-hook 'prog-mode-hook #'dogears-mode))
+;; Another alternative is gumshoe
+;; https://github.com/Overdr0ne/gumshoe
+
 ;; One more code navigation method because kythe/clangd are unreliable.
 (use-package dumb-jump
   :ensure t
@@ -1299,18 +1678,33 @@ Breadcrumb bookmarks:
          ("M-g x" . dumb-jump-go-prefer-external)
          ("M-g z" . dumb-jump-go-prefer-external-other-window))
   :config
-  (setq dumb-jump-selector 'ivy)
-  (setq dumb-jump-force-searcher 'rg)
+  ;;(setq dumb-jump-selector 'ivy)
+  ;; (setq dumb-jump-force-searcher 'rg)
+  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
   :init
-  (defhydra dumb-jump-hydra (:color blue :columns 3)
-    "Dumb Jump"
-    ("j" dumb-jump-go "Go")
-    ("o" dumb-jump-go-other-window "Other window")
-    ("e" dumb-jump-go-prefer-external "Go external")
-    ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
-    ("i" dumb-jump-go-prompt "Prompt")
-    ("l" dumb-jump-quick-look "Quick look")
-    ("b" dumb-jump-back "Back")))
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+  ;; (defhydra dumb-jump-hydra (:color blue :columns 3)
+  ;;   "Dumb Jump"
+  ;;   ("j" xref-find-definitions "Go")
+  ;;   ("o" dumb-jump-go-other-window "Other window")
+  ;;   ("e" dumb-jump-go-prefer-external "Go external")
+  ;;   ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
+  ;;   ("i" dumb-jump-go-prompt "Prompt")
+  ;;   ("l" dumb-jump-quick-look "Quick look")
+  ;;   ("b" xref-pop-marker-stack "Back"))
+  )
+
+(defun switch-previous-buffer ()
+  (interactive)
+  (switch-to-buffer (other-buffer)))
+;;(bind-key "M-o" 'switch-previous-buffer)
+(use-package iflipb
+  :ensure t
+  :bind* (
+         ("M-o" . iflipb-next-buffer)
+         ("M-O" . iflipb-previous-buffer)
+         ("C-x k" . iflipb-kill-buffer)))
+
 
 (defun modi/multi-pop-to-mark (orig-fun &rest args)
   "Call ORIG-FUN until the cursor moves.
@@ -1323,30 +1717,19 @@ Try the repeated popping up to 10 times."
             #'modi/multi-pop-to-mark)
 (setq set-mark-command-repeat-pop t)
 
-(use-package hideshow
-  :hook ((prog-mode . hs-minor-mode)))
+;; (use-package hideshow
+;;   :hook ((prog-mode . hs-minor-mode)))
 
-(defun toggle-fold ()
-  (interactive)
-  (save-excursion
-    (end-of-line)
-    (hs-toggle-hiding)))
+;; (defun toggle-fold ()
+;;   (interactive)
+;;   (save-excursion
+;;     (end-of-line)
+;;     (hs-toggle-hiding)))
 
 (use-package beginend
   :ensure t
   :init
   (beginend-global-mode))
-
-;; Disable golden ration for now because it's a bit janky.
-;; (use-package golden-ratio
-;;   :ensure t
-;;   :init
-;;   (golden-ratio-mode 1)
-;;   ;; important for golden-ratio to better work
-;;   (setq window-combination-resize t)
-;;   ;;:config
-;;   ;;(setq golden-ratio-auto-scale t)
-;;   )
 
 ;; Make .sh files executable upon save.
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
@@ -1369,6 +1752,24 @@ Try the repeated popping up to 10 times."
   :init
   (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
 
+;; (use-package graphviz-dot-mode
+;;   :ensure t
+;;   :config
+;;   (setq graphviz-dot-indent-width 2))
+
+;; (use-package company-graphviz-dot)
+
+;; Calendars should start with Monday as the first day of the week.
+(setq calendar-week-start-day 1)
+
+;; Check out https://github.com/raxod502/prescient.el
+;; And https://github.com/raxod502/selectrum
+
 (require 'server)
 (unless (server-running-p) (server-start))
 (setenv "EDITOR" "TERM=xterm-24bits emacsclient -nw")
+
+
+;; Future enhancements:
+;; prism for highlighting modes without good syntax hilighting?
+;; https://github.com/alphapapa/prism.el
