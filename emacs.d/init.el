@@ -66,7 +66,7 @@
    '("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(git-gutter:handled-backends '(git hg bzr svn))
  '(package-selected-packages
-   '(company-try-hard tree-sitter tree-sitter-langs cape bash-completion vertico icicles vcomplete elmo mct shelldon iflipb dogears historian amx airline-themes powerline solaire-mode all-the-icons neotree embark-consult embark marginalia orderless ample-theme molokai-theme railscasts-theme alect-themes cyberpunk-theme color-theme-sanityinc-tomorrow ujelly-theme gruvbox-theme monokai-theme monokai bazel company-graphviz-dot graphviz-dot-mode go-mode treemacs-magit treemacs-projectile treemacs winum link-hint modern-cpp-font-lock markdown-mode markdown nov discover-my-major beginend dumb-jump breadcrumb pretty-hydra origami eterm-256color godoctor go-eldoc company-go ycmd aio protobuf-mode rainbow-delimiters easy-kill auto-yasnippet multifiles phi-search fold-this region-bindings-mode multiple-cursors ivy-xref eglot google-c-style function-args company-quickhelp company f counsel-projectile find-file-in-project projectile avy expand-region headlong smartscan yasnippet base16-theme smart-mode-line mosey smartparens which-key deft highlight-symbol monky vc-defer vc-hgcmd magit git-gutter counsel swiper ivy-hydra ivy flx smex hydra clipetty quelpa-use-package quelpa auto-package-update diminish use-package))
+   '(consult corfu-terminal company-try-hard tree-sitter tree-sitter-langs cape bash-completion vertico icicles vcomplete elmo mct shelldon iflipb dogears historian amx airline-themes powerline solaire-mode all-the-icons neotree embark-consult embark marginalia orderless ample-theme molokai-theme railscasts-theme alect-themes cyberpunk-theme color-theme-sanityinc-tomorrow ujelly-theme gruvbox-theme monokai-theme monokai bazel company-graphviz-dot graphviz-dot-mode go-mode treemacs-magit treemacs-projectile treemacs winum link-hint modern-cpp-font-lock markdown-mode markdown nov discover-my-major beginend dumb-jump breadcrumb pretty-hydra origami eterm-256color godoctor go-eldoc company-go ycmd aio protobuf-mode rainbow-delimiters easy-kill auto-yasnippet multifiles phi-search fold-this region-bindings-mode multiple-cursors ivy-xref eglot google-c-style function-args company-quickhelp company f counsel-projectile find-file-in-project projectile avy expand-region headlong smartscan yasnippet base16-theme smart-mode-line mosey smartparens which-key deft highlight-symbol monky vc-defer vc-hgcmd magit git-gutter counsel swiper ivy-hydra ivy flx smex hydra clipetty quelpa-use-package quelpa auto-package-update diminish use-package))
  '(sp-override-key-bindings
    '(("C-<right>" . sp-slurp-hybrid-sexp)
      ("C-<left>" . sp-dedent-adjust-sexp)))
@@ -181,7 +181,9 @@ that uses 'font-lock-warning-face'."
 ;;           (add-hook 'c-mode-common-hook 'google-set-c-style)
 ;;           (add-hook 'c-mode-common-hook 'google-make-newline-indent)))
 (use-package cc-mode
-  :ensure t)
+  :ensure t
+  :init
+  (add-hook 'c-mode-common-hook 'subword-mode))
 
 ;; Headers are c++, not c
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
@@ -193,14 +195,6 @@ that uses 'font-lock-warning-face'."
 (use-package modern-cpp-font-lock
   :ensure t
   :init (modern-c++-font-lock-global-mode t))
-
-(use-package tree-sitter
-  :ensure t
-  :init
-  (global-tree-sitter-mode)
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
-(use-package tree-sitter-langs
-  :ensure t)
 
 
 ;; Save clipboard contents into kill-ring before replace them
@@ -592,9 +586,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :init
   (defmosey '(beginning-of-line
               back-to-indentation
-              sp-backward-sexp  ; Moves across lines
+              sp-backward-sexp  ;; Moves across lines
               sp-end-of-sexp    ;; Might be bad
-              sp-forward-sexp   ; Moves across lines
+              sp-forward-sexp   ;; Moves across lines
               mosey-goto-end-of-code
               mosey-goto-beginning-of-comment-text
               end-of-line)
@@ -698,11 +692,14 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package yasnippet
   :ensure t
-  :diminish yas-minor-mode
-  :config
-  (setq yas-triggers-in-field t)
-  :init
-  (yas-global-mode 1))
+  :diminish yas-minor-mode)
+;; (use-package yasnippet
+;;   :ensure t
+;;   :diminish yas-minor-mode
+;;   :config
+;;   (setq yas-triggers-in-field t)
+;;   :init
+;;   (yas-global-mode 1))
 
 ;; persistent abbreviation file
 (setq abbrev-file-name (concat user-emacs-directory "abbrev_defs"))
@@ -755,24 +752,21 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package vertico
   :ensure t
   :init
-  (vertico-mode)
-  :config
-  (setq completion-in-region-function
-      (lambda (&rest args)
-        (apply (if vertico-mode
-                   #'consult-completion-in-region
-                 #'completion--in-region)
-               args)))
-  )
+  (vertico-mode))
 
 ;; Completion
 ;; headlong might be useful for bookmark jumping
 
 ;; Could also try out restricto as an alternative
 ;; https://github.com/oantolin/restricto
+(setq read-file-name-completion-ignore-case t
+      read-buffer-completion-ignore-case t
+      completion-ignore-case t)
 (use-package orderless
   :ensure t
-  :custom (completion-styles '(orderless)))
+  :custom
+  (completion-styles '(substring flex basic))
+  (orderless-smart-case t))
   ;; :config
   ;; Allow space in minibuffer completions
   ;; (let ((map minibuffer-local-completion-map))
@@ -822,9 +816,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                  (window-parameters (mode-line-format . none)))))
 
 (use-package consult
-  :ensure t
-  :init
-  (setq completion-in-region-function #'consult-completion-in-region))
+  :ensure t)
+
+(use-package embark-consult
+  :ensure t)
 
 (defvar consult--source-dogears
   (list :name     "Dogears"
@@ -897,113 +892,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;;   :init (counsel-projectile-mode)
 ;;   :config (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
 
-;; (use-package winum
-;;   :ensure t
-;;   :init
-;;   (setq winum-keymap
-;;         (let ((map (make-sparse-keymap)))
-;;           (define-key map (kbd "C-`") 'winum-select-window-by-number)
-;;           (define-key map (kbd "M-0") 'winum-select-window-0-or-10)
-;;           (define-key map (kbd "M-1") 'winum-select-window-1)
-;;           (define-key map (kbd "M-2") 'winum-select-window-2)
-;;           (define-key map (kbd "M-3") 'winum-select-window-3)
-;;           (define-key map (kbd "M-4") 'winum-select-window-4)
-;;           (define-key map (kbd "M-5") 'winum-select-window-5)
-;;           (define-key map (kbd "M-6") 'winum-select-window-6)
-;;           (define-key map (kbd "M-7") 'winum-select-window-7)
-;;           (define-key map (kbd "M-8") 'winum-select-window-8)
-;;           map))
-;;   (winum-mode)
-;;   :config
-;;   (set-face-attribute 'winum-face nil :weight 'bold)
-;;   (setq window-numbering-scope            'global
-;;         winum-reverse-frame-list          nil
-;;         winum-auto-assign-0-to-minibuffer t
-;;         winum-assign-func                 'my-winum-assign-func
-;;         winum-auto-setup-mode-line        t
-;;         winum-format                      " %s "
-;;         winum-mode-line-position          1
-;;         winum-ignored-buffers             '(" *which-key*")
-;;         winum-ignored-buffers-regexp      '(" \\*Treemacs-.*")))
-
-;; (use-package treemacs
-;;   :ensure t
-;;   :defer t
-;;   :init
-;;   (with-eval-after-load 'winum
-;;     (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
-;;   :config
-;;   (progn
-;;     (setq treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
-;;           treemacs-deferred-git-apply-delay      0.5
-;;           treemacs-directory-name-transformer    #'identity
-;;           treemacs-display-in-side-window        t
-;;           treemacs-eldoc-display                 t
-;;           treemacs-file-event-delay              5000
-;;           treemacs-file-extension-regex          treemacs-last-period-regex-value
-;;           treemacs-file-follow-delay             0.2
-;;           treemacs-file-name-transformer         #'identity
-;;           treemacs-follow-after-init             t
-;;           treemacs-git-command-pipe              ""
-;;           treemacs-goto-tag-strategy             'refetch-index
-;;           treemacs-indentation                   2
-;;           treemacs-indentation-string            " "
-;;           treemacs-is-never-other-window         nil
-;;           treemacs-max-git-entries               5000
-;;           treemacs-missing-project-action        'ask
-;;           treemacs-move-forward-on-expand        nil
-;;           treemacs-no-png-images                 nil
-;;           treemacs-no-delete-other-windows       t
-;;           treemacs-project-follow-cleanup        nil
-;;           treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-;;           treemacs-position                      'left
-;;           treemacs-recenter-distance             0.1
-;;           treemacs-recenter-after-file-follow    nil
-;;           treemacs-recenter-after-tag-follow     nil
-;;           treemacs-recenter-after-project-jump   'always
-;;           treemacs-recenter-after-project-expand 'on-distance
-;;           treemacs-show-cursor                   nil
-;;           treemacs-show-hidden-files             t
-;;           treemacs-silent-filewatch              nil
-;;           treemacs-silent-refresh                nil
-;;           treemacs-sorting                       'alphabetic-asc
-;;           treemacs-space-between-root-nodes      t
-;;           treemacs-tag-follow-cleanup            t
-;;           treemacs-tag-follow-delay              1.5
-;;           treemacs-user-mode-line-format         nil
-;;           treemacs-user-header-line-format       nil
-;;           treemacs-width                         35)
-
-;;     ;; The default width and height of the icons is 22 pixels. If you are
-;;     ;; using a Hi-DPI display, uncomment this to double the icon size.
-;;     ;;(treemacs-resize-icons 44)
-
-;;     (treemacs-follow-mode t)
-;;     (treemacs-filewatch-mode t)
-;;     (treemacs-fringe-indicator-mode t)
-;;     (pcase (cons (not (null (executable-find "git")))
-;;                  (not (null treemacs-python-executable)))
-;;       (`(t . t)
-;;        (treemacs-git-mode 'deferred))
-;;       (`(t . _)
-;;        (treemacs-git-mode 'simple))))
-;;   :bind
-;;   (:map global-map
-;;         ("M-0"       . treemacs-select-window)
-;;         ("C-x t 1"   . treemacs-delete-other-windows)
-;;         ("C-x t t"   . treemacs)
-;;         ("C-x t B"   . treemacs-bookmark)
-;;         ("C-x t C-t" . treemacs-find-file)
-;;         ("C-x t M-t" . treemacs-find-tag)))
-
-;; (use-package treemacs-projectile
-;;   :requires treemacs projectile
-;;   :ensure t)
-
-;; (use-package treemacs-magit
-;;   :requires treemacs magit
-;;   :ensure t)
-
 (use-package f
   :ensure t)
 
@@ -1013,8 +901,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (projectile-clear-known-projects)
   (mapc #'projectile-add-known-project
         (f-glob "~/fig/*/google3"))
-  ;;(mapc #'projectile-add-known-project
-  ;;      (seq-remove (apply-partially 's-contains? "git5") (f-glob "/google/src/cloud/gmbuell/*/google3")))
+  (mapc #'projectile-add-known-project
+       (seq-remove (apply-partially 's-contains? "fig") (f-glob "/google/src/cloud/gmbuell/*/google3")))
   (projectile-save-known-projects))
 
 (projectile-register-project-type 'google3 '("WORKSPACE"))
@@ -1043,6 +931,46 @@ In that case, insert the number."
                     company-candidates)
         (self-insert-command 1)
       (company-complete-number (string-to-number k)))))
+
+
+(use-package corfu
+  ;; Optional customizations
+  :custom
+  ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-auto-delay 0)
+  (corfu-auto-prefix 3)
+  (corfu-quit-no-match 'separator)
+  ;; (corfu-separator ?\s)          ;; Orderless field separator
+  ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
+  ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
+  ;; (corfu-preview-current nil)    ;; Disable current candidate preview
+  ;; (corfu-preselect-first nil)    ;; Disable candidate preselection
+  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+  ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
+  ;; (corfu-scroll-margin 5)        ;; Use scroll margin
+
+  ;; Enable Corfu only for certain modes.
+  ;; :hook ((prog-mode . corfu-mode)
+  ;;        (shell-mode . corfu-mode)
+  ;;        (eshell-mode . corfu-mode))
+
+  ;; Recommended: Enable Corfu globally.
+  ;; This is recommended since Dabbrev can be used globally (M-/).
+  ;; See also `corfu-excluded-modes'.
+  :init
+  (global-corfu-mode))
+
+(use-package corfu-indexed
+  :requires (corfu)
+  :init
+  (corfu-indexed-mode 1))
+
+(quelpa '(corfu-terminal
+          :fetcher git
+          :url "https://codeberg.org/akib/emacs-corfu-terminal.git"))
+(unless (display-graphic-p)
+  (corfu-terminal-mode +1))
 
 ;; (use-package company
 ;;   :ensure t
@@ -1080,24 +1008,24 @@ In that case, insert the number."
 ;;           ("C-z" . company-try-hard)))
 
 (setq tab-always-indent 'complete)
-(defun gmbuell-indent-or-complete-common (arg)
-  "Indent the current line or region, or complete the common part."
-  (interactive "P")
-  (cond
-   ((use-region-p)
-    (indent-region (region-beginning) (region-end)))
-   ((memq indent-line-function
-          '(indent-relative indent-relative-maybe))
-    (completion-at-point))
-   ((let ((old-point (point))
-          (old-tick (buffer-chars-modified-tick))
-          (tab-always-indent t))
-      (indent-for-tab-command arg)
-      (when (and (eq old-point (point))
-                 (eq old-tick (buffer-chars-modified-tick)))
-        (completion-at-point))))))
+;; (defun gmbuell-indent-or-complete-common (arg)
+;;   "Indent the current line or region, or complete the common part."
+;;   (interactive "P")
+;;   (cond
+;;    ((use-region-p)
+;;     (indent-region (region-beginning) (region-end)))
+;;    ((memq indent-line-function
+;;           '(indent-relative indent-relative-maybe))
+;;     (completion-at-point))
+;;    ((let ((old-point (point))
+;;           (old-tick (buffer-chars-modified-tick))
+;;           (tab-always-indent t))
+;;       (indent-for-tab-command arg)
+;;       (when (and (eq old-point (point))
+;;                  (eq old-tick (buffer-chars-modified-tick)))
+;;         (completion-at-point))))))
 
-(bind-key "TAB" 'gmbuell-indent-or-complete-common c++-mode-map)
+;; (bind-key "TAB" 'gmbuell-indent-or-complete-common c++-mode-map)
 
 ;; Doesn't work in terminal mode. For documentation popups on idle.
 ;; (use-package pos-tip
@@ -1113,30 +1041,6 @@ In that case, insert the number."
 ;;   :ensure t
 ;;   :init
 ;;   (company-statistics-mode))
-
-;; Trying to embrace thee glot way and go full flymake
-;; (use-package flycheck
-;;   :ensure t
-;;   :init
-;;   (global-flycheck-mode))
-
-;; (defhydra hydra-flycheck
-;;     (:pre (flycheck-list-errors)
-;;      :post (quit-windows-on "*Flycheck errors*")
-;;      :hint nil)
-;;   "Errors"
-;;   ("f" flycheck-error-list-set-filter "Filter")
-;;   ("j" flycheck-next-error "Next")
-;;   ("k" flycheck-previous-error "Previous")
-;;   ("gg" flycheck-first-error "First")
-;;   ("G" (progn (goto-char (point-max)) (flycheck-previous-error)) "Last")
-;;   ("q" nil))
-
-;; (use-package flycheck-inline
-;;   :after (flycheck)
-;;   :ensure t
-;;   :init
-;;   (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
 
 (use-package flymake
   :custom
@@ -1169,6 +1073,7 @@ In that case, insert the number."
      . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3")))
   ;; "-index-file=/usr/local/google/home/gmbuell/index.idx"
   (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-cross-file-rename")))
+  ;;(add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3")))
   )
 
 ;; eldoc is very noisy
@@ -1178,9 +1083,9 @@ In that case, insert the number."
             (eldoc-mode -1)))
 
 ;; Also use dabbrev for completion
-(defun add-cape-dabbrev ()
-  (add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
-  )
+;; (defun add-cape-dabbrev ()
+;;   (add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
+;;   )
 (use-package cape
   :ensure t
   :demand t
@@ -1189,8 +1094,8 @@ In that case, insert the number."
   ;;(add-to-list 'completion-at-point-functions #'cape-file)
   ;;(add-to-list 'completion-at-point-functions #'cape-tex)
   ;;(add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
-  (add-hook 'c++-mode-hook #'add-cape-dabbrev)
-  (add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
+  ;;(add-hook 'c++-mode-hook #'add-cape-dabbrev)
+  ;;(add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
   ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
   ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
@@ -1201,7 +1106,9 @@ In that case, insert the number."
   ;;(add-to-list 'completion-at-point-functions #'cape-dict)
   ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
   ;;(add-to-list 'completion-at-point-functions #'cape-line)
-)
+  )
+;; https://www.masteringemacs.org/article/text-expansion-hippie-expand
+(global-set-key [remap dabbrev-expand] 'hippie-expand)
 
 ;; (use-package ivy-xref
 ;;   :after (ivy)
@@ -1309,12 +1216,6 @@ In that case, insert the number."
         :ensure t)
       (use-package borg-mode :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/")))
 
-;; My custom hacked CiderLSP support
-;; (add-to-list
-;;    'eglot-server-programs
-;;    '((c++-mode c-mode java-mode python-mode protobuf-mode)
-;;      . ("/google/bin/releases/editor-devtools/ciderlsp" "--noforward_sync_responses" "--request_options=enable_placeholders" "--tooltag=emacs-eglot")))
-
 
 (defhydra hydra-next-error
   (global-map "C-x")
@@ -1333,6 +1234,8 @@ _k_: previous error    _l_: last error
          (user-error nil))
    nil :bind nil)
   ("q" nil            nil :color blue))
+
+(setq next-error-message-highlight t)
 
 ;; Hacked together BUILD mode
 (require 'python)
@@ -1495,12 +1398,12 @@ No association with rules for now.")
   :ensure t
   :init (add-hook 'term-mode-hook #'eterm-256color-mode))
 
-;; Probably try shelldon instead of this
-;; https://github.com/Overdr0ne/shelldon
 (setq enable-recursive-minibuffers t)
 (use-package bash-completion
   :ensure t
   :init (bash-completion-setup))
+
+;; https://github.com/Overdr0ne/shelldon
 (use-package shelldon
   :ensure t
   :bind* (("C-t" . shelldon)
@@ -1510,41 +1413,6 @@ No association with rules for now.")
   (add-hook 'shelldon-mode-hook 'ansi-color-for-comint-mode-on)
   (add-to-list 'comint-output-filter-functions 'ansi-color-process-output)
   (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t))
-
-;; (use-package shell-pop
-;;   :defer t
-;;   :custom
-;;   ;; This binding toggles popping up a shell, or moving cursour to the shell pop-up.
-;;   (shell-pop-universal-key "C-t")
-
-;;   ;; Percentage for shell-buffer window size.
-;;   (shell-pop-window-size 30)
-
-;;   ;; Position of the popped buffer: top, bottom, left, right, full.
-;;   (shell-pop-window-position "bottom")
-
-;;   ;; Please use an awesome shell.
-;;   (shell-pop-term-shell "/bin/bash"))
-
-;; https://github.com/szermatt/emacs-bash-completion
-;; (use-package bash-completion
-;;   :disabled
-;;   :ensure t
-;;   :init (bash-completion-setup))
-
-;; (use-package term-projectile
-;;   :disabled
-;;   :ensure t)
-
-;; (use-package multi-term
-;;   :ensure t
-;;   :bind (("C-c t" . multi-term-dedicated-toggle))
-;;   :init (setq multi-term-dedicated-select-after-open-p t
-;;               ;;multi-term-program "/usr/local/bin/zsh"
-;;               multi-term-program "/usr/bin/zsh"
-;;               multi-term-program-switches "--login"
-;;               ;;multi-term-dedicated-skip-other-window-p t
-;;               ))
 
 (setq comint-prompt-read-only t)
 (setq comint-scroll-to-bottom-on-input t)
@@ -1716,15 +1584,6 @@ Try the repeated popping up to 10 times."
 (advice-add 'pop-to-mark-command :around
             #'modi/multi-pop-to-mark)
 (setq set-mark-command-repeat-pop t)
-
-;; (use-package hideshow
-;;   :hook ((prog-mode . hs-minor-mode)))
-
-;; (defun toggle-fold ()
-;;   (interactive)
-;;   (save-excursion
-;;     (end-of-line)
-;;     (hs-toggle-hiding)))
 
 (use-package beginend
   :ensure t
