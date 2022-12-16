@@ -65,6 +65,8 @@
  '(custom-safe-themes
    '("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(git-gutter:handled-backends '(git hg bzr svn))
+ '(package-selected-packages
+   '(flymake-golangci flymake-golanci yaml-mode which-key vertico stickyfunc-enhance sqlformat smex smartscan smartparens smart-mode-line shelldon region-bindings-mode rainbow-delimiters quelpa-use-package protobuf-mode pretty-hydra phi-search origami orderless nov multiple-cursors multifiles mosey monky modern-cpp-font-lock markdown-mode marginalia magit link-hint ivy-xref ivy-hydra iflipb highlight-symbol headlong google-c-style godoctor go-eldoc git-gutter function-args fold-this flymake-go-staticcheck flycheck-ycmd flycheck-inline flycheck-golangci-lint flx find-file-in-project expand-region eterm-256color embark-consult eglot easy-kill dumb-jump doom-themes dogears dockerfile-mode discover-my-major diminish deft dash-functional counsel-projectile corfu-terminal company-statistics company-quickhelp company-go clipetty cape breadcrumb beginend bazel bash-completion base16-theme auto-yasnippet auto-package-update async))
  '(sp-override-key-bindings
    '(("C-<right>" . sp-slurp-hybrid-sexp)
      ("C-<left>" . sp-dedent-adjust-sexp)))
@@ -1058,6 +1060,8 @@ In that case, insert the number."
   (add-hook 'go-mode-hook 'eglot-ensure)
   (add-hook 'python-mode-hook 'eglot-ensure)
   (add-hook 'protobuf-mode-hook 'eglot-ensure)
+  (setq eglot-stay-out-of '(flymake))
+  (add-hook 'eglot-managed-mode-hook (lambda () (add-hook 'flymake-diagnostic-functions 'eglot-flymake-backend nil t)))
   :config
   (add-to-list
    'eglot-server-programs
@@ -1396,20 +1400,24 @@ No association with rules for now.")
 (setq exec-path (append exec-path (list (expand-file-name (concat (getenv "HOME") "/go/bin")))))
 
 ;; Golang
+;; Install gopls lsp server
+;; go install golang.org/x/tools/gopls@latest
+;; Also need to do more setup to get this to work with bazel.
+;; https://github.com/bazelbuild/rules_go/wiki/Editor-setup
+(defun eglot-format-buffer-on-save ()
+  (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
 (use-package go-mode
   :ensure t
   :init
   (add-to-list 'auto-mode-alist '("\\.go\\'" . go-mode))
+  (add-hook 'go-mode-hook #'yas-minor-mode)
+  (add-hook 'go-mode-hook #'eglot-ensure)
+  (add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
   )
-(defun eglot-format-buffer-on-save ()
-  (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
-(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
-(setq-default eglot-workspace-configuration
-    '((:gopls .
-        ((staticcheck . t)
-         (matcher . "CaseSensitive")))))
 
-(use-package flymake-golanci
+;; Install golangci-lint
+;; curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.50.1
+(use-package flymake-golangci
   :ensure t
   :init
   (add-hook 'go-mode-hook 'flymake-golangci-load))
