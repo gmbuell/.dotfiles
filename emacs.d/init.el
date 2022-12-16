@@ -65,8 +65,6 @@
  '(custom-safe-themes
    '("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(git-gutter:handled-backends '(git hg bzr svn))
- '(package-selected-packages
-   '(consult corfu-terminal company-try-hard tree-sitter tree-sitter-langs cape bash-completion vertico icicles vcomplete elmo mct shelldon iflipb dogears historian amx airline-themes powerline solaire-mode all-the-icons neotree embark-consult embark marginalia orderless ample-theme molokai-theme railscasts-theme alect-themes cyberpunk-theme color-theme-sanityinc-tomorrow ujelly-theme gruvbox-theme monokai-theme monokai bazel company-graphviz-dot graphviz-dot-mode go-mode treemacs-magit treemacs-projectile treemacs winum link-hint modern-cpp-font-lock markdown-mode markdown nov discover-my-major beginend dumb-jump breadcrumb pretty-hydra origami eterm-256color godoctor go-eldoc company-go ycmd aio protobuf-mode rainbow-delimiters easy-kill auto-yasnippet multifiles phi-search fold-this region-bindings-mode multiple-cursors ivy-xref eglot google-c-style function-args company-quickhelp company f counsel-projectile find-file-in-project projectile avy expand-region headlong smartscan yasnippet base16-theme smart-mode-line mosey smartparens which-key deft highlight-symbol monky vc-defer vc-hgcmd magit git-gutter counsel swiper ivy-hydra ivy flx smex hydra clipetty quelpa-use-package quelpa auto-package-update diminish use-package))
  '(sp-override-key-bindings
    '(("C-<right>" . sp-slurp-hybrid-sexp)
      ("C-<left>" . sp-dedent-adjust-sexp)))
@@ -1076,6 +1074,14 @@ In that case, insert the number."
   ;;(add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3")))
   )
 
+;; Tell eglot about go modules
+(require 'project)
+(defun project-find-go-module (dir)
+  (when-let ((root (locate-dominating-file dir "go.mod")))
+    (cons 'go-module root)))
+(cl-defmethod project-root ((project (head go-module)))
+  (cdr project))
+(add-hook 'project-find-functions #'project-find-go-module)
 ;; eldoc is very noisy
 (global-eldoc-mode -1)
 (add-hook 'prog-mode-hook
@@ -1356,7 +1362,9 @@ No association with rules for now.")
   (google3-build-mode-setup-imenu))
 
 (use-package bazel
-  :ensure t)
+  :ensure t
+  :init
+  (setq bazel-command '("bazelisk")))
 
 (setq auto-mode-alist
       (nconc
@@ -1392,6 +1400,21 @@ No association with rules for now.")
   :init
   (add-to-list 'auto-mode-alist '("\\.go\\'" . go-mode))
   )
+(defun eglot-format-buffer-on-save ()
+  (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
+(setq-default eglot-workspace-configuration
+    '((:gopls .
+        ((staticcheck . t)
+         (matcher . "CaseSensitive")))))
+
+;;(add-to-list 'load-path "~/go/src/github.com/dougm/goflymake")
+;;(require 'go-flymake)
+
+;; (use-package flymake-go-staticcheck
+;;   :ensure t
+;;   :init
+;;   (add-hook 'go-mode-hook #'flymake-go-staticcheck-enable))
 
 ;; Shell setup
 (use-package eterm-256color
