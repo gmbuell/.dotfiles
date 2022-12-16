@@ -932,6 +932,7 @@ In that case, insert the number."
 
 
 (use-package corfu
+  :ensure t
   ;; Optional customizations
   :custom
   ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
@@ -1407,6 +1408,12 @@ No association with rules for now.")
     '((:gopls .
         ((staticcheck . t)
          (matcher . "CaseSensitive")))))
+
+(use-package flymake-golanci
+  :ensure t
+  :init
+  (add-hook 'go-mode-hook 'flymake-golangci-load))
+
 
 ;;(add-to-list 'load-path "~/go/src/github.com/dougm/goflymake")
 ;;(require 'go-flymake)
