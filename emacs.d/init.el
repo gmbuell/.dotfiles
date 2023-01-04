@@ -15,6 +15,7 @@
 (package-refresh-contents)
 
 (add-to-list 'load-path "~/.emacs.d/lisp/")
+(add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 
 ;; Bootstrap 'use-package'.
 (unless (package-installed-p 'use-package)
@@ -66,7 +67,7 @@
    '("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(git-gutter:handled-backends '(git hg bzr svn))
  '(package-selected-packages
-   '(flymake-golangci flymake-golanci yaml-mode which-key vertico stickyfunc-enhance sqlformat smex smartscan smartparens smart-mode-line shelldon region-bindings-mode rainbow-delimiters quelpa-use-package protobuf-mode pretty-hydra phi-search origami orderless nov multiple-cursors multifiles mosey monky modern-cpp-font-lock markdown-mode marginalia magit link-hint ivy-xref ivy-hydra iflipb highlight-symbol headlong google-c-style godoctor go-eldoc git-gutter function-args fold-this flymake-go-staticcheck flycheck-ycmd flycheck-inline flycheck-golangci-lint flx find-file-in-project expand-region eterm-256color embark-consult eglot easy-kill dumb-jump doom-themes dogears dockerfile-mode discover-my-major diminish deft dash-functional counsel-projectile corfu-terminal company-statistics company-quickhelp company-go clipetty cape breadcrumb beginend bazel bash-completion base16-theme auto-yasnippet auto-package-update async))
+   '(walkman magit-todos hl-todo jbeans-theme go-mode corfu f projectile avy consult embark yasnippet flymake-golangci flymake-golanci yaml-mode which-key vertico stickyfunc-enhance sqlformat smex smartscan smartparens smart-mode-line shelldon region-bindings-mode rainbow-delimiters quelpa-use-package protobuf-mode pretty-hydra phi-search origami orderless nov multiple-cursors multifiles mosey monky modern-cpp-font-lock markdown-mode marginalia magit link-hint ivy-xref ivy-hydra iflipb highlight-symbol headlong google-c-style godoctor go-eldoc git-gutter function-args fold-this flymake-go-staticcheck flycheck-ycmd flycheck-inline flycheck-golangci-lint flx find-file-in-project expand-region eterm-256color embark-consult eglot easy-kill dumb-jump doom-themes dogears dockerfile-mode discover-my-major diminish deft dash-functional counsel-projectile corfu-terminal company-statistics company-quickhelp company-go clipetty cape breadcrumb beginend bazel bash-completion base16-theme auto-yasnippet auto-package-update async))
  '(sp-override-key-bindings
    '(("C-<right>" . sp-slurp-hybrid-sexp)
      ("C-<left>" . sp-dedent-adjust-sexp)))
@@ -383,7 +384,7 @@ Git gutter:
 (use-package magit
   :ensure t
   :bind ("C-c g" . magit-status)
-  :config
+  :init
   (setq auto-revert-check-vc-info t)
   (setq vc-follow-symlinks t))
 
@@ -394,6 +395,16 @@ Git gutter:
 
 (advice-add 'magit-toplevel :around #'my/google3-early-exit)
 (advice-add 'magit-inside-worktree-p :around #'my/google3-early-exit)
+
+(use-package hl-todo
+  :ensure t
+  :init
+  (global-hl-todo-mode))
+
+(use-package magit-todos
+  :ensure t
+  :init
+  (magit-todos-mode))
 
 ;; smerge-mode instead of ediff
 (use-package smerge-mode
@@ -650,6 +661,12 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; (use-package airline-themes
 ;;   :ensure t)
 
+;; Too many blue colors
+;; (use-package jbeans-theme
+;;   :ensure t
+;;   :config
+;;   (load-theme 'jbeans t))
+
 (use-package doom-themes
   :ensure t
   :config
@@ -710,23 +727,33 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
           (lambda ()
             (abbrev-mode -1)))
 
-;; (use-package org
-;;   :ensure t
-;;   :init
-;;   (setq org-confirm-babel-evaluate nil
-;;       org-src-fontify-natively t
-;;       org-src-tab-acts-natively t)
-;;   :config
-;;   ;; (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
-;;   ;; Add shortcut to recalculate table
-;;   ;; (bind-key "M-r" '(lambda () (interactive)(org-table-recalculate t)) org-mode-map)
-;;   (org-babel-do-load-languages
-;;    'org-babel-load-languages
-;;    '((sh . t)
-;;      (comint . t)
-;;      (sql . t)
-;;      ;;(dremel . t)
-;;      )))
+(use-package org
+  :ensure t
+  :init
+  (setq org-confirm-babel-evaluate nil
+      org-src-fontify-natively t
+      org-src-tab-acts-natively t)
+  :config
+  ;; (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
+  ;; Add shortcut to recalculate table
+  ;; (bind-key "M-r" '(lambda () (interactive)(org-table-recalculate t)) org-mode-map)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((shell . t)
+     (comint . t)
+     (sqlite . t)
+     (emacs-lisp . t)
+     ;;(dremel . t)
+     )))
+
+(use-package walkman
+  :ensure t
+  :config
+  (setq walkman-keep-headers t)
+  :bind (:map org-mode-map
+              ("C-c w" . walkman-transient)
+              ("C-c e" . walkman-at-point)
+              ))
 
 
 ;; M-n and M-p move between symbols
@@ -1371,6 +1398,10 @@ No association with rules for now.")
   :init
   (setq bazel-command '("bazelisk")))
 
+(defun test-go ()
+  (interactive)
+  (shelldon-async-command "bazel test --test_output=all :all"))
+
 (setq auto-mode-alist
       (nconc
        (list
@@ -1404,15 +1435,15 @@ No association with rules for now.")
 ;; go install golang.org/x/tools/gopls@latest
 ;; Also need to do more setup to get this to work with bazel.
 ;; https://github.com/bazelbuild/rules_go/wiki/Editor-setup
-(defun eglot-format-buffer-on-save ()
-  (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+;; (defun eglot-format-buffer-on-save ()
+;;   (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
 (use-package go-mode
   :ensure t
   :init
   (add-to-list 'auto-mode-alist '("\\.go\\'" . go-mode))
   (add-hook 'go-mode-hook #'yas-minor-mode)
   (add-hook 'go-mode-hook #'eglot-ensure)
-  (add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
+  ;;(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
   )
 
 ;; Install golangci-lint
@@ -1432,9 +1463,9 @@ No association with rules for now.")
 ;;   (add-hook 'go-mode-hook #'flymake-go-staticcheck-enable))
 
 ;; Shell setup
-(use-package eterm-256color
-  :ensure t
-  :init (add-hook 'term-mode-hook #'eterm-256color-mode))
+;; (use-package eterm-256color
+;;   :ensure t
+;;   :init (add-hook 'term-mode-hook #'eterm-256color-mode))
 
 (setq enable-recursive-minibuffers t)
 (use-package bash-completion
@@ -1445,12 +1476,16 @@ No association with rules for now.")
 (use-package shelldon
   :ensure t
   :bind* (("C-t" . shelldon)
-          ("M-t" . shelldon-output-hist))
+          ("M-t" . shelldon-output-history))
   :init
   (setq shell-command-prompt-show-cwd t)
-  (add-hook 'shelldon-mode-hook 'ansi-color-for-comint-mode-on)
-  (add-to-list 'comint-output-filter-functions 'ansi-color-process-output)
-  (autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t))
+  ;; (setq shell-command-switch "-ic")
+  (setq shelldon-ansi-colors t)
+  ;; xterm-color below might be better
+  ;(add-hook 'shelldon-mode-hook 'ansi-color-for-comint-mode-on)
+  ;(add-to-list 'comint-output-filter-functions 'ansi-color-process-output)
+  ;(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
+  )
 
 (setq comint-prompt-read-only t)
 (setq comint-scroll-to-bottom-on-input t)
@@ -1458,9 +1493,18 @@ No association with rules for now.")
 (use-package xterm-color
   :ensure t
   :init
-  (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter)
+  (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)
+  (add-hook 'shell-mode-hook
+            (lambda ()
+              ;; Disable font-locking in this buffer to improve performance
+              (font-lock-mode -1)
+              ;; Prevent font-locking from being re-enabled in this buffer
+              (make-local-variable 'font-lock-function)
+              (setq font-lock-function (lambda (_) nil))
+              (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)))
   (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions))
-  (setq compilation-environment '("TERM=xterm-256color"))
+  ;;(setq compilation-environment '("TERM=xterm-256color"))
+  (setq compilation-environment '("TERM=xterm-24bits"))
   (defun my/advice-compilation-filter (f proc string)
     (funcall f proc (xterm-color-filter string)))
   (advice-add 'compilation-filter :around #'my/advice-compilation-filter))
