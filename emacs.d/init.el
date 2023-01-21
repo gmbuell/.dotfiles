@@ -67,17 +67,17 @@
    '("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(git-gutter:handled-backends '(git hg bzr svn))
  '(package-selected-packages
-   '(walkman magit-todos hl-todo jbeans-theme go-mode corfu f projectile avy consult embark yasnippet flymake-golangci flymake-golanci yaml-mode which-key vertico stickyfunc-enhance sqlformat smex smartscan smartparens smart-mode-line shelldon region-bindings-mode rainbow-delimiters quelpa-use-package protobuf-mode pretty-hydra phi-search origami orderless nov multiple-cursors multifiles mosey monky modern-cpp-font-lock markdown-mode marginalia magit link-hint ivy-xref ivy-hydra iflipb highlight-symbol headlong google-c-style godoctor go-eldoc git-gutter function-args fold-this flymake-go-staticcheck flycheck-ycmd flycheck-inline flycheck-golangci-lint flx find-file-in-project expand-region eterm-256color embark-consult eglot easy-kill dumb-jump doom-themes dogears dockerfile-mode discover-my-major diminish deft dash-functional counsel-projectile corfu-terminal company-statistics company-quickhelp company-go clipetty cape breadcrumb beginend bazel bash-completion base16-theme auto-yasnippet auto-package-update async))
+   '(yasnippet-snippets t: walkman magit-todos hl-todo jbeans-theme go-mode corfu f projectile avy consult embark yasnippet flymake-golangci flymake-golanci yaml-mode which-key vertico stickyfunc-enhance sqlformat smex smartscan smartparens smart-mode-line shelldon region-bindings-mode rainbow-delimiters quelpa-use-package protobuf-mode pretty-hydra phi-search origami orderless nov multiple-cursors multifiles mosey monky modern-cpp-font-lock markdown-mode marginalia magit link-hint ivy-xref ivy-hydra iflipb highlight-symbol headlong google-c-style godoctor go-eldoc git-gutter function-args fold-this flymake-go-staticcheck flycheck-ycmd flycheck-inline flycheck-golangci-lint flx find-file-in-project expand-region eterm-256color embark-consult eglot easy-kill dumb-jump doom-themes dogears dockerfile-mode discover-my-major diminish deft dash-functional counsel-projectile corfu-terminal company-statistics company-quickhelp company-go clipetty cape breadcrumb beginend bazel bash-completion base16-theme auto-yasnippet auto-package-update async))
  '(sp-override-key-bindings
    '(("C-<right>" . sp-slurp-hybrid-sexp)
      ("C-<left>" . sp-dedent-adjust-sexp)))
  '(warning-suppress-log-types '((comp))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+;; (custom-set-faces
+;;  ;; custom-set-faces was added by Custom.
+;;  ;; If you edit it by hand, you could mess it up, so be careful.
+;;  ;; Your init file should contain only one such instance.
+;;  ;; If there is more than one, they won't work right.
+;;  '(flymake-error ((t (:underline (:color "#e74c3c" :style wave :position wave))))))
 
 ;; Disable graphical garbage
 (when (and (fboundp 'tool-bar-mode) (not (eq tool-bar-mode -1)))
@@ -709,7 +709,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package yasnippet
   :ensure t
-  :diminish yas-minor-mode)
+  :diminish yas-minor-mode
+  :config
+  (add-to-list 'yas-snippet-dirs "~/.emacs.d/lisp/snippets")
+  :init
+  (yas-global-mode 1))
+
+(use-package yasnippet-snippets
+  :ensure yasnippet-snippets
+  :requires (yasnippet))
 ;; (use-package yasnippet
 ;;   :ensure t
 ;;   :diminish yas-minor-mode
@@ -726,6 +734,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (add-hook 'prog-mode-hook
           (lambda ()
             (abbrev-mode -1)))
+
+(add-hook 'prog-mode-hook 'subword-mode)
 
 (use-package org
   :ensure t
@@ -965,10 +975,10 @@ In that case, insert the number."
   ;; Optional customizations
   :custom
   ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  (corfu-auto t)                 ;; Enable auto completion
-  (corfu-auto-delay 0)
-  (corfu-auto-prefix 3)
-  (corfu-quit-no-match 'separator)
+  ;; (corfu-auto t)                 ;; Enable auto completion
+  ;; (corfu-auto-delay 0)
+  ;; (corfu-auto-prefix 3)
+  ;; (corfu-quit-no-match 'separator)
   ;; (corfu-separator ?\s)          ;; Orderless field separator
   ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
   ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
@@ -1396,11 +1406,7 @@ No association with rules for now.")
 (use-package bazel
   :ensure t
   :init
-  (setq bazel-command '("bazelisk")))
-
-(defun test-go ()
-  (interactive)
-  (shelldon-async-command "bazel test --test_output=all :all"))
+  (setq bazel-command '("bazel")))
 
 (setq auto-mode-alist
       (nconc
@@ -1484,7 +1490,10 @@ No association with rules for now.")
   ;; xterm-color below might be better
   ;(add-hook 'shelldon-mode-hook 'ansi-color-for-comint-mode-on)
   ;(add-to-list 'comint-output-filter-functions 'ansi-color-process-output)
-  ;(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
+                                        ;(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
+  (defun test-go ()
+    (interactive)
+    (shelldon-async-command "bazel test --test_output=all :all"))
   )
 
 (setq comint-prompt-read-only t)
