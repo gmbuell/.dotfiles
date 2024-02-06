@@ -66,8 +66,9 @@
  '(custom-safe-themes
    '("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(git-gutter:handled-backends '(git hg bzr svn))
+ '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
-   '(yasnippet-snippets t: walkman magit-todos hl-todo jbeans-theme go-mode corfu f projectile avy consult embark yasnippet flymake-golangci flymake-golanci yaml-mode which-key vertico stickyfunc-enhance sqlformat smex smartscan smartparens smart-mode-line shelldon region-bindings-mode rainbow-delimiters quelpa-use-package protobuf-mode pretty-hydra phi-search origami orderless nov multiple-cursors multifiles mosey monky modern-cpp-font-lock markdown-mode marginalia magit link-hint ivy-xref ivy-hydra iflipb highlight-symbol headlong google-c-style godoctor go-eldoc git-gutter function-args fold-this flymake-go-staticcheck flycheck-ycmd flycheck-inline flycheck-golangci-lint flx find-file-in-project expand-region eterm-256color embark-consult eglot easy-kill dumb-jump doom-themes dogears dockerfile-mode discover-my-major diminish deft dash-functional counsel-projectile corfu-terminal company-statistics company-quickhelp company-go clipetty cape breadcrumb beginend bazel bash-completion base16-theme auto-yasnippet auto-package-update async))
+   '(ace-window aio auto-yasnippet bash-completion bazel beginend breadcrumb cape clipetty copilot corfu-terminal deft diminish discover-my-major dogears doom-themes dumb-jump embark-consult expand-region find-file-in-project flymake-golangci fold-this git-gutter go-mode highlight-symbol iflipb link-hint magit-todos marginalia markdown-mode modern-cpp-font-lock mosey multifiles multiple-cursors nov orderless origami phi-search pretty-hydra projectile protobuf-mode quelpa-use-package rainbow-delimiters region-bindings-mode shelldon smart-mode-line smartparens smartscan vertico walkman which-key xterm-color yaml-mode yasnippet-snippets))
  '(sp-override-key-bindings
    '(("C-<right>" . sp-slurp-hybrid-sexp)
      ("C-<left>" . sp-dedent-adjust-sexp)))
@@ -516,12 +517,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                '(("Class" "^\\(template[        ]*<[^>]+>[      ]*\\)?\\(class\\|struct\\)[     ]+\\([[:alnum:]_]+\\(<[^>]+>\\)?\\)\\([         \n]\\|\\\\\n\\)*[:{]" 3)
                  ("Test" "^ *TEST\\(?:_F\\)?([^,]+,\n? *\\(.+\\)) {$" 1))))))
 
-(use-package which-func
-  :diminish which-func-mode
-  :init
-  (which-function-mode)
-  (setq-default header-line-format
-                '((which-func-mode ("" which-func-format " ")))))
+;; This seems to massively slow down opening files and errors frequently.
+;; (use-package which-func
+;;   :diminish which-func-mode
+;;   :init
+;;   (which-function-mode)
+;;   (setq-default header-line-format
+;;                 '((which-func-mode ("" which-func-format " ")))))
 
 (use-package markdown-mode
   :ensure t)
@@ -789,7 +791,12 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package vertico
   :ensure t
   :init
-  (vertico-mode))
+  (vertico-mode)
+  :config
+  (vertico-multiform-mode)
+  (setq vertico-multiform-commands
+      '((consult-imenu buffer indexed)))
+  :bind (("M-i" . consult-imenu)))
 
 ;; Completion
 ;; headlong might be useful for bookmark jumping
@@ -901,6 +908,12 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq avy-background t)
   (setq avy-keys (number-sequence ?a ?z)))
 
+(use-package ace-window
+  :ensure t
+  :bind (("C-x o" . ace-window))
+  :init
+  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
+
 ;; Project managment
 ;; Also look into bufler for this
 ;; https://github.com/alphapapa/bufler.el#compared-to-ibuffer
@@ -975,9 +988,10 @@ In that case, insert the number."
   ;; Optional customizations
   :custom
   ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  ;; (corfu-auto t)                 ;; Enable auto completion
-  ;; (corfu-auto-delay 0)
-  ;; (corfu-auto-prefix 3)
+  ;; 10/26/2023 Disable corfu-auto because copilot is so much better
+  ;;(corfu-auto t)                 ;; Enable auto completion
+  (corfu-auto-delay 0.2)
+  (corfu-auto-prefix 2)
   ;; (corfu-quit-no-match 'separator)
   ;; (corfu-separator ?\s)          ;; Orderless field separator
   ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
@@ -1009,6 +1023,63 @@ In that case, insert the number."
           :url "https://codeberg.org/akib/emacs-corfu-terminal.git"))
 (unless (display-graphic-p)
   (corfu-terminal-mode +1))
+
+(defun rk/copilot-complete-or-accept ()
+  "Command that either triggers a completion or accepts one if one
+is available. Useful if you tend to hammer your keys like I do."
+  (interactive)
+  (if (copilot--overlay-visible)
+      (progn
+        (copilot-accept-completion)
+        (open-line 1)
+        (next-line))
+    (copilot-complete)))
+
+(defun rk/copilot-quit ()
+  "Run `copilot-clear-overlay' or `keyboard-quit'. If copilot is
+cleared, make sure the overlay doesn't come back too soon."
+  (interactive)
+  (condition-case err
+      (when copilot--overlay
+        (lexical-let ((pre-copilot-disable-predicates copilot-disable-predicates))
+          (setq copilot-disable-predicates (list (lambda () t)))
+          (copilot-clear-overlay)
+          (run-with-idle-timer
+           1.0
+           nil
+           (lambda ()
+             (setq copilot-disable-predicates pre-copilot-disable-predicates)))))
+    (error handler)))
+
+(defun rk/copilot-complete-if-active (next-func n)
+  (let ((completed (when copilot-mode (copilot-accept-completion))))
+    (unless completed (funcall next-func n))))
+
+(use-package copilot
+  :quelpa (copilot :fetcher github
+                   :repo "zerolfx/copilot.el"
+                   :branch "main"
+                   :files ("dist" "*.el"))
+  :init
+  (add-hook 'prog-mode-hook 'copilot-mode)
+  :config
+  ;; keybindings that are active when copilot shows completions
+  (define-key copilot-mode-map (kbd "M-C-<next>") #'copilot-next-completion)
+  (define-key copilot-mode-map (kbd "M-C-<prior>") #'copilot-previous-completion)
+  (define-key copilot-mode-map (kbd "M-C-<right>") #'copilot-accept-completion-by-word)
+  (define-key copilot-mode-map (kbd "M-C-<down>") #'copilot-accept-completion-by-line)
+
+  ;; global keybindings
+  (define-key global-map (kbd "M-C-<return>") #'rk/copilot-complete-or-accept)
+  ;; 10/26/2023 Don't rebind dabbrev-expand (which should be C-/) so I stil have other completion mechanisms available.
+  ;; (global-set-key [remap dabbrev-expand] #'rk/copilot-complete-or-accept)
+  ;; Do copilot-quit when pressing C-g
+  (advice-add 'keyboard-quit :before #'rk/copilot-quit)
+
+  ;; complete by pressing right or tab but only when copilot completions are
+  ;; shown. This means we leave the normal functionality intact.
+  (advice-add 'right-char :around #'rk/copilot-complete-if-active)
+  (advice-add 'indent-for-tab-command :around #'rk/copilot-complete-if-active))
 
 ;; (use-package company
 ;;   :ensure t
@@ -1045,7 +1116,8 @@ In that case, insert the number."
 ;;           :map company-active-map
 ;;           ("C-z" . company-try-hard)))
 
-(setq tab-always-indent 'complete)
+;; 10/26/2023 Disable complete because copilot is so much better.
+;; (setq tab-always-indent 'complete)
 ;; (defun gmbuell-indent-or-complete-common (arg)
 ;;   "Indent the current line or region, or complete the common part."
 ;;   (interactive "P")
@@ -1097,8 +1169,9 @@ In that case, insert the number."
   (add-hook 'go-mode-hook 'eglot-ensure)
   (add-hook 'python-mode-hook 'eglot-ensure)
   (add-hook 'protobuf-mode-hook 'eglot-ensure)
-  (setq eglot-stay-out-of '(flymake))
-  (add-hook 'eglot-managed-mode-hook (lambda () (add-hook 'flymake-diagnostic-functions 'eglot-flymake-backend nil t)))
+  ;; Stop this flymake workaround because I think everything is fine with eglot and flymake now.
+  ;;(setq eglot-stay-out-of '(flymake))
+  ;;(add-hook 'eglot-managed-mode-hook (lambda () (add-hook 'flymake-diagnostic-functions 'eglot-flymake-backend nil t)))
   :config
   (add-to-list
    'eglot-server-programs
@@ -1125,10 +1198,11 @@ In that case, insert the number."
   (cdr project))
 (add-hook 'project-find-functions #'project-find-go-module)
 ;; eldoc is very noisy
-(global-eldoc-mode -1)
-(add-hook 'prog-mode-hook
-          (lambda ()
-            (eldoc-mode -1)))
+;; Going to see if eldoc is better now
+;;(global-eldoc-mode -1)
+;;(add-hook 'prog-mode-hook
+;;          (lambda ()
+;;            (eldoc-mode -1)))
 
 ;; Also use dabbrev for completion
 ;; (defun add-cape-dabbrev ()
@@ -1254,7 +1328,9 @@ In that case, insert the number."
 
 ;; Protocol buffer support
 (use-package protobuf-mode
-  :ensure t)
+  :ensure t
+  :bind* (:map protobuf-mode-map
+               ("TAB" . indent-for-tab-command)))
 
 (if (file-exists-p "/usr/share/emacs/site-lisp/emacs-google-config")
     (progn
@@ -1413,7 +1489,8 @@ delimiters instead of word delimiters."
 (use-package bazel
   :ensure t
   :init
-  (setq bazel-command '("bazel")))
+  (setq bazel-command '("bazel"))
+  :bind (("C-c C-c" . bazel-build)))
 
 (setq auto-mode-alist
       (nconc
@@ -1461,10 +1538,11 @@ delimiters instead of word delimiters."
 
 ;; Install golangci-lint
 ;; curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.50.1
-(use-package flymake-golangci
-  :ensure t
-  :init
-  (add-hook 'go-mode-hook 'flymake-golangci-load))
+;; Disable golangci because I'm using bazel.
+;; (use-package flymake-golangci
+;;   :ensure t
+;;   :init
+;;   (add-hook 'go-mode-hook 'flymake-golangci-load))
 
 
 ;;(add-to-list 'load-path "~/go/src/github.com/dougm/goflymake")
@@ -1667,9 +1745,9 @@ Breadcrumb bookmarks:
 (use-package iflipb
   :ensure t
   :bind* (
-         ("M-o" . iflipb-next-buffer)
-         ("M-O" . iflipb-previous-buffer)
-         ("C-x k" . iflipb-kill-buffer)))
+          ;;("M-o" . iflipb-next-buffer)
+          ;;("M-O" . iflipb-previous-buffer)
+          ("C-x k" . iflipb-kill-buffer)))
 
 
 (defun modi/multi-pop-to-mark (orig-fun &rest args)
