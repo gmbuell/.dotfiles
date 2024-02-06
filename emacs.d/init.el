@@ -1384,6 +1384,13 @@ No association with rules for now.")
   (when (eq major-mode 'google3-build-mode)
     (setq imenu-generic-expression '((nil "name = \"\\(.*\\)\"" 1)))
     (setq imenu-create-index-function 'imenu-default-create-index-function)))
+
+(defun google3-build-mode-regexp (symbols)
+  "Return an optimized regular expression matching the given SYMBOLS list.
+Similar to `regexp-opt' with `'words', but using symbol
+delimiters instead of word delimiters."
+  (concat "\\_<" (regexp-opt (mapcar 'symbol-name symbols) t) "\\_>"))
+
 (define-derived-mode google3-build-mode python-mode
   "build"
   "Major mode for editing BUILD files"
