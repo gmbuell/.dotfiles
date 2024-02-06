@@ -843,10 +843,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package embark
   :ensure t
-  ;; :bind.
-  ;; (("C-." . embark-act)         ;; pick some comfortable binding
-  ;;  ("C-;" . embark-dwim)        ;; good alternative: M-.
-  ;;  ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+   :bind
+   (("C-." . embark-act)         ;; pick some comfortable binding
+    ("C-;" . embark-dwim)        ;; good alternative: M-.
+    ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
 
   :init
   ;; Optionally replace the key help with a completing-read interface
@@ -860,9 +860,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                  (window-parameters (mode-line-format . none)))))
 
 (use-package consult
-  :ensure t)
-
-(use-package embark-consult
   :ensure t)
 
 (defvar consult--source-dogears
@@ -901,6 +898,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :ensure t
   :bind (("C-c SPC" . avy-goto-word-1)
          ;;("C-c C-j" . avy-resume)
+         ("M-j" . avy-goto-char-timer)
+         :map isearch-mode-map
+         ("M-j" . avy-isearch)
          )
   :init
   (avy-setup-default)
@@ -957,7 +957,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (projectile-register-project-type 'google3 '("WORKSPACE"))
 
-(add-hook 'after-init-hook 'refresh-projectile)
+;; Probably need to stop using projectile and move to normal project.el. Plus
+;; refresh-projectile can be very slow.
+;; (add-hook 'after-init-hook 'refresh-projectile)
 
 ;; (defvar company-mode/enable-yas t
 ;;   "Enable yasnippet for all backends.")
@@ -1172,19 +1174,20 @@ cleared, make sure the overlay doesn't come back too soon."
   ;; Stop this flymake workaround because I think everything is fine with eglot and flymake now.
   ;;(setq eglot-stay-out-of '(flymake))
   ;;(add-hook 'eglot-managed-mode-hook (lambda () (add-hook 'flymake-diagnostic-functions 'eglot-flymake-backend nil t)))
+  (when (file-exists-p "/google/bin/releases/")
+    (add-to-list
+     'eglot-server-programs
+     '((python-mode)
+       . ("/google/bin/releases/editor-devtools/ciderlsp" "--noforward_sync_responses" "--request_options=enable_placeholders" "--tooltag=emacs-eglot")))
+    ;; kythe is deprecated but it works on unsubmitted code.
+    ;; But no autocomplete
+    (add-to-list
+     'eglot-server-programs
+     ;; '((c++-mode c-mode java-mode python-mode protobuf-mode)
+     '((protobuf-mode mendel-mode borg-mode google3-build-mode)
+       . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3"))))
+  ;; "-index-file=/usr/local/google/home/gmbuell/index.idx")
   :config
-  (add-to-list
-   'eglot-server-programs
-   '((python-mode)
-     . ("/google/bin/releases/editor-devtools/ciderlsp" "--noforward_sync_responses" "--request_options=enable_placeholders" "--tooltag=emacs-eglot")))
-  ;; kythe is deprecated but it works on unsubmitted code.
-  ;; But no autocomplete
-  (add-to-list
-   'eglot-server-programs
-   ;; '((c++-mode c-mode java-mode python-mode protobuf-mode)
-   '((protobuf-mode mendel-mode borg-mode google3-build-mode)
-     . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3")))
-  ;; "-index-file=/usr/local/google/home/gmbuell/index.idx"
   (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-cross-file-rename")))
   ;;(add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3")))
   )
@@ -1250,9 +1253,12 @@ cleared, make sure the overlay doesn't come back too soon."
   t)
 
 (use-package region-bindings-mode
-  :ensure t)
-(require 'region-bindings-mode)
-(region-bindings-mode-enable)
+  :ensure t
+  :demand t
+  :init
+  (require 'region-bindings-mode)
+  (region-bindings-mode-enable))
+
 
 ;; It may be possible to use avy to set marks for multiple cursors.
 ;; I.e. avy-push-mark
@@ -1597,8 +1603,8 @@ delimiters instead of word delimiters."
               (setq font-lock-function (lambda (_) nil))
               (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)))
   (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions))
-  ;;(setq compilation-environment '("TERM=xterm-256color"))
-  (setq compilation-environment '("TERM=xterm-24bits"))
+  (setq compilation-environment '("TERM=xterm-256color"))
+  ;;(setq compilation-environment '("TERM=xterm-24bits"))
   (defun my/advice-compilation-filter (f proc string)
     (funcall f proc (xterm-color-filter string)))
   (advice-add 'compilation-filter :around #'my/advice-compilation-filter))
@@ -1669,8 +1675,8 @@ delimiters instead of word delimiters."
   :ensure t)
 
 (defhydra hydra-goto-line (goto-map ""
-                           :pre (linum-mode 1)
-                           :post (linum-mode -1))
+                           :pre (display-line-numbers-mode 1)
+                           :post (display-line-numbers-mode -1))
   "goto-line"
   ("g" goto-line "go")
   ("m" set-mark-command "mark" :bind nil)
