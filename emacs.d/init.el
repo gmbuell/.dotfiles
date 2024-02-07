@@ -1353,6 +1353,8 @@ cleared, make sure the overlay doesn't come back too soon."
   ;; Stop this flymake workaround because I think everything is fine with eglot and flymake now.
   ;;(setq eglot-stay-out-of '(flymake))
   ;;(add-hook 'eglot-managed-mode-hook (lambda () (add-hook 'flymake-diagnostic-functions 'eglot-flymake-backend nil t)))
+  :config
+  (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-cross-file-rename")))
   (when (file-exists-p "/google/bin/releases/")
     (add-to-list
      'eglot-server-programs
@@ -1366,8 +1368,6 @@ cleared, make sure the overlay doesn't come back too soon."
      '((protobuf-mode mendel-mode borg-mode google3-build-mode)
        . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3"))))
   ;; "-index-file=/usr/local/google/home/gmbuell/index.idx")
-  :config
-  (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-cross-file-rename")))
   ;;(add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3")))
   )
 
