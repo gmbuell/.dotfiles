@@ -1154,37 +1154,6 @@ In that case, insert the number."
 (unless (display-graphic-p)
   (corfu-terminal-mode +1))
 
-(defun rk/copilot-complete-or-accept ()
-  "Command that either triggers a completion or accepts one if one
-is available. Useful if you tend to hammer your keys like I do."
-  (interactive)
-  (if (copilot--overlay-visible)
-      (progn
-        (copilot-accept-completion)
-        (open-line 1)
-        (next-line))
-    (copilot-complete)))
-
-(defun rk/copilot-quit ()
-  "Run `copilot-clear-overlay' or `keyboard-quit'. If copilot is
-cleared, make sure the overlay doesn't come back too soon."
-  (interactive)
-  (condition-case err
-      (when copilot--overlay
-        (lexical-let ((pre-copilot-disable-predicates copilot-disable-predicates))
-          (setq copilot-disable-predicates (list (lambda () t)))
-          (copilot-clear-overlay)
-          (run-with-idle-timer
-           1.0
-           nil
-           (lambda ()
-             (setq copilot-disable-predicates pre-copilot-disable-predicates)))))
-    (error handler)))
-
-(defun rk/copilot-complete-if-active (next-func n)
-  (let ((completed (when copilot-mode (copilot-accept-completion))))
-    (unless completed (funcall next-func n))))
-
 (use-package copilot
   :quelpa (copilot :fetcher github
                    :repo "zerolfx/copilot.el"
@@ -1193,23 +1162,103 @@ cleared, make sure the overlay doesn't come back too soon."
   :init
   (add-hook 'prog-mode-hook 'copilot-mode)
   :config
-  ;; keybindings that are active when copilot shows completions
-  (define-key copilot-mode-map (kbd "M-C-<next>") #'copilot-next-completion)
-  (define-key copilot-mode-map (kbd "M-C-<prior>") #'copilot-previous-completion)
-  (define-key copilot-mode-map (kbd "M-C-<right>") #'copilot-accept-completion-by-word)
-  (define-key copilot-mode-map (kbd "M-C-<down>") #'copilot-accept-completion-by-line)
+  (defun rk/no-copilot-mode ()
+    "Helper for `rk/no-copilot-modes'."
+    (copilot-mode -1))
 
+  (defvar rk/no-copilot-modes '(shell-mode
+                                inferior-python-mode
+                                eshell-mode
+                                term-mode
+                                vterm-mode
+                                comint-mode
+                                compilation-mode
+                                debugger-mode
+                                dired-mode-hook
+                                compilation-mode-hook
+                                flutter-mode-hook
+                                minibuffer-mode-hook)
+    "Modes in which copilot is inconvenient.")
+
+  (defun rk/copilot-disable-predicate ()
+    "When copilot should not automatically show completions."
+    (or rk/copilot-manual-mode
+        (member major-mode rk/no-copilot-modes)
+        ;; Need to figure out what the equivalent for corfu is if I want this behavior
+        ;;(company--active-p)
+        ))
+
+  (defvar rk/copilot-manual-mode nil
+    "When `t' will only show completions when manually triggered, e.g. via M-C-<return>.")
+
+  (defun rk/copilot-change-activation ()
+    "Switch between three activation modes:
+- automatic: copilot will automatically overlay completions
+- manual: you need to press a key (M-C-<return>) to trigger completions
+- off: copilot is completely disabled."
+    (interactive)
+    (if (and copilot-mode rk/copilot-manual-mode)
+        (progn
+          (message "deactivating copilot")
+          (global-copilot-mode -1)
+          (setq rk/copilot-manual-mode nil))
+      (if copilot-mode
+          (progn
+            (message "activating copilot manual mode")
+            (setq rk/copilot-manual-mode t))
+        (message "activating copilot mode")
+        (global-copilot-mode))))
+
+  (defun rk/copilot-complete-or-accept ()
+    "Command that either triggers a completion or accepts one if one
+is available. Useful if you tend to hammer your keys like I do."
+    (interactive)
+    (if (copilot--overlay-visible)
+        (progn
+          (copilot-accept-completion)
+          (open-line 1)
+          (next-line))
+      (copilot-complete)))
+
+  (defun rk/copilot-quit ()
+    "Run `copilot-clear-overlay' or `keyboard-quit'. If copilot is
+cleared, make sure the overlay doesn't come back too soon."
+    (interactive)
+    (when copilot--overlay
+      (setq pre-copilot-disable-predicates copilot-disable-predicates)
+      (setq copilot-disable-predicates (list (lambda () t)))
+      (copilot-clear-overlay)
+      (run-with-idle-timer
+       1.0
+       nil
+       (lambda ()
+         (setq copilot-disable-predicates pre-copilot-disable-predicates)))
+      ))
+
+  (defun rk/copilot-complete-if-active (next-func n)
+    (let ((completed (when copilot-mode (copilot-accept-completion))))
+      (unless completed (funcall next-func n))))
+  (add-to-list 'copilot-disable-predicates #'rk/copilot-disable-predicate)
   ;; global keybindings
-  (define-key global-map (kbd "M-C-<return>") #'rk/copilot-complete-or-accept)
-  ;; 10/26/2023 Don't rebind dabbrev-expand (which should be C-/) so I stil have other completion mechanisms available.
-  ;; (global-set-key [remap dabbrev-expand] #'rk/copilot-complete-or-accept)
+  ;; (define-key global-map (kbd "M-C-<return>") #'rk/copilot-complete-or-accept)
+  ;; dabbrev-expand isn't that good.
+  (global-set-key [remap dabbrev-expand] #'rk/copilot-complete-or-accept)
   ;; Do copilot-quit when pressing C-g
-  (advice-add 'keyboard-quit :before #'rk/copilot-quit)
-
+  ;; (advice-add 'keyboard-quit :before #'rk/copilot-quit)
   ;; complete by pressing right or tab but only when copilot completions are
   ;; shown. This means we leave the normal functionality intact.
-  (advice-add 'right-char :around #'rk/copilot-complete-if-active)
-  (advice-add 'indent-for-tab-command :around #'rk/copilot-complete-if-active))
+  ;; (advice-add 'right-char :around #'rk/copilot-complete-if-active)
+  ;; (advice-add 'indent-for-tab-command :around #'rk/copilot-complete-if-active)
+  :bind (:map copilot-completion-map
+              ("C-g"  . rk/copilot-quit)
+              ("C-f" . copilot-accept-completion)
+              ("<right>" . copilot-accept-completion)
+              ("M-<right>" . copilot-accept-completion-by-word)
+              ("M-f" . copilot-accept-completion-by-word)
+              ("C-e" . copilot-accept-completion-by-line)
+              ("<end>" . copilot-accept-completion-by-line)
+              ("M-n" . copilot-next-completion)
+              ("M-p" . copilot-previous-completion)))
 
 ;; (use-package company
 ;;   :ensure t
