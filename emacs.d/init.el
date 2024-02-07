@@ -984,6 +984,20 @@ In that case, insert the number."
         (self-insert-command 1)
       (company-complete-number (string-to-number k)))))
 
+;; Version of ora-company-number for corfu
+(defun ora-corfu-number ()
+  "Forward to `corfu-insert'.
+
+Unless the number is potentially part of the candidate.
+In that case, insert the number."
+  (interactive)
+  (let* ((k (this-command-keys))
+         (re (concat "^" (car corfu--input) k)))
+    (if (cl-find-if (lambda (s) (string-match re s))
+                    corfu--candidates)
+        (self-insert-command 1)
+      (corfu--goto (string-to-number k))
+      (corfu-insert))))
 
 (use-package corfu
   :ensure t
@@ -1013,12 +1027,25 @@ In that case, insert the number."
   ;; This is recommended since Dabbrev can be used globally (M-/).
   ;; See also `corfu-excluded-modes'.
   :init
-  (global-corfu-mode))
+  (global-corfu-mode)
+  (setq tab-always-indent 'complete)
+  (let ((map corfu-map))
+    (mapc
+     (lambda (x)
+       (define-key map (format "%d" x) 'ora-corfu-number))
+     (number-sequence 0 9))))
 
 (use-package corfu-indexed
   :requires (corfu)
   :init
   (corfu-indexed-mode 1))
+
+(use-package corfu-history
+  :requires (corfu)
+  :init
+  (corfu-history-mode 1)
+  (savehist-mode 1)
+  (add-to-list 'savehist-additional-variables 'corfu-history))
 
 (quelpa '(corfu-terminal
           :fetcher git
