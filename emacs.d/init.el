@@ -58,6 +58,8 @@
    :url "https://github.com/quelpa/quelpa-use-package.git"))
 (require 'quelpa-use-package)
 
+(use-package diminish :ensure t)
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -68,7 +70,7 @@
  '(git-gutter:handled-backends '(git hg bzr svn))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
-   '(flymake ace-window aio auto-yasnippet bash-completion bazel beginend breadcrumb cape clipetty copilot corfu-terminal deft diminish discover-my-major dogears doom-themes dumb-jump embark-consult expand-region find-file-in-project flymake-golangci fold-this git-gutter go-mode highlight-symbol iflipb link-hint magit-todos marginalia markdown-mode modern-cpp-font-lock mosey multifiles multiple-cursors nov orderless origami phi-search pretty-hydra projectile protobuf-mode quelpa-use-package rainbow-delimiters region-bindings-mode shelldon smart-mode-line smartparens smartscan vertico walkman which-key xterm-color yaml-mode yasnippet-snippets))
+   '(anzu flymake ace-window aio auto-yasnippet bash-completion bazel beginend breadcrumb cape clipetty copilot corfu-terminal deft diminish discover-my-major dogears doom-themes dumb-jump embark-consult expand-region find-file-in-project flymake-golangci fold-this git-gutter go-mode highlight-symbol iflipb link-hint magit-todos marginalia markdown-mode modern-cpp-font-lock mosey multifiles multiple-cursors nov orderless origami phi-search pretty-hydra projectile protobuf-mode quelpa-use-package rainbow-delimiters region-bindings-mode shelldon smart-mode-line smartparens smartscan vertico walkman which-key xterm-color yaml-mode yasnippet-snippets))
  '(sp-override-key-bindings
    '(("C-<right>" . sp-slurp-hybrid-sexp)
      ("C-<left>" . sp-dedent-adjust-sexp)))
@@ -204,6 +206,7 @@ that uses 'font-lock-warning-face'."
 
 ;; Better cut/paste handling for ssh and tmux
 (use-package clipetty
+  :diminish clipetty-mode
   :ensure t
   :hook (after-init . global-clipetty-mode))
 
@@ -471,6 +474,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
 
+;; Try out anzu
+(use-package anzu
+  :diminish anzu-mode
+  :ensure t
+  :init
+  (global-anzu-mode +1))
+
 ;; Help should search more than just commands
 (define-key 'help-command "a" 'apropos)
 
@@ -497,6 +507,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (add-hook 'isearch-mode-end-hook 'my-isearch-goto-match-beginning)
 
 (use-package highlight-symbol
+  :diminish highlight-symbol-mode
   :ensure t
   :config
   (setq highlight-symbol-on-navigation-p t)
@@ -549,6 +560,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (require 'subr-x)
 
 (use-package which-key
+  :diminish which-key-mode
   :ensure t
   :init
   (which-key-mode))
@@ -566,7 +578,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package smartparens-config
   :ensure smartparens
-  :diminish smartparens-mode
   :bind (:map prog-mode-map
               ("C-k" . gmbuell-smart-kill-line)
               :map c++-mode-map
@@ -576,18 +587,21 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
               :map go-mode-map
               ("C-k" . gmbuell-smart-kill-line)
               )
-  :init (progn
-          (smartparens-global-mode t)
-          (show-smartparens-global-mode +1)
-          (sp-use-smartparens-bindings)
-          (custom-set-variables '(sp-override-key-bindings
-                                  '(("C-<right>" . sp-slurp-hybrid-sexp)
-                                    ("C-<left>" . sp-dedent-adjust-sexp))))
-          ;; Fix forward slurp spacing
-          ;; https://github.com/Fuco1/smartparens/issues/297
-          (sp-local-pair 'c-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
-          (sp-local-pair 'c++-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*)")
-          (sp-local-pair 'go-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")))
+  :init
+  ;; smartparens-mode is incredibly difficult to diminish.
+  (add-hook 'smartparens-mode-hook (lambda () (diminish 'smartparens-mode)))
+  (diminish 'smartparens-mode)
+  (diminish 'smartparens-global-mode)
+  (smartparens-global-mode t)
+  (sp-use-smartparens-bindings)
+  (custom-set-variables '(sp-override-key-bindings
+                          '(("C-<right>" . sp-slurp-hybrid-sexp)
+                            ("C-<left>" . sp-dedent-adjust-sexp))))
+  ;; Fix forward slurp spacing
+  ;; https://github.com/Fuco1/smartparens/issues/297
+  (sp-local-pair 'c-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
+  (sp-local-pair 'c++-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*)")
+  (sp-local-pair 'go-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*"))
 
 ;; For chromebook:
 (global-set-key (kbd "<deletechar>") 'backward-kill-word)
@@ -1004,22 +1018,24 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; Project managment
 ;; Also look into bufler for this
 ;; https://github.com/alphapapa/bufler.el#compared-to-ibuffer
-(use-package projectile
-  :ensure t
-  :bind* (("C-c h" . projectile-find-file)
-         ("C-x p b" . projectile-switch-to-buffer)
-         ("C-x p p" . projectile-switch-project))
-  :config
-  (setq projectile-indexing-method 'alien)
-  (setq projectile-git-command "fd . -t f -0")
-  (setq projectile-generic-command "fd . -t f -0")
-  (setq projectile-hg-command "fd . -t f -0")
-  (setq projectile-globally-ignored-buffers spacemacs-useless-buffers-regexp)
-  ;; (setq projectile-completion-system 'ivy)
-  ;; Maybe enable cache for local file system
-  ;; (setq projectile-file-exists-local-cache-expire (* 5 60))
-  :init
-  (projectile-global-mode))
+;; Try not using projectile
+;; (use-package projectile
+;;   :ensure t
+;;   :bind* (("C-c h" . projectile-find-file)
+;;          ("C-x p b" . projectile-switch-to-buffer)
+;;          ("C-x p p" . projectile-switch-project))
+;;   :config
+;;   (setq projectile-indexing-method 'alien)
+;;   (setq projectile-git-command "fd . -t f -0")
+;;   (setq projectile-generic-command "fd . -t f -0")
+;;   (setq projectile-hg-command "fd . -t f -0")
+;;   (setq projectile-globally-ignored-buffers spacemacs-useless-buffers-regexp)
+;;   ;; (setq projectile-completion-system 'ivy)
+;;   ;; Maybe enable cache for local file system
+;;   ;; (setq projectile-file-exists-local-cache-expire (* 5 60))
+;;   :init
+;;   (projectile-global-mode))
+;; (projectile-register-project-type 'google3 '("WORKSPACE"))
 (use-package find-file-in-project
   :ensure t
   :commands find-file-in-project)
@@ -1041,8 +1057,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (mapc #'projectile-add-known-project
        (seq-remove (apply-partially 's-contains? "fig") (f-glob "/google/src/cloud/gmbuell/*/google3")))
   (projectile-save-known-projects))
-
-(projectile-register-project-type 'google3 '("WORKSPACE"))
 
 ;; Probably need to stop using projectile and move to normal project.el. Plus
 ;; refresh-projectile can be very slow.
@@ -1316,6 +1330,8 @@ cleared, make sure the overlay doesn't come back too soon."
 (cl-defmethod project-root ((project (head go-module)))
   (cdr project))
 (add-hook 'project-find-functions #'project-find-go-module)
+(use-package eldoc
+  :diminish eldoc-mode)
 ;; eldoc is very noisy
 ;; Going to see if eldoc is better now
 ;;(global-eldoc-mode -1)
@@ -1885,7 +1901,9 @@ Try the repeated popping up to 10 times."
 
 (use-package beginend
   :ensure t
-  :init
+  :config
+  (dolist (mode (cons 'beginend-global-mode (mapcar #'cdr beginend-modes)))
+    (diminish mode))
   (beginend-global-mode))
 
 ;; Make .sh files executable upon save.
