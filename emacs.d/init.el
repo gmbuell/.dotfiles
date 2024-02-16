@@ -70,7 +70,7 @@
  '(git-gutter:handled-backends '(git hg bzr svn))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
-   '(anzu flymake ace-window aio auto-yasnippet bash-completion bazel beginend breadcrumb cape clipetty copilot corfu-terminal deft diminish discover-my-major dogears doom-themes dumb-jump embark-consult expand-region find-file-in-project flymake-golangci fold-this git-gutter go-mode highlight-symbol iflipb link-hint magit-todos marginalia markdown-mode modern-cpp-font-lock mosey multifiles multiple-cursors nov orderless origami phi-search pretty-hydra projectile protobuf-mode quelpa-use-package rainbow-delimiters region-bindings-mode shelldon smart-mode-line smartparens smartscan vertico walkman which-key xterm-color yaml-mode yasnippet-snippets))
+   '(wgrep anzu flymake ace-window aio auto-yasnippet bash-completion bazel beginend breadcrumb cape clipetty copilot corfu-terminal deft diminish discover-my-major dogears doom-themes dumb-jump embark-consult expand-region find-file-in-project flymake-golangci fold-this git-gutter go-mode highlight-symbol iflipb link-hint magit-todos marginalia markdown-mode modern-cpp-font-lock mosey multifiles multiple-cursors nov orderless origami phi-search pretty-hydra projectile protobuf-mode quelpa-use-package rainbow-delimiters region-bindings-mode shelldon smart-mode-line smartparens smartscan vertico walkman which-key xterm-color yaml-mode yasnippet-snippets))
  '(sp-override-key-bindings
    '(("C-<right>" . sp-slurp-hybrid-sexp)
      ("C-<left>" . sp-dedent-adjust-sexp)))
@@ -989,6 +989,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;; auto-updating embark collect buffer
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
+
+;; wgrep mode to edit grep buffers (produced by embark-export)
+(use-package wgrep
+  :ensure t
+  :demand t)
 
 (use-package marginalia
   :ensure t
