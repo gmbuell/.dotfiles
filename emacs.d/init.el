@@ -609,91 +609,91 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (global-set-key (kbd "<deletechar>") 'backward-kill-word)
 
 ;; `M-x combobulate' (default: `C-c o o') to start using Combobulate
-(use-package treesit
-  :preface
-  (defun mp-setup-install-grammars ()
-    "Install Tree-sitter grammars if they are absent."
-    (interactive)
-    (dolist (grammar
-             '((css "https://github.com/tree-sitter/tree-sitter-css")
-               (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))
-               (python "https://github.com/tree-sitter/tree-sitter-python")
-               (yaml "https://github.com/ikatyang/tree-sitter-yaml")
-               (bash "https://github.com/tree-sitter/tree-sitter-bash")
-               (c "https://github.com/tree-sitter/tree-sitter-c")
-               (cmake "https://github.com/uyha/tree-sitter-cmake")
-               (commonlisp "https://github.com/theHamsta/tree-sitter-commonlisp")
-               (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
-               (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-               (go "https://github.com/tree-sitter/tree-sitter-go")
-               (gomod "https://github.com/camdencheek/tree-sitter-go-mod")
-               (html "https://github.com/tree-sitter/tree-sitter-html")
-               (json "https://github.com/tree-sitter/tree-sitter-json")
-               (lua "https://github.com/Azganoth/tree-sitter-lua")
-               (make "https://github.com/alemuller/tree-sitter-make")
-               (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-               (r "https://github.com/r-lib/tree-sitter-r")
-               (rust "https://github.com/tree-sitter/tree-sitter-rust")
-               (toml "https://github.com/tree-sitter/tree-sitter-toml")
-               (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
-               (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src"))
-               (dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile")
-               (proto "https://github.com/mitchellh/tree-sitter-proto")
-               (sql "https://github.com/DerekStride/tree-sitter-sql.git" "gh-pages")
-               (regex "https://github.com/tree-sitter/tree-sitter-regex")
-               ))
-      (add-to-list 'treesit-language-source-alist grammar)
-      ;; Only install `grammar' if we don't already have it
-      ;; installed. However, if you want to *update* a grammar then
-      ;; this obviously prevents that from happening.
-      (unless (treesit-language-available-p (car grammar))
-        (treesit-install-language-grammar (car grammar)))))
+;; (use-package treesit
+;;   :preface
+;;   (defun mp-setup-install-grammars ()
+;;     "Install Tree-sitter grammars if they are absent."
+;;     (interactive)
+;;     (dolist (grammar
+;;              '((css "https://github.com/tree-sitter/tree-sitter-css")
+;;                (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))
+;;                (python "https://github.com/tree-sitter/tree-sitter-python")
+;;                (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+;;                (bash "https://github.com/tree-sitter/tree-sitter-bash")
+;;                (c "https://github.com/tree-sitter/tree-sitter-c")
+;;                (cmake "https://github.com/uyha/tree-sitter-cmake")
+;;                (commonlisp "https://github.com/theHamsta/tree-sitter-commonlisp")
+;;                (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+;;                (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+;;                (go "https://github.com/tree-sitter/tree-sitter-go")
+;;                (gomod "https://github.com/camdencheek/tree-sitter-go-mod")
+;;                (html "https://github.com/tree-sitter/tree-sitter-html")
+;;                (json "https://github.com/tree-sitter/tree-sitter-json")
+;;                (lua "https://github.com/Azganoth/tree-sitter-lua")
+;;                (make "https://github.com/alemuller/tree-sitter-make")
+;;                (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+;;                (r "https://github.com/r-lib/tree-sitter-r")
+;;                (rust "https://github.com/tree-sitter/tree-sitter-rust")
+;;                (toml "https://github.com/tree-sitter/tree-sitter-toml")
+;;                (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
+;;                (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src"))
+;;                (dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile")
+;;                (proto "https://github.com/mitchellh/tree-sitter-proto")
+;;                (sql "https://github.com/DerekStride/tree-sitter-sql.git" "gh-pages")
+;;                (regex "https://github.com/tree-sitter/tree-sitter-regex")
+;;                ))
+;;       (add-to-list 'treesit-language-source-alist grammar)
+;;       ;; Only install `grammar' if we don't already have it
+;;       ;; installed. However, if you want to *update* a grammar then
+;;       ;; this obviously prevents that from happening.
+;;       (unless (treesit-language-available-p (car grammar))
+;;         (treesit-install-language-grammar (car grammar)))))
 
-  ;; Optional, but recommended. Tree-sitter enabled major modes are
-  ;; distinct from their ordinary counterparts.
-  ;;
-  ;; You can remap major modes with `major-mode-remap-alist'. Note
-  ;; that this does *not* extend to hooks! Make sure you migrate them
-  ;; also
-  (dolist (mapping '((python-mode . python-ts-mode)
-                     (css-mode . css-ts-mode)
-                     (typescript-mode . tsx-ts-mode)
-                     (json-mode . json-ts-mode)
-                     (js-mode . js-ts-mode)
-                     (css-mode . css-ts-mode)
-                     (yaml-mode . yaml-ts-mode)))
-    (add-to-list 'major-mode-remap-alist mapping))
+;;   ;; Optional, but recommended. Tree-sitter enabled major modes are
+;;   ;; distinct from their ordinary counterparts.
+;;   ;;
+;;   ;; You can remap major modes with `major-mode-remap-alist'. Note
+;;   ;; that this does *not* extend to hooks! Make sure you migrate them
+;;   ;; also
+;;   (dolist (mapping '((python-mode . python-ts-mode)
+;;                      (css-mode . css-ts-mode)
+;;                      (typescript-mode . tsx-ts-mode)
+;;                      (json-mode . json-ts-mode)
+;;                      (js-mode . js-ts-mode)
+;;                      (css-mode . css-ts-mode)
+;;                      (yaml-mode . yaml-ts-mode)))
+;;     (add-to-list 'major-mode-remap-alist mapping))
 
-  :config
-  (mp-setup-install-grammars)
-  ;; Do not forget to customize Combobulate to your liking:
-  ;;
-  ;;  M-x customize-group RET combobulate RET
-  ;;
-  (use-package combobulate
-    :quelpa (combobulate :fetcher github
-                     :repo "mickeynp/combobulate"
-                     :branch "development")
-    :preface
-    ;; You can customize Combobulate's key prefix here.
-    ;; Note that you may have to restart Emacs for this to take effect!
-    (setq combobulate-key-prefix "C-c o")
+;;   :config
+;;   (mp-setup-install-grammars)
+;;   ;; Do not forget to customize Combobulate to your liking:
+;;   ;;
+;;   ;;  M-x customize-group RET combobulate RET
+;;   ;;
+;;   (use-package combobulate
+;;     :quelpa (combobulate :fetcher github
+;;                      :repo "mickeynp/combobulate"
+;;                      :branch "development")
+;;     :preface
+;;     ;; You can customize Combobulate's key prefix here.
+;;     ;; Note that you may have to restart Emacs for this to take effect!
+;;     (setq combobulate-key-prefix "C-c o")
 
-    ;; Optional, but recommended.
-    ;;
-    ;; You can manually enable Combobulate with `M-x
-    ;; combobulate-mode'.
-    :hook ((python-ts-mode . combobulate-mode)
-           (js-ts-mode . combobulate-mode)
-           (css-ts-mode . combobulate-mode)
-           (yaml-ts-mode . combobulate-mode)
-           (json-ts-mode . combobulate-mode)
-           (typescript-ts-mode . combobulate-mode)
-           (tsx-ts-mode . combobulate-mode))))
+;;     ;; Optional, but recommended.
+;;     ;;
+;;     ;; You can manually enable Combobulate with `M-x
+;;     ;; combobulate-mode'.
+;;     :hook ((python-ts-mode . combobulate-mode)
+;;            (js-ts-mode . combobulate-mode)
+;;            (css-ts-mode . combobulate-mode)
+;;            (yaml-ts-mode . combobulate-mode)
+;;            (json-ts-mode . combobulate-mode)
+;;            (typescript-ts-mode . combobulate-mode)
+;;            (tsx-ts-mode . combobulate-mode))))
 
-(use-package treesit-auto
-  :ensure t
-  :demand t)
+;; (use-package treesit-auto
+;;   :ensure t
+;;   :demand t)
 
 ;; Look at https://github.com/Fuco1/smartparens/issues/209 for ideas for other ways to use smartparns for movement.
 ;; Also consider using goal column?
@@ -1185,7 +1185,8 @@ In that case, insert the number."
                                   dired-mode-hook
                                   compilation-mode-hook
                                   flutter-mode-hook
-                                  minibuffer-mode-hook)
+                                  minibuffer-mode-hook
+                                  shelldon-mode-hook)
       "Modes in which copilot is inconvenient.")
 
     (defun rk/copilot-disable-predicate ()
