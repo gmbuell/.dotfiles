@@ -12,7 +12,6 @@
 (add-to-list 'package-archives
              '("org" . "http://orgmode.org/elpa/") t)
 (package-initialize)
-(package-refresh-contents)
 
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
@@ -32,6 +31,9 @@
   :ensure t)
 (use-package bind-key
   :ensure t)
+
+;; Something is going wrong. Enable debugging.
+;; (setq debug-on-error t)
 
 ;; (use-package auto-package-update
 ;;   :ensure t
@@ -70,7 +72,7 @@
  '(git-gutter:handled-backends '(git hg bzr svn))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
-   '(wgrep anzu flymake ace-window aio auto-yasnippet bash-completion bazel beginend breadcrumb cape clipetty copilot corfu-terminal deft diminish discover-my-major dogears doom-themes dumb-jump embark-consult expand-region find-file-in-project flymake-golangci fold-this git-gutter go-mode highlight-symbol iflipb link-hint magit-todos marginalia markdown-mode modern-cpp-font-lock mosey multifiles multiple-cursors nov orderless origami phi-search pretty-hydra projectile protobuf-mode quelpa-use-package rainbow-delimiters region-bindings-mode shelldon smart-mode-line smartparens smartscan vertico walkman which-key xterm-color yaml-mode yasnippet-snippets))
+   '(pheaver-breadcrumb mmm-mode anzu flymake ace-window aio auto-yasnippet bash-completion bazel beginend breadcrumb cape clipetty copilot corfu-terminal deft diminish discover-my-major dogears doom-themes dumb-jump embark-consult expand-region find-file-in-project flymake-golangci fold-this git-gutter go-mode highlight-symbol iflipb link-hint magit-todos marginalia markdown-mode modern-cpp-font-lock mosey multifiles multiple-cursors nov orderless origami phi-search pretty-hydra projectile protobuf-mode quelpa-use-package rainbow-delimiters region-bindings-mode shelldon smart-mode-line smartparens smartscan vertico walkman which-key xterm-color yaml-mode yasnippet-snippets))
  '(sp-override-key-bindings
    '(("C-<right>" . sp-slurp-hybrid-sexp)
      ("C-<left>" . sp-dedent-adjust-sexp)))
@@ -1041,9 +1043,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;;   :init
 ;;   (projectile-global-mode))
 ;; (projectile-register-project-type 'google3 '("WORKSPACE"))
-(use-package find-file-in-project
-  :ensure t
-  :commands find-file-in-project)
+;; (use-package find-file-in-project
+;;   :ensure t
+;;   :commands find-file-in-project)
 ;; (use-package counsel-projectile
 ;;   :after (counsel projectile)
 ;;   :ensure t
@@ -1341,11 +1343,20 @@ cleared, make sure the overlay doesn't come back too soon."
   :ensure t
   :custom
   (flymake-fringe-indicator-position 'right-fringe)
-  (flymake-show-diagnostics-at-end-of-line t)
+  ;; (flymake-show-diagnostics-at-end-of-line t)
   :config
   (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
   :init
-  (add-hook 'find-file-hook 'flymake-find-file-hook))
+  (add-hook 'find-file-hook 'flymake-find-file-hook)
+  (add-hook 'eglot-managed-mode-hook
+            (lambda ()
+              ;; Show flymake diagnostics first.
+              (setq eldoc-documentation-functions
+                    (cons #'flymake-eldoc-function
+                          (remove #'flymake-eldoc-function eldoc-documentation-functions)))
+              ;; Show all eldoc feedback.
+              (setq eldoc-documentation-strategy #'eldoc-documentation-compose)))
+  )
 
 (use-package eglot
   :requires (yasnippet) ;; company
@@ -1379,6 +1390,7 @@ cleared, make sure the overlay doesn't come back too soon."
 
 ;; Tell eglot about go modules
 (require 'project)
+(bind-key "C-c h" 'project-find-file)
 (defun project-find-go-module (dir)
   (when-let ((root (locate-dominating-file dir "go.mod")))
     (cons 'go-module root)))
@@ -1683,7 +1695,20 @@ delimiters instead of word delimiters."
   :ensure t
   :init
   (setq bazel-command '("bazel"))
-  :bind (("C-c C-c" . bazel-build)))
+  ;; :bind (("C-c C-c" . compile))
+  )
+
+;; (defun go-mode-compile-hook ()
+;;   "Customize compile command based on file extension."
+;;   (when (string-match-p "\\machine.rl\\'" buffer-file-name)
+;;     (setq compile-command "ragel -Z -G2 machine.rl -o machine.go"))
+;;   (when (string-match-p "_test\\.go\\'" buffer-file-name)
+;;     (setq compile-command "bazel test -- \\:all"))
+;;   (unless (or (string-match-p "\\.rl\\'" buffer-file-name)
+;;               (string-match-p "_test\\.go\\'" buffer-file-name))
+;;     (setq compile-command "bazel build :all")))
+
+;; (add-hook 'go-mode-hook 'go-mode-compile-hook)
 
 (setq auto-mode-alist
       (nconc
@@ -1724,8 +1749,20 @@ delimiters instead of word delimiters."
   :ensure t
   :init
   (add-to-list 'auto-mode-alist '("\\.go\\'" . go-mode))
+  (add-to-list 'auto-mode-alist '("\\.rl\\'" . go-mode))
   (add-hook 'go-mode-hook #'yas-minor-mode)
   (add-hook 'go-mode-hook #'eglot-ensure)
+  :config
+  (defun my-custom-compile ()
+    "Compile using custom compile command."
+    (interactive)
+    (compile (cond ((string-match-p "\\machine.rl\\'" buffer-file-name)
+                    "ragel -Z -G2 machine.rl -o machine.go")
+                   ((string-match-p "_test\\.go\\'" buffer-file-name)
+                    "bazel test -- \\:all")
+                   (t
+                    "bazel build :all"))))
+  :bind (("C-c C-c" . my-custom-compile))
   ;;(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
   )
 
@@ -1871,7 +1908,7 @@ delimiters instead of word delimiters."
   ("q" nil "quit"))
 
 (use-package breadcrumb
-  :quelpa (breadcrumb :fetcher git :url
+  :quelpa (pheaver-breadcrumb :fetcher git :url
                       "https://github.com/pheaver/breadcrumb.git")
   :demand t)
 (defhydra hydra-breadcrumb
@@ -1890,6 +1927,14 @@ Breadcrumb bookmarks:
   ("s" bc-set nil)
   ("c" bc-clear nil)
   ("q" nil nil))
+
+;; A completely different breadcrumb which is a replacement for which-func-mode.
+;; Commented out because the name conflicts with the breadcrumb package above...
+;; (use-package breadcrumb
+;;   :quelpa (breadcrumb :fetcher git :url
+;;                       "https://github.com/joaotavora/breadcrumb.git")
+;;   :init
+;;   (breadcrumb-mode))
 
 (use-package dogears
   :quelpa (dogears :fetcher github :repo "alphapapa/dogears.el"
@@ -1992,6 +2037,11 @@ Try the repeated popping up to 10 times."
 ;; Calendars should start with Monday as the first day of the week.
 (setq calendar-week-start-day 1)
 
+(defun date ()
+  "Insert today's date in MM-DD-YY format."
+  (interactive)
+  (insert (format-time-string "%-m-%-d-%y")))
+
 ;; Check out https://github.com/raxod502/prescient.el
 ;; And https://github.com/raxod502/selectrum
 
@@ -2003,3 +2053,9 @@ Try the repeated popping up to 10 times."
 ;; Future enhancements:
 ;; prism for highlighting modes without good syntax hilighting?
 ;; https://github.com/alphapapa/prism.el
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
