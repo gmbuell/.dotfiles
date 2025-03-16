@@ -27,8 +27,6 @@
 (eval-when-compile
   (require 'use-package)
   (setq use-package-verbose t))
-(use-package diminish
-  :ensure t)
 (use-package bind-key
   :ensure t)
 
@@ -47,19 +45,6 @@
 ;;   ;;Update installed packages at startup if there is an update pending.
 ;;   :init (auto-package-update-maybe))
 
-;; Add quelpa for an additional way of adding packages
-(use-package quelpa
-  :ensure t
-  :config
-  ;;(setq quelpa-upgrade-p t)
-  (setq quelpa-upgrade-interval 7)
-  :init (quelpa-upgrade-all-maybe))
-(quelpa
- '(quelpa-use-package
-   :fetcher git
-   :url "https://github.com/quelpa/quelpa-use-package.git"))
-(require 'quelpa-use-package)
-
 (use-package diminish :ensure t)
 
 (custom-set-variables
@@ -68,14 +53,34 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
+   '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
+     "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(git-gutter:handled-backends '(git hg bzr svn))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
-   '(pheaver-breadcrumb mmm-mode anzu flymake ace-window aio auto-yasnippet bash-completion bazel beginend breadcrumb cape clipetty copilot corfu-terminal deft diminish discover-my-major dogears doom-themes dumb-jump embark-consult expand-region find-file-in-project flymake-golangci fold-this git-gutter go-mode highlight-symbol iflipb link-hint magit-todos marginalia markdown-mode modern-cpp-font-lock mosey multifiles multiple-cursors nov orderless origami phi-search pretty-hydra projectile protobuf-mode quelpa-use-package rainbow-delimiters region-bindings-mode shelldon smart-mode-line smartparens smartscan vertico walkman which-key xterm-color yaml-mode yasnippet-snippets))
+   '(ace-window anzu auto-yasnippet bash-completion bazel beginend cape
+                casual-symbol-overlay clipetty combobulate consult-dir
+                consult-eglot-embark corfu-terminal corfu-terminal-mode deft
+                diminish discover-my-major disproject dogears doom-themes
+                dumb-jump eat expand-region flymake-popon fold-this git-gutter
+                gnu-elpa-keyring-update go-mode highlight-symbol iflipb
+                link-hint magit-todos marginalia markdown-mode
+                modern-cpp-font-lock mosey multifiles nov orderless origami
+                pheaver-breadcrumb phi-search popper pretty-hydra protobuf-mode
+                quelpa-use-package rainbow-delimiters region-bindings-mode
+                shelldon smart-mode-line smartparens smartscan symbol-overlay-mc
+                tree-sitter-go-mod vertico walkman wgrep xterm-color yaml-mode
+                yasnippet-snippets))
+ '(package-vc-selected-packages
+   '((combobulate :url "https://github.com/mickeynp/combobulate.git" :branch
+                  "master")
+     (flymake-popon :url "https://codeberg.org/akib/emacs-flymake-popon.git"
+                    :branch "master")
+     (corfu-terminal-mode :url
+                          "https://codeberg.org/akib/emacs-corfu-terminal.git"
+                          :branch "main")))
  '(sp-override-key-bindings
-   '(("C-<right>" . sp-slurp-hybrid-sexp)
-     ("C-<left>" . sp-dedent-adjust-sexp)))
+   '(("C-<right>" . sp-slurp-hybrid-sexp) ("C-<left>" . sp-dedent-adjust-sexp)))
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
 ;;  ;; custom-set-faces was added by Custom.
@@ -129,7 +134,8 @@
 ;; Regexp for useful and useless buffers for smarter buffer switching
 (defvar spacemacs-useless-buffers-regexp '("*\.\+")
   "Regexp used to determine if a buffer is not useful.")
-(defvar spacemacs-useful-buffers-regexp '("\\*scratch\\*")
+
+(defvar spacemacs-useful-buffers-regexp '("\\*\\(scratch\\|eshell\\)\\*")
   "Regexp used to define buffers that are useful despite matching
 `spacemacs-useless-buffers-regexp'.")
 
@@ -508,13 +514,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (when (and isearch-forward (not isearch-mode-end-hook-quit)) (goto-char isearch-other-end)))
 (add-hook 'isearch-mode-end-hook 'my-isearch-goto-match-beginning)
 
-(use-package highlight-symbol
-  :diminish highlight-symbol-mode
-  :ensure t
-  :config
-  (setq highlight-symbol-on-navigation-p t)
-  :init
-  (add-hook 'prog-mode-hook #'highlight-symbol-mode))
+;; (use-package highlight-symbol
+;;   :diminish highlight-symbol-mode
+;;   :ensure t
+;;   :config
+;;   (setq highlight-symbol-on-navigation-p t)
+;;   :init
+;;   (add-hook 'prog-mode-hook #'highlight-symbol-mode))
 
 ;; (add-hook 'prog-mode (lambda () (add-hook 'before-save-hook 'delete-trailing-whitespace t)))
 ;; Actually, just always do this
@@ -608,92 +614,68 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; For chromebook:
 (global-set-key (kbd "<deletechar>") 'backward-kill-word)
 
-;; `M-x combobulate' (default: `C-c o o') to start using Combobulate
-;; (use-package treesit
-;;   :preface
-;;   (defun mp-setup-install-grammars ()
-;;     "Install Tree-sitter grammars if they are absent."
-;;     (interactive)
-;;     (dolist (grammar
-;;              '((css "https://github.com/tree-sitter/tree-sitter-css")
-;;                (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))
-;;                (python "https://github.com/tree-sitter/tree-sitter-python")
-;;                (yaml "https://github.com/ikatyang/tree-sitter-yaml")
-;;                (bash "https://github.com/tree-sitter/tree-sitter-bash")
-;;                (c "https://github.com/tree-sitter/tree-sitter-c")
-;;                (cmake "https://github.com/uyha/tree-sitter-cmake")
-;;                (commonlisp "https://github.com/theHamsta/tree-sitter-commonlisp")
-;;                (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
-;;                (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-;;                (go "https://github.com/tree-sitter/tree-sitter-go")
-;;                (gomod "https://github.com/camdencheek/tree-sitter-go-mod")
-;;                (html "https://github.com/tree-sitter/tree-sitter-html")
-;;                (json "https://github.com/tree-sitter/tree-sitter-json")
-;;                (lua "https://github.com/Azganoth/tree-sitter-lua")
-;;                (make "https://github.com/alemuller/tree-sitter-make")
-;;                (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-;;                (r "https://github.com/r-lib/tree-sitter-r")
-;;                (rust "https://github.com/tree-sitter/tree-sitter-rust")
-;;                (toml "https://github.com/tree-sitter/tree-sitter-toml")
-;;                (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
-;;                (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src"))
-;;                (dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile")
-;;                (proto "https://github.com/mitchellh/tree-sitter-proto")
-;;                (sql "https://github.com/DerekStride/tree-sitter-sql.git" "gh-pages")
-;;                (regex "https://github.com/tree-sitter/tree-sitter-regex")
-;;                ))
-;;       (add-to-list 'treesit-language-source-alist grammar)
-;;       ;; Only install `grammar' if we don't already have it
-;;       ;; installed. However, if you want to *update* a grammar then
-;;       ;; this obviously prevents that from happening.
-;;       (unless (treesit-language-available-p (car grammar))
-;;         (treesit-install-language-grammar (car grammar)))))
+(use-package treesit
+  :mode (("\\.tsx\\'" . tsx-ts-mode))
+  :preface
+  (defun mp-setup-install-grammars ()
+    "Install Tree-sitter grammars if they are absent."
+    (interactive)
+    (dolist (grammar
+             ;; Note the version numbers. These are the versions that
+             ;; are known to work with Combobulate *and* Emacs.
+             '((css . ("https://github.com/tree-sitter/tree-sitter-css" "v0.20.0"))
+               (go . ("https://github.com/tree-sitter/tree-sitter-go" "v0.20.0"))
+               (gomod . ("https://github.com/camdencheek/tree-sitter-go-mod" "v1.1.0"))
+               (html . ("https://github.com/tree-sitter/tree-sitter-html" "v0.20.1"))
+               (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "v0.20.1" "src"))
+               (json . ("https://github.com/tree-sitter/tree-sitter-json" "v0.20.2"))
+               (markdown . ("https://github.com/ikatyang/tree-sitter-markdown" "v0.7.1"))
+               (python . ("https://github.com/tree-sitter/tree-sitter-python" "v0.20.4"))
+               (rust . ("https://github.com/tree-sitter/tree-sitter-rust" "v0.21.2"))
+               (toml . ("https://github.com/tree-sitter/tree-sitter-toml" "v0.5.1"))
+               (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "tsx/src"))
+               (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "typescript/src"))
+               (yaml . ("https://github.com/ikatyang/tree-sitter-yaml" "v0.5.0"))))
+      (add-to-list 'treesit-language-source-alist grammar)
+      ;; Only install `grammar' if we don't already have it
+      ;; installed. However, if you want to *update* a grammar then
+      ;; this obviously prevents that from happening.
+      (unless (treesit-language-available-p (car grammar))
+        (treesit-install-language-grammar (car grammar)))))
 
-;;   ;; Optional, but recommended. Tree-sitter enabled major modes are
-;;   ;; distinct from their ordinary counterparts.
-;;   ;;
-;;   ;; You can remap major modes with `major-mode-remap-alist'. Note
-;;   ;; that this does *not* extend to hooks! Make sure you migrate them
-;;   ;; also
-;;   (dolist (mapping '((python-mode . python-ts-mode)
-;;                      (css-mode . css-ts-mode)
-;;                      (typescript-mode . tsx-ts-mode)
-;;                      (json-mode . json-ts-mode)
-;;                      (js-mode . js-ts-mode)
-;;                      (css-mode . css-ts-mode)
-;;                      (yaml-mode . yaml-ts-mode)))
-;;     (add-to-list 'major-mode-remap-alist mapping))
+  ;; Optional. Combobulate works in both xxxx-ts-modes and
+  ;; non-ts-modes.
 
-;;   :config
-;;   (mp-setup-install-grammars)
-;;   ;; Do not forget to customize Combobulate to your liking:
-;;   ;;
-;;   ;;  M-x customize-group RET combobulate RET
-;;   ;;
-;;   (use-package combobulate
-;;     :quelpa (combobulate :fetcher github
-;;                      :repo "mickeynp/combobulate"
-;;                      :branch "development")
-;;     :preface
-;;     ;; You can customize Combobulate's key prefix here.
-;;     ;; Note that you may have to restart Emacs for this to take effect!
-;;     (setq combobulate-key-prefix "C-c o")
-
-;;     ;; Optional, but recommended.
-;;     ;;
-;;     ;; You can manually enable Combobulate with `M-x
-;;     ;; combobulate-mode'.
-;;     :hook ((python-ts-mode . combobulate-mode)
-;;            (js-ts-mode . combobulate-mode)
-;;            (css-ts-mode . combobulate-mode)
-;;            (yaml-ts-mode . combobulate-mode)
-;;            (json-ts-mode . combobulate-mode)
-;;            (typescript-ts-mode . combobulate-mode)
-;;            (tsx-ts-mode . combobulate-mode))))
-
-;; (use-package treesit-auto
-;;   :ensure t
-;;   :demand t)
+  ;; You can remap major modes with `major-mode-remap-alist'. Note
+  ;; that this does *not* extend to hooks! Make sure you migrate them
+  ;; also
+  (dolist (mapping
+           '((python-mode . python-ts-mode)
+             (css-mode . css-ts-mode)
+             (typescript-mode . typescript-ts-mode)
+             (js2-mode . js-ts-mode)
+             (bash-mode . bash-ts-mode)
+             (conf-toml-mode . toml-ts-mode)
+             (go-mode . go-ts-mode)
+             (css-mode . css-ts-mode)
+             (json-mode . json-ts-mode)
+             (js-json-mode . json-ts-mode)))
+    (add-to-list 'major-mode-remap-alist mapping))
+  :config
+  (mp-setup-install-grammars)
+  ;; Do not forget to customize Combobulate to your liking:
+  ;;
+  ;;  M-x customize-group RET combobulate RET
+  ;;
+  (use-package combobulate
+    :ensure t
+    :vc (:url "https://github.com/mickeynp/combobulate.git"
+              :branch "master")
+    :custom
+    ;; You can customize Combobulate's key prefix here.
+    ;; Note that you may have to restart Emacs for this to take effect!
+    (combobulate-key-prefix "C-c o")
+    :hook ((prog-mode . combobulate-mode))))
 
 ;; Look at https://github.com/Fuco1/smartparens/issues/209 for ideas for other ways to use smartparns for movement.
 ;; Also consider using goal column?
@@ -795,8 +777,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;;   :init
 ;;   (solaire-global-mode +1))
 
-(defadvice custom-theme-load-confirm (around no-query-safe-theme activate)
-  t)
+(defadvice custom-theme-load-confirm (around no-query-safe-theme activate) t)
 
 ;; (use-package base16-theme
 ;;   ;; :if window-system
@@ -834,7 +815,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; persistent abbreviation file
 (setq abbrev-file-name (concat user-emacs-directory "abbrev_defs"))
 ;; Disable abbrev-mode
-(setq-default abbrev-mode -1)
+(abbrev-mode -1)
 ;; Make sure it stays disabled
 (add-hook 'prog-mode-hook
           (lambda ()
@@ -874,10 +855,35 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; M-n and M-p move between symbols
 ;; M-' to replace all symbols in the buffer matching the one under point
 ;; C-u M-' to replace symbols in your current defun only (as used by narrow-to-defun.)
-(use-package smartscan
+;; (use-package smartscan
+;;   :ensure t
+;;   :init
+;;   (add-hook 'prog-mode-hook #'smartscan-mode))
+
+(use-package symbol-overlay
   :ensure t
   :init
-  (add-hook 'prog-mode-hook #'smartscan-mode))
+  (global-set-key (kbd "M-i") 'symbol-overlay-put)
+  (global-set-key (kbd "M-n") 'symbol-overlay-switch-forward)
+  (global-set-key (kbd "M-p") 'symbol-overlay-switch-backward)
+  (global-set-key (kbd "<f7>") 'symbol-overlay-mode)
+  (global-set-key (kbd "<f8>") 'symbol-overlay-remove-all))
+
+(use-package symbol-overlay-mc
+  :ensure t
+  :requires (symbol-overlay)
+  :bind (("M-a" . symbol-overlay-mc-mark-all)))
+
+(use-package casual
+  :ensure t)
+
+(use-package casual-symbol-overlay
+  :ensure t
+  :requires (casual)
+  :init
+  (keymap-set symbol-overlay-map "C-o" #'casual-symbol-overlay-tmenu)
+  :config
+  (symbol-overlay-mc-insert-into-casual-tmenu))
 
 (use-package uniquify
   :init (setq uniquify-buffer-name-style 'forward))
@@ -898,8 +904,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :config
   (vertico-multiform-mode)
   (setq vertico-multiform-commands
-      '((consult-imenu buffer indexed)))
-  :bind (("M-i" . consult-imenu)))
+        '((consult-imenu buffer indexed))))
 
 ;; Completion
 ;; headlong might be useful for bookmark jumping
@@ -963,24 +968,145 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                  (window-parameters (mode-line-format . none)))))
 
 (use-package consult
-  :ensure t)
+  :ensure t
+  :bind (;; ("M-i" . consult-imenu)
+         ("C-x b" . consult-buffer)
+         ("M-y" . consult-yank-pop)
+         ;; M-g bindings in `goto-map'
+         ("M-g e" . consult-compile-error)
+         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+         ("M-g g" . consult-goto-line)             ;; orig. goto-line
+         ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
+         ("M-g i" . consult-imenu)
+         ("M-g I" . consult-imenu-multi)
+         ;; M-s bindings in `search-map'
+         ("M-s d" . consult-find)                  ;; Alternative: consult-fd
+         ("M-s c" . consult-locate)
+         ("M-s g" . consult-grep)
+         ("M-s G" . consult-git-grep)
+         ("M-s r" . consult-ripgrep)
+         ("M-s l" . consult-line)
+         ("M-s L" . consult-line-multi)
+         ("M-s k" . consult-keep-lines)
+         ("M-s u" . consult-focus-lines)
+         ;; Isearch integration
+         ("M-s e" . consult-isearch-history)
+         :map isearch-mode-map
+         ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
+         ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
+         ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
+         ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
+         )
+  :init
+  (bind-key* "C-c C-l" 'consult-history eshell-mode-map)
+  (setq xref-show-xrefs-function #'consult-xref
+        xref-show-definitions-function #'consult-xref)
+  :config
+  (setq consult-preview-key "M-.")
+  (defvar consult--source-recent-file-hidden
+    `(:hidden t :narrow (?a . "File") :enabled ,(lambda () (consult--project-root)) ,@consult--source-recent-file)
+    "Like `consult--source-recent-file' but hidden by default.")
+  (defvar consult--source-buffer-hidden
+    `(:hidden t :narrow (?a . "Buffer") :enabled ,(lambda () (consult--project-root)) ,@consult--source-buffer)
+    "Like `consult--source-buffer' but hidden by default.")
+  ;; Define non-hidden buffer source for non-project contexts
+  (defvar consult--source-non-project-buffer
+    `(:enabled ,(lambda () (not (consult--project-root)))
+               :narrow (?b . "Buffer")
+               ,@consult--source-buffer)
+    "Buffer candidate source for when not in a project.")
 
-(defvar consult--source-dogears
-  (list :name     "Dogears"
-        :narrow   ?d
-        :category 'dogears
-        :items    (lambda ()
-                    (mapcar
-                     (lambda (place)
-                       (propertize (dogears--format-record place)
-                                   'consult--candidate place))
-                     dogears-list))
-        :action   (lambda (cand)
-                    (dogears-go (get-text-property 0 'consult--candidate cand)))))
+  ;; Define non-hidden recent file source for non-project contexts
+  (defvar consult--source-non-project-recent-file
+    `(:enabled ,(lambda () (not (consult--project-root)))
+               :narrow (?f . "File")
+               ,@consult--source-recent-file)
+    "Recent file candidate source for when not in a project.")
+  ;; Excludes star buffers
+  (defvar consult--source-project-useful-buffer
+    `( :name     "Project Buffer"
+       :narrow   ?b
+       :category buffer
+       :face     consult-buffer
+       :history  buffer-name-history
+       :state    ,#'consult--buffer-state
+       :enabled  ,(lambda () (consult--project-root))
+       :items
+       ,(lambda ()
+          (when-let (root (consult--project-root))
+            (consult--buffer-query :sort 'visibility
+                                   :directory root
+                                   :as #'consult--buffer-pair
+                                   :exclude spacemacs-useless-buffers-regexp))))
+    "Project buffer candidate source for `consult-buffer'.")
+  (setq consult-buffer-sources '(consult--source-buffer-hidden
+                              consult--source-non-project-buffer
+                              consult--source-project-useful-buffer
+                              consult--source-project-recent-file
+                              consult--source-recent-file-hidden
+                              consult--source-non-project-recent-file))
+  )
 
-(defun consult-dogears ()
-  (interactive)
-  (consult--multi '(consult--source-dogears)))
+(use-package consult-dir
+  :ensure t
+  :after (consult)
+  :bind (("C-x C-d" . consult-dir)
+         :map minibuffer-local-completion-map
+         ("C-x C-d" . consult-dir)
+         ("C-x C-j" . consult-dir-jump-file))
+  :init
+  (defun eshell/z (&optional regexp)
+    "Navigate to a previously visited directory in eshell, or to
+any directory proferred by `consult-dir'."
+    (let ((eshell-dirs (delete-dups
+                        (mapcar 'abbreviate-file-name
+                                (ring-elements eshell-last-dir-ring)))))
+      (cond
+       ((and (not regexp) (featurep 'consult-dir))
+        (let* ((consult-dir--source-eshell `(:name "Eshell"
+                                                   :narrow ?e
+                                                   :category file
+                                                   :face consult-file
+                                                   :items ,eshell-dirs))
+               (consult-dir-sources (cons consult-dir--source-eshell
+                                          consult-dir-sources)))
+          (eshell/cd (substring-no-properties
+                      (consult-dir--pick "Switch directory: ")))))
+       (t (eshell/cd (if regexp (eshell-find-previous-directory regexp)
+                       (completing-read "cd: " eshell-dirs))))))))
+
+(use-package consult-eglot
+  :ensure t
+  :after (consult))
+(use-package consult-eglot-embark
+  :ensure t
+  :after (consult-eglot)
+  :init
+  (consult-eglot-embark-mode))
+
+(use-package disproject
+  :ensure t
+  ;; Replace `project-prefix-map' with `disproject-dispatch'.
+  :bind ( :map ctl-x-map
+          ("p" . disproject-dispatch)))
+
+;; 11/8/2024 disabled since dogears is temporarily disabled
+;; (defvar consult--source-dogears
+;;   (list :name     "Dogears"
+;;         :narrow   ?d
+;;         :category 'dogears
+;;         :items    (lambda ()
+;;                     (mapcar
+;;                      (lambda (place)
+;;                        (propertize (dogears--format-record place)
+;;                                    'consult--candidate place))
+;;                      dogears-list))
+;;         :action   (lambda (cand)
+;;                     (dogears-go (get-text-property 0 'consult--candidate cand)))))
+
+;; (defun consult-dogears ()
+;;   (interactive)
+;;   (consult--multi '(consult--source-dogears)))
 
 ;; Consult users will also want the embark-consult package.
 (use-package embark-consult
@@ -1055,15 +1181,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package f
   :ensure t)
 
-(defun refresh-projectile ()
-  (interactive)
-  "Reset projectile known projects to citc and git5 clients."
-  (projectile-clear-known-projects)
-  (mapc #'projectile-add-known-project
-        (f-glob "~/fig/*/google3"))
-  (mapc #'projectile-add-known-project
-       (seq-remove (apply-partially 's-contains? "fig") (f-glob "/google/src/cloud/gmbuell/*/google3")))
-  (projectile-save-known-projects))
+;; (defun refresh-projectile ()
+;;   (interactive)
+;;   "Reset projectile known projects to citc and git5 clients."
+;;   (projectile-clear-known-projects)
+;;   (mapc #'projectile-add-known-project
+;;         (f-glob "~/fig/*/google3"))
+;;   (mapc #'projectile-add-known-project
+;;        (seq-remove (apply-partially 's-contains? "fig") (f-glob "/google/src/cloud/gmbuell/*/google3")))
+;;   (projectile-save-known-projects))
 
 ;; Probably need to stop using projectile and move to normal project.el. Plus
 ;; refresh-projectile can be very slow.
@@ -1113,16 +1239,16 @@ In that case, insert the number."
   :custom
   ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
   ;; 10/26/2023 Disable corfu-auto because copilot is so much better
-  ;;(corfu-auto t)                 ;; Enable auto completion
+  (corfu-auto t)                 ;; Enable auto completion
   (corfu-auto-delay 0.2)
   (corfu-auto-prefix 2)
-  ;; (corfu-quit-no-match 'separator)
+  (corfu-quit-no-match 'separator)
   ;; (corfu-separator ?\s)          ;; Orderless field separator
   ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
   ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
   ;; (corfu-preview-current nil)    ;; Disable current candidate preview
   ;; (corfu-preselect-first nil)    ;; Disable candidate preselection
-  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+  (corfu-on-exact-match nil)     ;; Configure handling of exact matches
   ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
   ;; (corfu-scroll-margin 5)        ;; Use scroll margin
 
@@ -1155,119 +1281,137 @@ In that case, insert the number."
   (savehist-mode 1)
   (add-to-list 'savehist-additional-variables 'corfu-history))
 
-(quelpa '(corfu-terminal
-          :fetcher git
-          :url "https://codeberg.org/akib/emacs-corfu-terminal.git"))
-(unless (display-graphic-p)
-  (corfu-terminal-mode +1))
+(use-package corfu-terminal
+  :ensure t
+  :vc (:url "https://codeberg.org/akib/emacs-corfu-terminal.git"
+            :branch "main")
+  :init
+  (unless (display-graphic-p)
+    (corfu-terminal-mode +1))
+  )
 
-(when (not (file-exists-p "/google/bin/releases/"))
-  (use-package copilot
-    :quelpa (copilot :fetcher github
-                     :repo "zerolfx/copilot.el"
-                     :branch "main"
-                     :files ("dist" "*.el"))
-    :init
-    (add-hook 'prog-mode-hook 'copilot-mode)
-    :config
-    (defun rk/no-copilot-mode ()
-      "Helper for `rk/no-copilot-modes'."
-      (copilot-mode -1))
+(use-package popon
+  :ensure t
+  :vc (:url "https://codeberg.org/akib/emacs-popon.git"
+            :branch "master"))
 
-    (defvar rk/no-copilot-modes '(shell-mode
-                                  inferior-python-mode
-                                  eshell-mode
-                                  term-mode
-                                  vterm-mode
-                                  comint-mode
-                                  compilation-mode
-                                  debugger-mode
-                                  dired-mode-hook
-                                  compilation-mode-hook
-                                  flutter-mode-hook
-                                  minibuffer-mode-hook
-                                  shelldon-mode-hook)
-      "Modes in which copilot is inconvenient.")
+(use-package flymake-popon
+  :ensure t
+  :vc (:url "https://codeberg.org/akib/emacs-flymake-popon.git"
+            :branch "master")
+  :diminish flymake-popon-mode
+  :init
+  (global-flymake-popon-mode))
 
-    (defun rk/copilot-disable-predicate ()
-      "When copilot should not automatically show completions."
-      (or rk/copilot-manual-mode
-          (member major-mode rk/no-copilot-modes)
-          ;; Need to figure out what the equivalent for corfu is if I want this behavior
-          ;;(company--active-p)
-          ))
 
-    (defvar rk/copilot-manual-mode nil
-      "When `t' will only show completions when manually triggered, e.g. via M-C-<return>.")
+;; Temporarily disable copilot mode
+;; (when (not (file-exists-p "/google/bin/releases/"))
+;;   (use-package copilot
+;;     :quelpa (copilot :fetcher github
+;;                      :repo "zerolfx/copilot.el"
+;;                      :branch "main"
+;;                      :files ("dist" "*.el"))
+;;     :init
+;;     (add-hook 'prog-mode-hook 'copilot-mode)
+;;     :config
+;;     (defun rk/no-copilot-mode ()
+;;       "Helper for `rk/no-copilot-modes'."
+;;       (copilot-mode -1))
 
-    (defun rk/copilot-change-activation ()
-      "Switch between three activation modes:
-- automatic: copilot will automatically overlay completions
-- manual: you need to press a key (M-C-<return>) to trigger completions
-- off: copilot is completely disabled."
-      (interactive)
-      (if (and copilot-mode rk/copilot-manual-mode)
-          (progn
-            (message "deactivating copilot")
-            (global-copilot-mode -1)
-            (setq rk/copilot-manual-mode nil))
-        (if copilot-mode
-            (progn
-              (message "activating copilot manual mode")
-              (setq rk/copilot-manual-mode t))
-          (message "activating copilot mode")
-          (global-copilot-mode))))
+;;     (defvar rk/no-copilot-modes '(shell-mode
+;;                                   inferior-python-mode
+;;                                   eshell-mode
+;;                                   term-mode
+;;                                   vterm-mode
+;;                                   comint-mode
+;;                                   compilation-mode
+;;                                   debugger-mode
+;;                                   dired-mode-hook
+;;                                   compilation-mode-hook
+;;                                   flutter-mode-hook
+;;                                   minibuffer-mode-hook
+;;                                   shelldon-mode-hook)
+;;       "Modes in which copilot is inconvenient.")
 
-    (defun rk/copilot-complete-or-accept ()
-      "Command that either triggers a completion or accepts one if one
-is available. Useful if you tend to hammer your keys like I do."
-      (interactive)
-      (if (copilot--overlay-visible)
-          (progn
-            (copilot-accept-completion)
-            (open-line 1)
-            (next-line))
-        (copilot-complete)))
+;;     (defun rk/copilot-disable-predicate ()
+;;       "When copilot should not automatically show completions."
+;;       (or rk/copilot-manual-mode
+;;           (member major-mode rk/no-copilot-modes)
+;;           ;; Need to figure out what the equivalent for corfu is if I want this behavior
+;;           ;;(company--active-p)
+;;           ))
 
-    (defun rk/copilot-quit ()
-      "Run `copilot-clear-overlay' or `keyboard-quit'. If copilot is
-cleared, make sure the overlay doesn't come back too soon."
-      (interactive)
-      (when copilot--overlay
-        (setq pre-copilot-disable-predicates copilot-disable-predicates)
-        (setq copilot-disable-predicates (list (lambda () t)))
-        (copilot-clear-overlay)
-        (run-with-idle-timer
-         1.0
-         nil
-         (lambda ()
-           (setq copilot-disable-predicates pre-copilot-disable-predicates)))
-        ))
+;;     (defvar rk/copilot-manual-mode nil
+;;       "When `t' will only show completions when manually triggered, e.g. via M-C-<return>.")
 
-    (defun rk/copilot-complete-if-active (next-func n)
-      (let ((completed (when copilot-mode (copilot-accept-completion))))
-        (unless completed (funcall next-func n))))
-    (add-to-list 'copilot-disable-predicates #'rk/copilot-disable-predicate)
-    ;; global keybindings
-    ;; (define-key global-map (kbd "M-C-<return>") #'rk/copilot-complete-or-accept)
-    ;; dabbrev-expand isn't that good.
-    (global-set-key [remap dabbrev-expand] #'rk/copilot-complete-or-accept)
-    ;; Do copilot-quit when pressing C-g
-    ;; (advice-add 'keyboard-quit :before #'rk/copilot-quit)
-    ;; complete by pressing right or tab but only when copilot completions are
-    ;; shown. This means we leave the normal functionality intact.
-    ;; (advice-add 'right-char :around #'rk/copilot-complete-if-active)
-    ;; (advice-add 'indent-for-tab-command :around #'rk/copilot-complete-if-active)
-    :bind (:map copilot-completion-map
-                ("C-g"  . rk/copilot-quit)
-                ("C-f" . copilot-accept-completion)
-                ("<right>" . copilot-accept-completion)
-                ("M-<right>" . copilot-accept-completion-by-word)
-                ("M-f" . copilot-accept-completion-by-word)
-                ("C-e" . copilot-accept-completion-by-line)
-                ("<end>" . copilot-accept-completion-by-line)
-                ("M-n" . copilot-next-completion)
-                ("M-p" . copilot-previous-completion))))
+;;     (defun rk/copilot-change-activation ()
+;;       "Switch between three activation modes:
+;; - automatic: copilot will automatically overlay completions
+;; - manual: you need to press a key (M-C-<return>) to trigger completions
+;; - off: copilot is completely disabled."
+;;       (interactive)
+;;       (if (and copilot-mode rk/copilot-manual-mode)
+;;           (progn
+;;             (message "deactivating copilot")
+;;             (global-copilot-mode -1)
+;;             (setq rk/copilot-manual-mode nil))
+;;         (if copilot-mode
+;;             (progn
+;;               (message "activating copilot manual mode")
+;;               (setq rk/copilot-manual-mode t))
+;;           (message "activating copilot mode")
+;;           (global-copilot-mode))))
+
+;;     (defun rk/copilot-complete-or-accept ()
+;;       "Command that either triggers a completion or accepts one if one
+;; is available. Useful if you tend to hammer your keys like I do."
+;;       (interactive)
+;;       (if (copilot--overlay-visible)
+;;           (progn
+;;             (copilot-accept-completion)
+;;             (open-line 1)
+;;             (next-line))
+;;         (copilot-complete)))
+
+;;     (defun rk/copilot-quit ()
+;;       "Run `copilot-clear-overlay' or `keyboard-quit'. If copilot is
+;; cleared, make sure the overlay doesn't come back too soon."
+;;       (interactive)
+;;       (when copilot--overlay
+;;         (setq pre-copilot-disable-predicates copilot-disable-predicates)
+;;         (setq copilot-disable-predicates (list (lambda () t)))
+;;         (copilot-clear-overlay)
+;;         (run-with-idle-timer
+;;          1.0
+;;          nil
+;;          (lambda ()
+;;            (setq copilot-disable-predicates pre-copilot-disable-predicates)))
+;;         ))
+
+;;     (defun rk/copilot-complete-if-active (next-func n)
+;;       (let ((completed (when copilot-mode (copilot-accept-completion))))
+;;         (unless completed (funcall next-func n))))
+;;     (add-to-list 'copilot-disable-predicates #'rk/copilot-disable-predicate)
+;;     ;; global keybindings
+;;     ;; (define-key global-map (kbd "M-C-<return>") #'rk/copilot-complete-or-accept)
+;;     ;; dabbrev-expand isn't that good.
+;;     (global-set-key [remap dabbrev-expand] #'rk/copilot-complete-or-accept)
+;;     ;; Do copilot-quit when pressing C-g
+;;     ;; (advice-add 'keyboard-quit :before #'rk/copilot-quit)
+;;     ;; complete by pressing right or tab but only when copilot completions are
+;;     ;; shown. This means we leave the normal functionality intact.
+;;     ;; (advice-add 'right-char :around #'rk/copilot-complete-if-active)
+;;     ;; (advice-add 'indent-for-tab-command :around #'rk/copilot-complete-if-active)
+;;     :bind (:map copilot-completion-map
+;;                 ("C-g"  . rk/copilot-quit)
+;;                 ("C-f" . copilot-accept-completion)
+;;                 ("<right>" . copilot-accept-completion)
+;;                 ("M-<right>" . copilot-accept-completion-by-word)
+;;                 ("M-f" . copilot-accept-completion-by-word)
+;;                 ("C-e" . copilot-accept-completion-by-line)
+;;                 ("<end>" . copilot-accept-completion-by-line)
+;;                 ("M-n" . copilot-next-completion)
+;;                 ("M-p" . copilot-previous-completion))))
 
 ;; (use-package company
 ;;   :ensure t
@@ -1305,25 +1449,25 @@ cleared, make sure the overlay doesn't come back too soon."
 ;;           ("C-z" . company-try-hard)))
 
 ;; 10/26/2023 Disable complete because copilot is so much better.
-;; (setq tab-always-indent 'complete)
-;; (defun gmbuell-indent-or-complete-common (arg)
-;;   "Indent the current line or region, or complete the common part."
-;;   (interactive "P")
-;;   (cond
-;;    ((use-region-p)
-;;     (indent-region (region-beginning) (region-end)))
-;;    ((memq indent-line-function
-;;           '(indent-relative indent-relative-maybe))
-;;     (completion-at-point))
-;;    ((let ((old-point (point))
-;;           (old-tick (buffer-chars-modified-tick))
-;;           (tab-always-indent t))
-;;       (indent-for-tab-command arg)
-;;       (when (and (eq old-point (point))
-;;                  (eq old-tick (buffer-chars-modified-tick)))
-;;         (completion-at-point))))))
+(setq tab-always-indent 'complete)
+(defun gmbuell-indent-or-complete-common (arg)
+  "Indent the current line or region, or complete the common part."
+  (interactive "P")
+  (cond
+   ((use-region-p)
+    (indent-region (region-beginning) (region-end)))
+   ((memq indent-line-function
+          '(indent-relative indent-relative-maybe))
+    (completion-at-point))
+   ((let ((old-point (point))
+          (old-tick (buffer-chars-modified-tick))
+          (tab-always-indent t))
+      (indent-for-tab-command arg)
+      (when (and (eq old-point (point))
+                 (eq old-tick (buffer-chars-modified-tick)))
+        (completion-at-point))))))
 
-;; (bind-key "TAB" 'gmbuell-indent-or-complete-common c++-mode-map)
+(bind-key "TAB" 'gmbuell-indent-or-complete-common prog-mode-map)
 
 ;; Doesn't work in terminal mode. For documentation popups on idle.
 ;; (use-package pos-tip
@@ -1366,7 +1510,9 @@ cleared, make sure the overlay doesn't come back too soon."
   (add-hook 'c-mode-hook 'eglot-ensure)
   (add-hook 'c++-mode-hook 'eglot-ensure)
   (add-hook 'go-mode-hook 'eglot-ensure)
+  (add-hook 'go-ts-mode-hook 'eglot-ensure)
   (add-hook 'python-mode-hook 'eglot-ensure)
+  (add-hook 'python-ts-mode-hook 'eglot-ensure)
   (add-hook 'protobuf-mode-hook 'eglot-ensure)
   ;; Stop this flymake workaround because I think everything is fine with eglot and flymake now.
   ;;(setq eglot-stay-out-of '(flymake))
@@ -1449,8 +1595,7 @@ cleared, make sure the overlay doesn't come back too soon."
 ;;   (setq xref-show-xrefs-function #'ivy-xref-show-xrefs))
 
 (require 'nadvice)
-(defun do-nothing (orig-fun &rest args)
-  t)
+(defun do-nothing (orig-fun &rest args) t)
 
 (use-package region-bindings-mode
   :ensure t
@@ -1520,7 +1665,9 @@ cleared, make sure the overlay doesn't come back too soon."
   :requires (yasnippet)
   :ensure t
   :bind (("M-w" . aya-create)
-         ("M-W" . aya-expand)))
+         ("M-W" . aya-expand))
+  :init
+  (setq aya-case-fold t))
 
 ;; Doesn't currently do anything because I've remapped M-w which is usually
 ;; kill-ring-save.
@@ -1744,15 +1891,25 @@ delimiters instead of word delimiters."
 ;; go install golang.org/x/tools/gopls@latest
 ;; Also need to do more setup to get this to work with bazel.
 ;; https://github.com/bazelbuild/rules_go/wiki/Editor-setup
-;; (defun eglot-format-buffer-on-save ()
-;;   (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+(defun eglot-format-buffer-before-save ()
+  (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+;; (defun eglot-organize-imports-before-save ()
+;;   (add-hook 'before-save-hook
+;;             (lambda ()
+;;               (call-interactively 'eglot-code-action-organize-imports))
+;;             nil t))
 (use-package go-mode
   :ensure t
   :init
-  (add-to-list 'auto-mode-alist '("\\.go\\'" . go-mode))
+  (add-to-list 'auto-mode-alist '("\\.go\\'" . go-ts-mode))
   (add-to-list 'auto-mode-alist '("\\.rl\\'" . go-mode))
   (add-hook 'go-mode-hook #'yas-minor-mode)
   (add-hook 'go-mode-hook #'eglot-ensure)
+  (add-hook 'go-mode-hook #'eglot-format-buffer-before-save)
+  (add-hook 'go-ts-mode-hook #'yas-minor-mode)
+  (add-hook 'go-ts-mode-hook #'eglot-ensure)
+  (add-hook 'go-ts-mode-hook #'eglot-format-buffer-before-save)
+  ;; (add-hook 'go-mode-hook #'eglot-organize-imports-before-save)
   :config
   (defun my-custom-compile ()
     "Compile using custom compile command."
@@ -1764,7 +1921,6 @@ delimiters instead of word delimiters."
                    (t
                     "bazel build :all"))))
   :bind (("C-c C-c" . my-custom-compile))
-  ;;(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
   )
 
 ;; Install golangci-lint
@@ -1790,49 +1946,52 @@ delimiters instead of word delimiters."
 ;;   :init (add-hook 'term-mode-hook #'eterm-256color-mode))
 
 (setq enable-recursive-minibuffers t)
-(use-package bash-completion
-  :ensure t
-  :init (bash-completion-setup))
+;; 11/8/2024 disable bash-completion until I need it
+;; (use-package bash-completion
+;;   :ensure t
+;;   :init (bash-completion-setup))
 
+;; 11/8/2024 Disable shelldon. eshell might be better
 ;; https://github.com/Overdr0ne/shelldon
-(use-package shelldon
-  :ensure t
-  :bind* (("C-t" . shelldon)
-          ("M-t" . shelldon-output-history))
-  :init
-  (setq shell-command-prompt-show-cwd t)
-  ;; (setq shell-command-switch "-ic")
-  (setq shelldon-ansi-colors t)
-  ;; xterm-color below might be better
-  ;(add-hook 'shelldon-mode-hook 'ansi-color-for-comint-mode-on)
-  ;(add-to-list 'comint-output-filter-functions 'ansi-color-process-output)
-                                        ;(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
-  (defun test-go ()
-    (interactive)
-    (shelldon-async-command "bazel test --test_output=all :all"))
-  )
+;; (use-package shelldon
+;;   :ensure t
+;;   :bind* (("C-t" . shelldon)
+;;           ("M-t" . shelldon-output-history))
+;;   :init
+;;   (setq shell-command-prompt-show-cwd t)
+;;   ;; (setq shell-command-switch "-ic")
+;;   (setq shelldon-ansi-colors t)
+;;   ;; xterm-color below might be better
+;;   ;(add-hook 'shelldon-mode-hook 'ansi-color-for-comint-mode-on)
+;;   ;(add-to-list 'comint-output-filter-functions 'ansi-color-process-output)
+;;                                         ;(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
+;;   (defun test-go ()
+;;     (interactive)
+;;     (shelldon-async-command "bazel test --test_output=all :all"))
+;;   )
 
 (setq comint-prompt-read-only t)
 (setq comint-scroll-to-bottom-on-input t)
 
-(use-package xterm-color
-  :ensure t
-  :init
-  (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)
-  (add-hook 'shell-mode-hook
-            (lambda ()
-              ;; Disable font-locking in this buffer to improve performance
-              (font-lock-mode -1)
-              ;; Prevent font-locking from being re-enabled in this buffer
-              (make-local-variable 'font-lock-function)
-              (setq font-lock-function (lambda (_) nil))
-              (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)))
-  (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions))
-  (setq compilation-environment '("TERM=xterm-256color"))
-  ;;(setq compilation-environment '("TERM=xterm-24bits"))
-  (defun my/advice-compilation-filter (f proc string)
-    (funcall f proc (xterm-color-filter string)))
-  (advice-add 'compilation-filter :around #'my/advice-compilation-filter))
+;; 11/8/2024 Disable xterm-color until I actually need it
+;; (use-package xterm-color
+;;   :ensure t
+;;   :init
+;;   (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)
+;;   (add-hook 'shell-mode-hook
+;;             (lambda ()
+;;               ;; Disable font-locking in this buffer to improve performance
+;;               (font-lock-mode -1)
+;;               ;; Prevent font-locking from being re-enabled in this buffer
+;;               (make-local-variable 'font-lock-function)
+;;               (setq font-lock-function (lambda (_) nil))
+;;               (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)))
+;;   (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions))
+;;   (setq compilation-environment '("TERM=xterm-256color"))
+;;   ;;(setq compilation-environment '("TERM=xterm-24bits"))
+;;   (defun my/advice-compilation-filter (f proc string)
+;;     (funcall f proc (xterm-color-filter string)))
+;;   (advice-add 'compilation-filter :around #'my/advice-compilation-filter))
 
 
 (defun get-buffers-matching-mode (mode)
@@ -1868,29 +2027,31 @@ delimiters instead of word delimiters."
   ("C-c l o" . link-hint-open-link)
   ("C-c l c" . link-hint-copy-link))
 
-(use-package origami
-  :ensure t
-  :bind (("C-c TAB" . origami-forward-toggle-node))
-  :config (global-origami-mode)
-  :init
-  (defhydra hydra-origami (:color red)
-    "
-  _o_pen node    _n_ext fold       toggle _f_orward
-  _c_lose node   _p_revious fold   toggle _a_ll
-  "
-    ("o" origami-open-node)
-    ("c" origami-close-node)
-    ("n" origami-next-fold)
-    ("p" origami-previous-fold)
-    ("f" origami-forward-toggle-node)
-    ("a" origami-toggle-all-nodes)))
+;; 11/8/2024 disable origami because I'm not using it
+;; (use-package origami
+;;   :ensure t
+;;   :bind (("C-c TAB" . origami-forward-toggle-node))
+;;   :config (global-origami-mode)
+;;   :init
+;;   (defhydra hydra-origami (:color red)
+;;     "
+;;   _o_pen node    _n_ext fold       toggle _f_orward
+;;   _c_lose node   _p_revious fold   toggle _a_ll
+;;   "
+;;     ("o" origami-open-node)
+;;     ("c" origami-close-node)
+;;     ("n" origami-next-fold)
+;;     ("p" origami-previous-fold)
+;;     ("f" origami-forward-toggle-node)
+;;     ("a" origami-toggle-all-nodes)))
 
 ;; Show hydras overlayed in the middle of the frame
 (use-package hydra-posframe
   ;; Only enable if we are running graphical mode.
   :if window-system
-  :quelpa (hydra-posframe :fetcher git :url
-                          "https://github.com/Ladicle/hydra-posframe.git")
+  :ensure t
+  :vc (:url "https://github.com/Ladicle/hydra-posframe.git"
+            :branch "main")
   :hook (after-init . hydra-posframe-mode)
   :custom (hydra-posframe-border-width 5))
 
@@ -1899,35 +2060,36 @@ delimiters instead of word delimiters."
   :requires hydra
   :ensure t)
 
-(defhydra hydra-goto-line (goto-map ""
-                           :pre (display-line-numbers-mode 1)
-                           :post (display-line-numbers-mode -1))
-  "goto-line"
-  ("g" goto-line "go")
-  ("m" set-mark-command "mark" :bind nil)
-  ("<SPC>" avy-goto-word-1 "char")
-  ("q" nil "quit"))
+;; Try out consult-goto instead
+;; (defhydra hydra-goto-line (goto-map ""
+;;                            :pre (display-line-numbers-mode 1)
+;;                            :post (display-line-numbers-mode -1))
+;;   "goto-line"
+;;   ("g" goto-line "go")
+;;   ("m" set-mark-command "mark" :bind nil)
+;;   ("<SPC>" avy-goto-word-1 "char")
+;;   ("q" nil "quit"))
 
-(use-package breadcrumb
-  :quelpa (pheaver-breadcrumb :fetcher git :url
-                      "https://github.com/pheaver/breadcrumb.git")
-  :demand t)
-(defhydra hydra-breadcrumb
-  (:exit t)
-  "
-Breadcrumb bookmarks:
-  _<up>_:   prev   _S-<up>_:   local prev
-  _<down>_: next   _S-<down>_: local next
-  _s_: set  _c_: clear  _l_: list  _q_: quit
-"
-  ("<down>" bc-next nil :exit nil)
-  ("<up>" bc-previous nil :exit nil)
-  ("S-<down>" bc-local-next nil :exit nil)
-  ("S-<up>" bc-local-previous nil :exit nil)
-  ("l" bc-list nil)
-  ("s" bc-set nil)
-  ("c" bc-clear nil)
-  ("q" nil nil))
+;; (use-package breadcrumb
+;;   :quelpa (pheaver-breadcrumb :fetcher git :url
+;;                       "https://github.com/pheaver/breadcrumb.git")
+;;   :demand t)
+;; (defhydra hydra-breadcrumb
+;;   (:exit t)
+;;   "
+;; Breadcrumb bookmarks:
+;;   _<up>_:   prev   _S-<up>_:   local prev
+;;   _<down>_: next   _S-<down>_: local next
+;;   _s_: set  _c_: clear  _l_: list  _q_: quit
+;; "
+;;   ("<down>" bc-next nil :exit nil)
+;;   ("<up>" bc-previous nil :exit nil)
+;;   ("S-<down>" bc-local-next nil :exit nil)
+;;   ("S-<up>" bc-local-previous nil :exit nil)
+;;   ("l" bc-list nil)
+;;   ("s" bc-set nil)
+;;   ("c" bc-clear nil)
+;;   ("q" nil nil))
 
 ;; A completely different breadcrumb which is a replacement for which-func-mode.
 ;; Commented out because the name conflicts with the breadcrumb package above...
@@ -1937,45 +2099,48 @@ Breadcrumb bookmarks:
 ;;   :init
 ;;   (breadcrumb-mode))
 
-(use-package dogears
-  :quelpa (dogears :fetcher github :repo "alphapapa/dogears.el"
-                   :files (:defaults (:exclude "helm-dogears.el")))
-  :bind (:map global-map
-              ("M-g d" . dogears-go)
-              ("M-g M-b" . dogears-back)
-              ("M-g M-f" . dogears-forward)
-              ("M-g M-d" . dogears-list)
-              ("M-g M-D" . dogears-sidebar))
-  :init
-  (add-hook 'prog-mode-hook #'dogears-mode))
+;; 11/8/2024 Disable dogears because I'm not using it.
+;; (use-package dogears
+;;   :quelpa (dogears :fetcher github :repo "alphapapa/dogears.el"
+;;                    :files (:defaults (:exclude "helm-dogears.el")))
+;;   :bind (:map global-map
+;;               ("M-g d" . dogears-go)
+;;               ("M-g M-b" . dogears-back)
+;;               ("M-g M-f" . dogears-forward)
+;;               ("M-g M-d" . dogears-list)
+;;               ("M-g M-D" . dogears-sidebar))
+;;   :init
+;;   (add-hook 'prog-mode-hook #'dogears-mode))
 ;; Another alternative is gumshoe
 ;; https://github.com/Overdr0ne/gumshoe
 
 ;; One more code navigation method because kythe/clangd are unreliable.
-(use-package dumb-jump
-  :ensure t
-  :bind (("M-g o" . dumb-jump-go-other-window)
-         ("M-g j" . dumb-jump-go)
-         ("M-g b" . dumb-jump-back)
-         ("M-g i" . dumb-jump-go-prompt)
-         ("M-g x" . dumb-jump-go-prefer-external)
-         ("M-g z" . dumb-jump-go-prefer-external-other-window))
-  :config
-  ;;(setq dumb-jump-selector 'ivy)
-  ;; (setq dumb-jump-force-searcher 'rg)
-  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
-  :init
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
-  ;; (defhydra dumb-jump-hydra (:color blue :columns 3)
-  ;;   "Dumb Jump"
-  ;;   ("j" xref-find-definitions "Go")
-  ;;   ("o" dumb-jump-go-other-window "Other window")
-  ;;   ("e" dumb-jump-go-prefer-external "Go external")
-  ;;   ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
-  ;;   ("i" dumb-jump-go-prompt "Prompt")
-  ;;   ("l" dumb-jump-quick-look "Quick look")
-  ;;   ("b" xref-pop-marker-stack "Back"))
-  )
+;; 11/20/2024 Try without dumb-jump since it seems to be deprecated in favor of
+;; native xref.
+;; (use-package dumb-jump
+;;   :ensure t
+;;   :bind (("M-g o" . dumb-jump-go-other-window)
+;;          ("M-g j" . dumb-jump-go)
+;;          ("M-g b" . dumb-jump-back)
+;;          ("M-g i" . dumb-jump-go-prompt)
+;;          ("M-g x" . dumb-jump-go-prefer-external)
+;;          ("M-g z" . dumb-jump-go-prefer-external-other-window))
+;;   :config
+;;   ;;(setq dumb-jump-selector 'ivy)
+;;   (setq dumb-jump-force-searcher 'rg)
+;;   :init
+;;   (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+;;   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+;;   ;; (defhydra dumb-jump-hydra (:color blue :columns 3)
+;;   ;;   "Dumb Jump"
+;;   ;;   ("j" xref-find-definitions "Go")
+;;   ;;   ("o" dumb-jump-go-other-window "Other window")
+;;   ;;   ("e" dumb-jump-go-prefer-external "Go external")
+;;   ;;   ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
+;;   ;;   ("i" dumb-jump-go-prompt "Prompt")
+;;   ;;   ("l" dumb-jump-quick-look "Quick look")
+;;   ;;   ("b" xref-pop-marker-stack "Back"))
+;;   )
 
 (defun switch-previous-buffer ()
   (interactive)
@@ -1987,6 +2152,74 @@ Breadcrumb bookmarks:
           ;;("M-o" . iflipb-next-buffer)
           ;;("M-O" . iflipb-previous-buffer)
           ("C-x k" . iflipb-kill-buffer)))
+
+(use-package popper
+  :ensure t
+  :bind (("C-t"   . my/popper-toggle-or-eshell)
+         :map help-mode-map
+         ("q" . my/popper-quit)
+         :map special-mode-map
+         ("q" . my/popper-quit)
+         )
+  :init
+  (setq popper-reference-buffers
+        '(;;"\\*Messages\\*"
+          ;; "Output\\*$"
+          "\\*Async Shell Command\\*"
+          help-mode
+          compilation-mode
+          flymake-diagnostics-buffer-mode
+          "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
+          "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
+          "^\\*term.*\\*$"   term-mode   ;term as a popup
+          "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
+          ;; "^\\*eldoc.*\\*$"  eldoc-mode  ; eldoc as a popup
+          ))
+  ;;(setq popper-group-function #'popper-group-by-project)
+  (setq popper-group-function #'popper-group-by-directory)
+  (popper-mode +1)
+  (popper-echo-mode +1)
+  (defun my/popper-quit ()
+    "Kill popper popup if one is active, otherwise quit window"
+    (interactive)
+    (if popper-open-popup-alist
+        (popper-kill-latest-popup)
+      (quit-window)))
+  (defun my/popper-toggle-or-eshell ()
+    "Toggle popup or create new eshell if no buried popups exist."
+    (interactive)
+    (if popper-open-popup-alist
+        (popper-toggle)
+      (let ((group (when popper-group-function (funcall popper-group-function))))
+        (if (null (alist-get group popper-buried-popup-alist nil nil 'equal))
+            (eshell t)
+          (popper-toggle))))))
+
+;; From https://stackoverflow.com/questions/13009908/eshell-search-history
+(defun my-eshell-previous-matching-input-from-input (arg)
+  "Search backwards through input history for match for current input.
+\(Previous history elements are earlier commands.)
+With prefix argument N, search for Nth previous match.
+If N is negative, search forwards for the -Nth following match."
+  (interactive "p")
+  (if (not (memq last-command '(eshell-previous-matching-input-from-input
+                eshell-next-matching-input-from-input)))
+      ;; Starting a new search
+      (setq eshell-matching-input-from-input-string
+        (buffer-substring (save-excursion (eshell-bol) (point))
+                  (point))
+        eshell-history-index nil))
+  (eshell-previous-matching-input
+   (regexp-quote eshell-matching-input-from-input-string)
+   arg))
+
+;; override eshell-previous-matching-input-from-input, because it limits the search is from the beginning.
+(advice-add 'eshell-previous-matching-input-from-input :override #'my-eshell-previous-matching-input-from-input)
+
+(use-package eat
+  :ensure t
+  :init
+  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
 
 
 (defun modi/multi-pop-to-mark (orig-fun &rest args)
