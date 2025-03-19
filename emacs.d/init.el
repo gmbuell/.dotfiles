@@ -320,10 +320,34 @@ Git gutter:
 ;; http://daemianmack.com/magit-cheatsheet.html
 (use-package magit
   :ensure t
-  :bind ("C-c g" . magit-status)
+  :bind ("C-c g" . unpackaged/magit-status)
   :init
   (setq auto-revert-check-vc-info t)
-  (setq vc-follow-symlinks t))
+  (setq vc-follow-symlinks t)
+  (defun unpackaged/magit-status ()
+    "Open a `magit-status' buffer and close the other window so only Magit is visible.
+If a file was visited in the buffer that was active when this
+command was called, go to its unstaged changes section."
+    (interactive)
+    (let* ((buffer-file-path (when buffer-file-name
+                               (file-relative-name buffer-file-name
+                                                   (locate-dominating-file buffer-file-name ".git"))))
+           (section-ident `((file . ,buffer-file-path) (unstaged) (status))))
+      (call-interactively #'magit-status)
+      (delete-other-windows)
+      (when buffer-file-path
+        (goto-char (point-min))
+        (cl-loop until (when (equal section-ident (magit-section-ident (magit-current-section)))
+                         (magit-section-show (magit-current-section))
+                         (recenter)
+                         t)
+                 do (condition-case nil
+                        (magit-section-forward)
+                      (error (cl-return (magit-status-goto-initial-section-1))))))))
+  :config
+  ;; This changes Magit's default buffer display behavior but should make it
+  ;; more consistent.
+  (setopt magit-display-buffer-function #'display-buffer))
 
 (defun my/google3-early-exit (orig-fun &rest args)
   (if (string-prefix-p "/google/src/cloud/" (buffer-file-name))
@@ -405,27 +429,6 @@ buffer, otherwise just change the current paragraph."
                          (= original-num-lines (line-number-at-pos (point-max)))
                        (string= hash (buffer-hash)))
                finally return fill-column))))
-
-(defun unpackaged/magit-status ()
-  "Open a `magit-status' buffer and close the other window so only Magit is visible.
-If a file was visited in the buffer that was active when this
-command was called, go to its unstaged changes section."
-  (interactive)
-  (let* ((buffer-file-path (when buffer-file-name
-                             (file-relative-name buffer-file-name
-                                                 (locate-dominating-file buffer-file-name ".git"))))
-         (section-ident `((file . ,buffer-file-path) (unstaged) (status))))
-    (call-interactively #'magit-status)
-    (delete-other-windows)
-    (when buffer-file-path
-      (goto-char (point-min))
-      (cl-loop until (when (equal section-ident (magit-section-ident (magit-current-section)))
-                       (magit-section-show (magit-current-section))
-                       (recenter)
-                       t)
-               do (condition-case nil
-                      (magit-section-forward)
-                    (error (cl-return (magit-status-goto-initial-section-1))))))))
 
 ;; smerge-mode instead of ediff
 (use-package smerge-mode
@@ -954,15 +957,38 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package embark
   :ensure t
-   :bind
-   (("C-." . embark-act)         ;; pick some comfortable binding
-    ("C-;" . embark-dwim)        ;; good alternative: M-.
-    ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+  :after (vertico)
+  :bind
+  (("M-." . embark-act)          ;; Could also be embark-dwim for more of a
+                                  ;; direct xref substitute
+   ("C-h B" . embark-bindings))  ;; alternative for `describe-bindings'
 
   :init
   ;; Optionally replace the key help with a completing-read interface
   (setq prefix-help-command #'embark-prefix-help-command)
+  ;; Make embark behave like helm
+  (defun with-minibuffer-keymap (keymap)
+    (lambda (fn &rest args)
+      (minibuffer-with-setup-hook
+          (lambda ()
+            (use-local-map
+             (make-composed-keymap keymap (current-local-map))))
+        (apply fn args))))
 
+  (defvar embark-completing-read-prompter-map
+    (let ((map (make-sparse-keymap)))
+      (define-key map (kbd "TAB") 'abort-recursive-edit)
+      map))
+
+  (advice-add 'embark-completing-read-prompter :around
+              (with-minibuffer-keymap embark-completing-read-prompter-map))
+  (define-key vertico-map (kbd "TAB") 'embark-act-with-completing-read)
+
+  (defun embark-act-with-completing-read (&optional arg)
+    (interactive "P")
+    (let* ((embark-prompter 'embark-completing-read-prompter)
+           (embark-indicators '(embark-minimal-indicator)))
+      (embark-act arg)))
   :config
   ;; Hide the mode line of the Embark live/completions buffers
   (add-to-list 'display-buffer-alist
@@ -983,7 +1009,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
          ("M-g i" . consult-imenu)
          ("M-g I" . consult-imenu-multi)
          ;; M-s bindings in `search-map'
-         ("M-s d" . consult-find)                  ;; Alternative: consult-fd
+         ("M-s d" . consult-fd)                  ;; Alternative: consult-fd
          ("M-s c" . consult-locate)
          ("M-s g" . consult-grep)
          ("M-s G" . consult-git-grep)
@@ -1001,6 +1027,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
          ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
          )
   :init
+  (require 'esh-mode)
   (bind-key* "C-c C-l" 'consult-history eshell-mode-map)
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
@@ -1146,10 +1173,62 @@ any directory proferred by `consult-dir'."
   (setq avy-keys (number-sequence ?a ?z)))
 
 (use-package ace-window
+  :requires (embark)
   :ensure t
   :bind (("C-x o" . ace-window))
   :init
-  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
+  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+  (defun ace-window-prefix ()
+    "Use `ace-window' to display the buffer of the next command.
+The next buffer is the buffer displayed by the next command invoked
+immediately after this command (ignoring reading from the minibuffer).
+Creates a new window before displaying the buffer.
+When `switch-to-buffer-obey-display-actions' is non-nil,
+`switch-to-buffer' commands are also supported."
+    (interactive)
+    (display-buffer-override-next-command
+     (lambda (buffer _)
+       (let (window type)
+         (setq
+          window (aw-select (propertize " ACE" 'face 'mode-line-highlight))
+          type 'reuse)
+         (cons window type)))
+     nil "[ace-window]")
+    (message "Use `ace-window' to display next command buffer..."))
+  (defvar-keymap my/window-prefix-map
+    :doc "Keymap for various window-prefix maps"
+    :suppress 'nodigits
+    "o" #'ace-window-prefix
+    "0" #'ace-window-prefix
+    "1" #'same-window-prefix
+    "2" #'split-window-vertically
+    "3" #'split-window-horizontally
+    "4" #'other-window-prefix
+    "5" #'other-frame-prefix
+    "6" #'other-tab-prefix
+    "t" #'other-tab-prefix)
+  ;; Look up the key in `my/window-prefix-map' and call that function first.
+  ;; Then run the default embark action.
+  (cl-defun my/embark--call-prefix-action (&rest rest &key run type &allow-other-keys)
+    (when-let ((cmd (keymap-lookup
+                     my/window-prefix-map
+                     (key-description (this-command-keys-vector)))))
+      (funcall cmd))
+    (funcall run :action (embark--default-action type) :type type rest))
+  ;; Dummy function, will be overridden by running `embark-around-action-hooks'
+  (defun my/embark-set-window () (interactive))
+
+  ;; When running the dummy function, call the prefix action from above
+  (setf (alist-get 'my/embark-set-window embark-around-action-hooks)
+        '(my/embark--call-prefix-action))
+  (setf (alist-get 'buffer embark-default-action-overrides) #'pop-to-buffer-same-window
+        (alist-get 'file embark-default-action-overrides) #'find-file
+        (alist-get 'bookmark embark-default-action-overrides) #'bookmark-jump
+        (alist-get 'library embark-default-action-overrides) #'find-library)
+  (map-keymap (lambda (key cmd)
+                (keymap-set embark-general-map (key-description (make-vector 1 key))
+                            #'my/embark-set-window))
+              my/window-prefix-map))
 
 (use-package f
   :ensure t)
@@ -1482,9 +1561,10 @@ In that case, insert the number."
 
 (use-package expand-region
   :ensure t
-  :bind (("C-=" . er/expand-region) ;; Need to remap this
+  :bind (("C-c e" . er/expand-region)
          :map region-bindings-mode-map
-         ("u" . er/contract-region)))
+         ("u" . er/contract-region)
+         ("e" . er/expand-region)))
 
 ;; phi search works with multiple cursors But has weird behavior around trying
 ;; to move while in a search. Fortunately, multiple cursors mode seems to use it
