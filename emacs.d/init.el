@@ -129,7 +129,20 @@
   :after (dired)
   :commands dired-jump
   :config
-  (setq dired-omit-mode t))
+  (setq dired-omit-mode t)
+  ;; Make dired-omit-mode hide all "dotfiles"
+  (setq dired-omit-files
+        (concat dired-omit-files "\\|^\\..*$")))
+
+;; Additional syntax highlighting for dired
+(use-package diredfl
+  :ensure t
+  :hook
+  ((dired-mode . diredfl-mode)
+   ;; highlight parent and directory preview as well
+   (dirvish-directory-view-mode . diredfl-mode))
+  :config
+  (set-face-attribute 'diredfl-dir-name nil :bold t))
 
 ;; Regexp for useful and useless buffers for smarter buffer switching
 (defvar spacemacs-useless-buffers-regexp '("*\.\+")
@@ -912,6 +925,48 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (keymap-set vertico-map "DEL" #'vertico-directory-delete-char)
   (keymap-set vertico-map "M-DEL" #'vertico-directory-delete-word)
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy))
+
+(use-package dirvish
+  :ensure t
+  :init
+  (dirvish-override-dired-mode)
+  :custom
+  (dirvish-quick-access-entries ; It's a custom option, `setq' won't work
+   '(("h" "~/"                     "Home")
+     ("r" "~/repo/"                "repo")))
+  :config
+  ;; (dirvish-peek-mode)             ; Preview files in minibuffer
+  (dirvish-side-follow-mode)      ; similar to `treemacs-follow-mode'
+  (setq dirvish-mode-line-format
+        '(:left (sort symlink) :right (omit yank index)))
+  (setq dirvish-attributes           ; The order *MATTERS* for some attributes
+        '(vc-state subtree-state collapse git-msg file-time file-size)
+        dirvish-side-attributes
+        '(vc-state collapse file-size))
+  (setq dired-listing-switches
+        "-l --almost-all --human-readable --group-directories-first --no-group")
+  :bind ; Bind `dirvish-fd|dirvish-side|dirvish-dwim' as you see fit
+  (("C-c f" . dirvish-side)
+   :map dirvish-mode-map          ; Dirvish inherits `dired-mode-map'
+   ("o" . dired-up-directory)     ; So you can adjust dired bindings here
+   ("?"   . dirvish-dispatch)     ; contains most of sub-menus in dirvish extensions
+   ("a"   . dirvish-quick-access)
+   ("f"   . dirvish-history-go-forward)
+   ("b"   . dirvish-history-go-backward)
+   ("y"   . dirvish-yank-menu)
+   ("N"   . dirvish-narrow)
+   ("^"   . dirvish-history-last)
+   ("s"   . dirvish-setup-menu)   ; `st' toggles mtime, `ss' toggles file size, etc.
+   ("h"   . dirvish-history-jump) ; remapped `describe-mode'
+   ("r"   . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
+   ("v"   . dirvish-vc-menu)      ; remapped `dired-view-file'
+   ("TAB" . dirvish-subtree-toggle)
+   ("M-f" . dirvish-file-info-menu)
+   ("M-l" . dirvish-ls-switches-menu)
+   ("M-m" . dirvish-mark-menu)
+   ("M-t" . dirvish-layout-toggle)
+   ("M-e" . dirvish-emerge-menu)
+   ("M-j" . dirvish-fd-jump)))
 
 ;; Completion
 ;; headlong might be useful for bookmark jumping
