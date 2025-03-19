@@ -1,10 +1,11 @@
+;;; -*- lexical-binding: t -*-
+
 ;; Don't load site default
 (setq inhibit-default-init t)
 ;; Also need to start emacs with --no-site-file because that happens before this
 ;; init.
 
-(setq comp-deferred-compilation t)
-(setq package-native-compile t)
+(setopt package-native-compile t)
 
 (setq gc-cons-threshold 100000000)
 (require 'package)
@@ -30,21 +31,6 @@
 (use-package bind-key
   :ensure t)
 
-;; Something is going wrong. Enable debugging.
-;; (setq debug-on-error t)
-
-;; (use-package auto-package-update
-;;   :ensure t
-;;   :config
-;;   ;;  Delete residual old versions.
-;;   (setq auto-package-update-delete-old-versions t)
-;;   ;; Update every week.
-;;   (setq auto-package-update-interval 7)
-;;   ;; Do not bother me when updates have taken place.
-;;   (setq auto-package-update-hide-results t)
-;;   ;;Update installed packages at startup if there is an update pending.
-;;   :init (auto-package-update-maybe))
-
 (use-package diminish :ensure t)
 
 (custom-set-variables
@@ -61,7 +47,7 @@
    '(ace-window anzu auto-yasnippet bash-completion bazel beginend cape
                 casual-symbol-overlay clipetty combobulate consult-dir
                 consult-eglot-embark corfu-terminal corfu-terminal-mode deft
-                diminish discover-my-major disproject dogears doom-themes
+                diminish discover-my-major disproject doom-themes
                 dumb-jump eat expand-region flymake-popon fold-this git-gutter
                 gnu-elpa-keyring-update go-mode highlight-symbol iflipb
                 link-hint magit-todos marginalia markdown-mode
@@ -103,9 +89,7 @@
 ;; Navigation
 ;; ---------------------------------------------------------------------------
 ;; Auto refresh
-;; Global auto revert might hang things?
 (global-auto-revert-mode 1)
-;; (global-auto-revert-mode -1)
 (add-to-list 'global-auto-revert-ignore-modes 'Buffer-menu-mode)
 (setq auto-revert-check-vc-info t)
 ;; Slow down auto revert.
@@ -198,13 +182,6 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'python-mode (font-lock-width-keyword 80))
 (font-lock-add-keywords 'ess-mode (font-lock-width-keyword 80))
 
-;; C++ style
-;; Not sure if we want google-c-style enabled or not. It's old emacs.
-;; (use-package google-c-style
-;;   :ensure t
-;;   :init (progn
-;;           (add-hook 'c-mode-common-hook 'google-set-c-style)
-;;           (add-hook 'c-mode-common-hook 'google-make-newline-indent)))
 (use-package cc-mode
   :ensure t
   :init
@@ -231,7 +208,7 @@ that uses 'font-lock-warning-face'."
   :ensure t
   :hook (after-init . global-clipetty-mode))
 
-;; Single space between sentences is more widespread than double
+;; Single space between sentences
 (setq-default sentence-end-double-space nil)
 
 ;; ---------------------------------------------------------------------------
@@ -241,8 +218,6 @@ that uses 'font-lock-warning-face'."
 ;; Show column number in mode line
 (setq column-number-mode t)
 
-;; highlight current line
-;; (global-hl-line-mode t)
 ;; no blink
 (blink-cursor-mode 0)
 ;; When emacs asks for "yes" or "no", let "y" or "n" suffice
@@ -295,74 +270,11 @@ that uses 'font-lock-warning-face'."
                         "[0-9a-f]\\{32\\}-[0-9a-f]\\{32\\}\\.org"
                         ".*png$" ".*cache$"))
 
-;; For fuzzy searching.
-;; (use-package flx
-;;   :ensure t)
-
-;; Look at these release notes to see other cool ivy stuff
-;; https://oremacs.com/2016/04/26/ivy-0.8.0/
-;; (use-package ivy
-;;   :ensure t
-;;   :diminish ivy-mode
-;;   :bind (("C-c C-r" . ivy-resume)
-;;          :map ivy-minibuffer-map
-;;          ("C-m" . ivy-alt-done))
-;;   :config
-;;   (setq ivy-extra-directories nil)
-;;   (setq ivy-use-virtual-buffers t)
-;;   (setq enable-recursive-minibuffers t)
-;;   ;; FYI, M-r will disable fuzzy matching for a single search.
-;;   ;; I've used ivy--regex-fuzzy in the past but it's a disaster too many places.
-;;   (setq ivy-re-builders-alist
-;;         '((counsel-M-x . ivy--regex-fuzzy)
-;;           (counsel-find-file . ivy--regex-fuzzy)
-;;           (ivy-switch-buffer . ivy--regex-fuzzy)
-;;           (counsel-git . ivy--regex-fuzzy)
-;;           (t . ivy--regex-plus)))
-;;   ;; Get rid of initial ^ to make everything fuzzy.
-;;   (setq ivy-initial-inputs-alist nil)
-;;   ;; This solves the long standing issue of e.g. creating a file or a directory
-;;   ;; foo when a file foobar already exists. Previously, the only solution was to
-;;   ;; use C-M-j. It's still available, but now you can also select your input with
-;;   ;; C-p and press RET.
-;;   (setq ivy-use-selectable-prompt t)
-;;   :init
-;;   (ivy-mode 1))
-
-;; (use-package ivy-hydra
-;;   :after (ivy hydra)
-;;   :ensure t)
-
 ;; Consider also occur mode
 ;; https://github.com/sawan/emacs-config/blob/013af97a03e5dd7493d50f35c9c4724fa7de88f5/emacs24.el#L477-L483
 ;; https://github.com/sawan/emacs-config/blob/013af97a03e5dd7493d50f35c9c4724fa7de88f5/emacs24.el#L938-L947
 ;; https://oremacs.com/2015/01/26/occur-dwim/
 ;; https://github.com/abo-abo/hydra/wiki/Emacs
-
-;; (use-package swiper
-;;   :ensure t
-;;   ;; :bind (("C-s" . counsel-grep-or-swiper))
-;;   ;; :bind (("C-s" . swiper-isearch))
-;;   )
-;; (use-package counsel
-;;   :ensure t
-;;   :diminish counsel-mode
-;;   :bind (("M-i" . counsel-semantic-or-imenu)
-;;          ;; ("C-c h" . counsel-git)
-;;          :map minibuffer-local-map
-;;          ("C-r" . counsel-minibuffer-history))
-;;   :init
-;;   (counsel-mode 1))
-
-;; Lets try using ripgrep (rg) for everything
-;; (setq counsel-git-cmd "rg --files -0")
-;; (setq counsel-rg-base-command
-;;       "rg -i -M 120 --no-heading --line-number --color never %s .")
-;; (setq counsel-grep-base-command
-;;       "rg -i -M 120 --no-heading --line-number --color never %s .")
-;; I've also seen this command recommended. Not sure if it works.
-;; (setq counsel-grep-base-command
-;;     "rg -i -M 120 --no-heading --line-number --color never %s %s")
 
 ;; Git integration
 ;; -------------------------------------------------------------------
@@ -431,9 +343,92 @@ Git gutter:
   :init
   (magit-todos-mode))
 
+(defvar unpackaged/flex-fill-paragraph-column nil
+  "Last fill column used in command `unpackaged/flex-fill-paragraph'.")
+
+(defun unpackaged/flex-fill-paragraph (&optional fewer-lines unfill)
+  "Fill paragraph, incrementing fill column to cause a change when repeated.
+The global value of `fill-column' is not modified; it is only
+bound around calls to `fill-paragraph'.
+
+When called for the first time in a sequence, unfill to the
+default `fill-column'.
+
+When called repeatedly, increase `fill-column' until filling
+changes.
+
+With one universal prefix, increase `fill-column' until the
+number of lines is reduced.  With two, unfill completely."
+  (interactive "P")
+  (let* ((fewer-lines (or fewer-lines (equal current-prefix-arg '(4))))
+         (unfill (or unfill (equal current-prefix-arg '(16))))
+         (fill-column
+          (cond (unfill (setf unpackaged/flex-fill-paragraph-column nil)
+                        most-positive-fixnum)
+                (t (setf unpackaged/flex-fill-paragraph-column
+                         (if (equal last-command this-command)
+                             (or (unpackaged/flex-fill-paragraph--next-fill-column fewer-lines)
+                                 fill-column)
+                           fill-column))))))
+    (fill-paragraph)
+    (message "Fill column: %s" fill-column)))
+
+(defun unpackaged/flex-fill-paragraph--next-fill-column (&optional fewer-lines)
+  "Return next `fill-column' value.
+If FEWER-LINES is non-nil, reduce the number of lines in the
+buffer, otherwise just change the current paragraph."
+  ;; This works well, but because of all the temp buffers, sometimes when called
+  ;; in rapid succession, it can cause GC, which can be noticeable.  It would be
+  ;; nice to avoid that.  Note that this has primarily been tested on
+  ;; `emacs-lisp-mode'; hopefully it works well in other modes.
+  (let* ((point (point))
+         (source-buffer (current-buffer))
+         (mode major-mode)
+         (fill-column (or unpackaged/flex-fill-paragraph-column fill-column))
+         (old-fill-column fill-column)
+         (hash (unless fewer-lines
+                 (buffer-hash)))
+         (original-num-lines (when fewer-lines
+                               (line-number-at-pos (point-max)))))
+    (with-temp-buffer
+      (delay-mode-hooks
+        (funcall mode))
+      (setq-local fill-column old-fill-column)
+      (insert-buffer-substring source-buffer)
+      (goto-char point)
+      (cl-loop while (fill-paragraph)
+               ;; If filling doesn't change after 100 iterations, abort by returning nil.
+               if (> (- fill-column old-fill-column) 100)
+               return nil
+               else do (cl-incf fill-column)
+               while (if fewer-lines
+                         (= original-num-lines (line-number-at-pos (point-max)))
+                       (string= hash (buffer-hash)))
+               finally return fill-column))))
+
+(defun unpackaged/magit-status ()
+  "Open a `magit-status' buffer and close the other window so only Magit is visible.
+If a file was visited in the buffer that was active when this
+command was called, go to its unstaged changes section."
+  (interactive)
+  (let* ((buffer-file-path (when buffer-file-name
+                             (file-relative-name buffer-file-name
+                                                 (locate-dominating-file buffer-file-name ".git"))))
+         (section-ident `((file . ,buffer-file-path) (unstaged) (status))))
+    (call-interactively #'magit-status)
+    (delete-other-windows)
+    (when buffer-file-path
+      (goto-char (point-min))
+      (cl-loop until (when (equal section-ident (magit-section-ident (magit-current-section)))
+                       (magit-section-show (magit-current-section))
+                       (recenter)
+                       t)
+               do (condition-case nil
+                      (magit-section-forward)
+                    (error (cl-return (magit-status-goto-initial-section-1))))))))
+
 ;; smerge-mode instead of ediff
 (use-package smerge-mode
-  :requires hydra
   :config
   (defhydra unpackaged/smerge-hydra
     (:color pink :hint nil :post (smerge-auto-leave))
@@ -495,7 +490,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
 
-;; Try out anzu
 (use-package anzu
   :diminish anzu-mode
   :ensure t
@@ -527,16 +521,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (when (and isearch-forward (not isearch-mode-end-hook-quit)) (goto-char isearch-other-end)))
 (add-hook 'isearch-mode-end-hook 'my-isearch-goto-match-beginning)
 
-;; (use-package highlight-symbol
-;;   :diminish highlight-symbol-mode
-;;   :ensure t
-;;   :config
-;;   (setq highlight-symbol-on-navigation-p t)
-;;   :init
-;;   (add-hook 'prog-mode-hook #'highlight-symbol-mode))
-
-;; (add-hook 'prog-mode (lambda () (add-hook 'before-save-hook 'delete-trailing-whitespace t)))
-;; Actually, just always do this
 (add-hook 'before-save-hook 'delete-trailing-whitespace t)
 
 (set-default 'imenu-auto-rescan t)
@@ -548,14 +532,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                imenu-generic-expression
                '(("Class" "^\\(template[        ]*<[^>]+>[      ]*\\)?\\(class\\|struct\\)[     ]+\\([[:alnum:]_]+\\(<[^>]+>\\)?\\)\\([         \n]\\|\\\\\n\\)*[:{]" 3)
                  ("Test" "^ *TEST\\(?:_F\\)?([^,]+,\n? *\\(.+\\)) {$" 1))))))
-
-;; This seems to massively slow down opening files and errors frequently.
-;; (use-package which-func
-;;   :diminish which-func-mode
-;;   :init
-;;   (which-function-mode)
-;;   (setq-default header-line-format
-;;                 '((which-func-mode ("" which-func-format " ")))))
 
 (use-package markdown-mode
   :ensure t)
@@ -577,6 +553,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 ;; eww browsing inside emacs. Much better than w3m!
 (setq browse-url-browser-function 'eww-browse-url)
+;; Consider adding in unpackaged/eww-imenu-index
+;; https://github.com/alphapapa/unpackaged.el?tab=readme-ov-file#eww-imenu-support
 
 (require 'subr-x)
 
@@ -761,12 +739,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; (use-package airline-themes
 ;;   :ensure t)
 
-;; Too many blue colors
-;; (use-package jbeans-theme
-;;   :ensure t
-;;   :config
-;;   (load-theme 'jbeans t))
-
 (use-package doom-themes
   :ensure t
   :config
@@ -777,12 +749,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
   ;; Enable flashing mode-line on errors
   (doom-themes-visual-bell-config)
-  ;; Enable custom neotree theme (all-the-icons must be installed!)
-  ;; (doom-themes-neotree-config)
-  ;; or for treemacs users
-  ;; (setq doom-themes-treemacs-theme "doom-atom") ; use "doom-colors" for less minimal icon theme
-  ;; (doom-themes-treemacs-config)
-  ;; Corrects (and improves) org-mode's native fontification.
   (doom-themes-org-config))
 
 ;; (use-package solaire-mode
@@ -817,13 +783,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package yasnippet-snippets
   :ensure yasnippet-snippets
   :requires (yasnippet))
-;; (use-package yasnippet
-;;   :ensure t
-;;   :diminish yas-minor-mode
-;;   :config
-;;   (setq yas-triggers-in-field t)
-;;   :init
-;;   (yas-global-mode 1))
 
 ;; persistent abbreviation file
 (setq abbrev-file-name (concat user-emacs-directory "abbrev_defs"))
@@ -864,15 +823,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
               ("C-c e" . walkman-at-point)
               ))
 
-
-;; M-n and M-p move between symbols
-;; M-' to replace all symbols in the buffer matching the one under point
-;; C-u M-' to replace symbols in your current defun only (as used by narrow-to-defun.)
-;; (use-package smartscan
-;;   :ensure t
-;;   :init
-;;   (add-hook 'prog-mode-hook #'smartscan-mode))
-
 (use-package symbol-overlay
   :ensure t
   :init
@@ -900,15 +850,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package uniquify
   :init (setq uniquify-buffer-name-style 'forward))
-
-;; (use-package icomplete
-;;   :init
-;;   (fido-vertical-mode +1)
-;;   :config
-;;   ;; I wish this worked but it doesn't.
-;;   ;; (setq icomplete-in-buffer t)
-;;   (setq icomplete-tidy-shadowed-file-names t)
-;;   (setq icomplete-matches-format nil))
 
 (use-package vertico
   :ensure t
@@ -1210,75 +1151,8 @@ any directory proferred by `consult-dir'."
   :init
   (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
 
-;; Project managment
-;; Also look into bufler for this
-;; https://github.com/alphapapa/bufler.el#compared-to-ibuffer
-;; Try not using projectile
-;; (use-package projectile
-;;   :ensure t
-;;   :bind* (("C-c h" . projectile-find-file)
-;;          ("C-x p b" . projectile-switch-to-buffer)
-;;          ("C-x p p" . projectile-switch-project))
-;;   :config
-;;   (setq projectile-indexing-method 'alien)
-;;   (setq projectile-git-command "fd . -t f -0")
-;;   (setq projectile-generic-command "fd . -t f -0")
-;;   (setq projectile-hg-command "fd . -t f -0")
-;;   (setq projectile-globally-ignored-buffers spacemacs-useless-buffers-regexp)
-;;   ;; (setq projectile-completion-system 'ivy)
-;;   ;; Maybe enable cache for local file system
-;;   ;; (setq projectile-file-exists-local-cache-expire (* 5 60))
-;;   :init
-;;   (projectile-global-mode))
-;; (projectile-register-project-type 'google3 '("WORKSPACE"))
-;; (use-package find-file-in-project
-;;   :ensure t
-;;   :commands find-file-in-project)
-;; (use-package counsel-projectile
-;;   :after (counsel projectile)
-;;   :ensure t
-;;   :init (counsel-projectile-mode)
-;;   :config (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
-
 (use-package f
   :ensure t)
-
-;; (defun refresh-projectile ()
-;;   (interactive)
-;;   "Reset projectile known projects to citc and git5 clients."
-;;   (projectile-clear-known-projects)
-;;   (mapc #'projectile-add-known-project
-;;         (f-glob "~/fig/*/google3"))
-;;   (mapc #'projectile-add-known-project
-;;        (seq-remove (apply-partially 's-contains? "fig") (f-glob "/google/src/cloud/gmbuell/*/google3")))
-;;   (projectile-save-known-projects))
-
-;; Probably need to stop using projectile and move to normal project.el. Plus
-;; refresh-projectile can be very slow.
-;; (add-hook 'after-init-hook 'refresh-projectile)
-
-;; (defvar company-mode/enable-yas t
-;;   "Enable yasnippet for all backends.")
-
-;; (defun company-mode/backend-with-yas (backend)
-;;   (if (or (not company-mode/enable-yas) (and (listp backend) (member 'company-yasnippet backend)))
-;;       backend
-;;     (append (if (consp backend) backend (list backend))
-;;             '(:with company-yasnippet))))
-
-;; ;; Allow company completions by selecting the completion number
-(defun ora-company-number ()
-  "Forward to `company-complete-number'.
-
-Unless the number is potentially part of the candidate.
-In that case, insert the number."
-  (interactive)
-  (let* ((k (this-command-keys))
-         (re (concat "^" company-prefix k)))
-    (if (cl-find-if (lambda (s) (string-match re s))
-                    company-candidates)
-        (self-insert-command 1)
-      (company-complete-number (string-to-number k)))))
 
 ;; Version of ora-company-number for corfu
 (defun ora-corfu-number ()
@@ -1300,7 +1174,7 @@ In that case, insert the number."
   ;; Optional customizations
   :custom
   ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  ;; 10/26/2023 Disable corfu-auto because copilot is so much better
+  ;; Remember to disable corfu-auto if I'm using copilot
   (corfu-auto t)                 ;; Enable auto completion
   (corfu-auto-delay 0.2)
   (corfu-auto-prefix 2)
@@ -1313,11 +1187,6 @@ In that case, insert the number."
   (corfu-on-exact-match nil)     ;; Configure handling of exact matches
   ;; (corfu-echo-documentation nil) ;; Disable documentation in the echo area
   ;; (corfu-scroll-margin 5)        ;; Use scroll margin
-
-  ;; Enable Corfu only for certain modes.
-  ;; :hook ((prog-mode . corfu-mode)
-  ;;        (shell-mode . corfu-mode)
-  ;;        (eshell-mode . corfu-mode))
 
   ;; Recommended: Enable Corfu globally.
   ;; This is recommended since Dabbrev can be used globally (M-/).
@@ -1475,42 +1344,7 @@ In that case, insert the number."
 ;;                 ("M-n" . copilot-next-completion)
 ;;                 ("M-p" . copilot-previous-completion))))
 
-;; (use-package company
-;;   :ensure t
-;;   ;;:bind ([remap indent-for-tab-command] . company-indent-or-complete-common)
-;;   :bind* (:map prog-mode-map
-;;                ("TAB" . company-indent-or-complete-common))
-;;   :init
-;;   (global-company-mode)
-;;   (setq company-tooltip-limit 9)                      ; bigger popup window
-;;   (setq company-idle-delay .2)                         ; decrease delay before autocompletion popup shows
-;;   (setq company-minimum-prefix-length 3)
-;;   (setq company-echo-delay (if (display-graphic-p) nil 0))  ; Maybe this should just be always 0?
-;;   (setq company-require-match nil)                     ;  Allow exiting the completion
-;;   (setq company-show-numbers t)
-;;   (setq company-backends '((company-capf :with company-dabbrev-code))) ;; company-dabbrev-code
-;;   (let ((map company-active-map))
-;;     (mapc
-;;      (lambda (x)
-;;        (define-key map (format "%d" x) 'ora-company-number))
-;;      (number-sequence 0 9))
-;;     (define-key map " " (lambda ()
-;;                           (interactive)
-;;                           (company-abort)
-;;                           (self-insert-command 1)))
-;;     (define-key map (kbd "<return>") nil))
-;;   ;; If completing on . or -> is too aggressive:
-;;   (setq company-begin-commands '(self-insert-command))
-;;   ;; Remove company-clang since we don't use it.
-;;   )
-
-;; (use-package company-try-hard
-;;   :ensure t
-;;   :bind* (("C-z" . company-try-hard)
-;;           :map company-active-map
-;;           ("C-z" . company-try-hard)))
-
-;; 10/26/2023 Disable complete because copilot is so much better.
+;; Consider disableing complete if using copilot
 (setq tab-always-indent 'complete)
 (defun gmbuell-indent-or-complete-common (arg)
   "Indent the current line or region, or complete the common part."
@@ -1530,21 +1364,6 @@ In that case, insert the number."
         (completion-at-point))))))
 
 (bind-key "TAB" 'gmbuell-indent-or-complete-common prog-mode-map)
-
-;; Doesn't work in terminal mode. For documentation popups on idle.
-;; (use-package pos-tip
-;;   :ensure t)
-;; (use-package company-quickhelp
-;;   :after (pos-tip)
-;;   :ensure t
-;;   :init (add-hook 'after-init-hook 'company-quickhelp-mode))
-
-;; This might be crap. The backends might already give good completion ordering.
-;; (use-package company-statistics
-;;   :after (company)
-;;   :ensure t
-;;   :init
-;;   (company-statistics-mode))
 
 (use-package flymake
   :ensure t
@@ -1566,7 +1385,7 @@ In that case, insert the number."
   )
 
 (use-package eglot
-  :requires (yasnippet) ;; company
+  :requires (yasnippet)
   :ensure t
   :init
   (add-hook 'c-mode-hook 'eglot-ensure)
@@ -1576,9 +1395,7 @@ In that case, insert the number."
   (add-hook 'python-mode-hook 'eglot-ensure)
   (add-hook 'python-ts-mode-hook 'eglot-ensure)
   (add-hook 'protobuf-mode-hook 'eglot-ensure)
-  ;; Stop this flymake workaround because I think everything is fine with eglot and flymake now.
-  ;;(setq eglot-stay-out-of '(flymake))
-  ;;(add-hook 'eglot-managed-mode-hook (lambda () (add-hook 'flymake-diagnostic-functions 'eglot-flymake-backend nil t)))
+  (setq eglot-stay-out-of '(flymake))
   :config
   (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-cross-file-rename")))
   (when (file-exists-p "/google/bin/releases/")
@@ -1608,53 +1425,13 @@ In that case, insert the number."
 (add-hook 'project-find-functions #'project-find-go-module)
 (use-package eldoc
   :diminish eldoc-mode)
-;; eldoc is very noisy
-;; Going to see if eldoc is better now
-;;(global-eldoc-mode -1)
-;;(add-hook 'prog-mode-hook
-;;          (lambda ()
-;;            (eldoc-mode -1)))
 
-;; Also use dabbrev for completion
-;; (defun add-cape-dabbrev ()
-;;   (add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
-;;   )
 (use-package cape
   :ensure t
-  :demand t
-  :init
-  ;; Add `completion-at-point-functions', used by `completion-at-point'.
-  ;;(add-to-list 'completion-at-point-functions #'cape-file)
-  ;;(add-to-list 'completion-at-point-functions #'cape-tex)
-  ;;(add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
-  ;;(add-hook 'c++-mode-hook #'add-cape-dabbrev)
-  ;;(add-hook 'completion-at-point-functions #'cape-dabbrev nil t)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
-  ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
-  ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
-  ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-to-list 'completion-at-point-functions #'cape-ispell)
-  ;;(add-to-list 'completion-at-point-functions #'cape-dict)
-  ;;(add-to-list 'completion-at-point-functions #'cape-symbol)
-  ;;(add-to-list 'completion-at-point-functions #'cape-line)
-  )
+  :demand t)
+
 ;; https://www.masteringemacs.org/article/text-expansion-hippie-expand
 (global-set-key [remap dabbrev-expand] 'hippie-expand)
-
-;; (use-package ivy-xref
-;;   :after (ivy)
-;;   :ensure t
-;;   :init
-;;   ;; xref initialization is different in Emacs 27 - there are two different
-;;   ;; variables which can be set rather than just one
-;;   (when (>= emacs-major-version 27)
-;;     (setq xref-show-definitions-function #'ivy-xref-show-defs))
-;;   ;; Necessary in Emacs <27. In Emacs 27 it will affect all xref-based
-;;   ;; commands other than xref-find-definitions (e.g. project-find-regexp)
-;;   ;; as well
-;;   (setq xref-show-xrefs-function #'ivy-xref-show-xrefs))
 
 (require 'nadvice)
 (defun do-nothing (orig-fun &rest args) t)
@@ -1669,7 +1446,6 @@ In that case, insert the number."
 
 ;; It may be possible to use avy to set marks for multiple cursors.
 ;; I.e. avy-push-mark
-;; Also via swiper https://oremacs.com/2015/10/14/swiper-mc/
 (use-package multiple-cursors
   :ensure t
   :demand t
@@ -1706,7 +1482,7 @@ In that case, insert the number."
 
 (use-package expand-region
   :ensure t
-  :bind (("C-=" . er/expand-region)
+  :bind (("C-=" . er/expand-region) ;; Need to remap this
          :map region-bindings-mode-map
          ("u" . er/contract-region)))
 
@@ -1908,18 +1684,6 @@ delimiters instead of word delimiters."
   ;; :bind (("C-c C-c" . compile))
   )
 
-;; (defun go-mode-compile-hook ()
-;;   "Customize compile command based on file extension."
-;;   (when (string-match-p "\\machine.rl\\'" buffer-file-name)
-;;     (setq compile-command "ragel -Z -G2 machine.rl -o machine.go"))
-;;   (when (string-match-p "_test\\.go\\'" buffer-file-name)
-;;     (setq compile-command "bazel test -- \\:all"))
-;;   (unless (or (string-match-p "\\.rl\\'" buffer-file-name)
-;;               (string-match-p "_test\\.go\\'" buffer-file-name))
-;;     (setq compile-command "bazel build :all")))
-
-;; (add-hook 'go-mode-hook 'go-mode-compile-hook)
-
 (setq auto-mode-alist
       (nconc
        (list
@@ -2002,59 +1766,10 @@ delimiters instead of word delimiters."
 ;;   :init
 ;;   (add-hook 'go-mode-hook #'flymake-go-staticcheck-enable))
 
-;; Shell setup
-;; (use-package eterm-256color
-;;   :ensure t
-;;   :init (add-hook 'term-mode-hook #'eterm-256color-mode))
-
 (setq enable-recursive-minibuffers t)
-;; 11/8/2024 disable bash-completion until I need it
-;; (use-package bash-completion
-;;   :ensure t
-;;   :init (bash-completion-setup))
-
-;; 11/8/2024 Disable shelldon. eshell might be better
-;; https://github.com/Overdr0ne/shelldon
-;; (use-package shelldon
-;;   :ensure t
-;;   :bind* (("C-t" . shelldon)
-;;           ("M-t" . shelldon-output-history))
-;;   :init
-;;   (setq shell-command-prompt-show-cwd t)
-;;   ;; (setq shell-command-switch "-ic")
-;;   (setq shelldon-ansi-colors t)
-;;   ;; xterm-color below might be better
-;;   ;(add-hook 'shelldon-mode-hook 'ansi-color-for-comint-mode-on)
-;;   ;(add-to-list 'comint-output-filter-functions 'ansi-color-process-output)
-;;                                         ;(autoload 'ansi-color-for-comint-mode-on "ansi-color" nil t)
-;;   (defun test-go ()
-;;     (interactive)
-;;     (shelldon-async-command "bazel test --test_output=all :all"))
-;;   )
 
 (setq comint-prompt-read-only t)
 (setq comint-scroll-to-bottom-on-input t)
-
-;; 11/8/2024 Disable xterm-color until I actually need it
-;; (use-package xterm-color
-;;   :ensure t
-;;   :init
-;;   (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)
-;;   (add-hook 'shell-mode-hook
-;;             (lambda ()
-;;               ;; Disable font-locking in this buffer to improve performance
-;;               (font-lock-mode -1)
-;;               ;; Prevent font-locking from being re-enabled in this buffer
-;;               (make-local-variable 'font-lock-function)
-;;               (setq font-lock-function (lambda (_) nil))
-;;               (add-hook 'comint-preoutput-filter-functions 'xterm-color-filter nil t)))
-;;   (setq comint-output-filter-functions (remove 'ansi-color-process-output comint-output-filter-functions))
-;;   (setq compilation-environment '("TERM=xterm-256color"))
-;;   ;;(setq compilation-environment '("TERM=xterm-24bits"))
-;;   (defun my/advice-compilation-filter (f proc string)
-;;     (funcall f proc (xterm-color-filter string)))
-;;   (advice-add 'compilation-filter :around #'my/advice-compilation-filter))
-
 
 (defun get-buffers-matching-mode (mode)
   "Returns a list of buffers where their major-mode is equal to MODE"
@@ -2089,24 +1804,6 @@ delimiters instead of word delimiters."
   ("C-c l o" . link-hint-open-link)
   ("C-c l c" . link-hint-copy-link))
 
-;; 11/8/2024 disable origami because I'm not using it
-;; (use-package origami
-;;   :ensure t
-;;   :bind (("C-c TAB" . origami-forward-toggle-node))
-;;   :config (global-origami-mode)
-;;   :init
-;;   (defhydra hydra-origami (:color red)
-;;     "
-;;   _o_pen node    _n_ext fold       toggle _f_orward
-;;   _c_lose node   _p_revious fold   toggle _a_ll
-;;   "
-;;     ("o" origami-open-node)
-;;     ("c" origami-close-node)
-;;     ("n" origami-next-fold)
-;;     ("p" origami-previous-fold)
-;;     ("f" origami-forward-toggle-node)
-;;     ("a" origami-toggle-all-nodes)))
-
 ;; Show hydras overlayed in the middle of the frame
 (use-package hydra-posframe
   ;; Only enable if we are running graphical mode.
@@ -2121,16 +1818,6 @@ delimiters instead of word delimiters."
 (use-package pretty-hydra
   :requires hydra
   :ensure t)
-
-;; Try out consult-goto instead
-;; (defhydra hydra-goto-line (goto-map ""
-;;                            :pre (display-line-numbers-mode 1)
-;;                            :post (display-line-numbers-mode -1))
-;;   "goto-line"
-;;   ("g" goto-line "go")
-;;   ("m" set-mark-command "mark" :bind nil)
-;;   ("<SPC>" avy-goto-word-1 "char")
-;;   ("q" nil "quit"))
 
 ;; (use-package breadcrumb
 ;;   :quelpa (pheaver-breadcrumb :fetcher git :url
@@ -2175,34 +1862,6 @@ delimiters instead of word delimiters."
 ;;   (add-hook 'prog-mode-hook #'dogears-mode))
 ;; Another alternative is gumshoe
 ;; https://github.com/Overdr0ne/gumshoe
-
-;; One more code navigation method because kythe/clangd are unreliable.
-;; 11/20/2024 Try without dumb-jump since it seems to be deprecated in favor of
-;; native xref.
-;; (use-package dumb-jump
-;;   :ensure t
-;;   :bind (("M-g o" . dumb-jump-go-other-window)
-;;          ("M-g j" . dumb-jump-go)
-;;          ("M-g b" . dumb-jump-back)
-;;          ("M-g i" . dumb-jump-go-prompt)
-;;          ("M-g x" . dumb-jump-go-prefer-external)
-;;          ("M-g z" . dumb-jump-go-prefer-external-other-window))
-;;   :config
-;;   ;;(setq dumb-jump-selector 'ivy)
-;;   (setq dumb-jump-force-searcher 'rg)
-;;   :init
-;;   (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
-;;   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
-;;   ;; (defhydra dumb-jump-hydra (:color blue :columns 3)
-;;   ;;   "Dumb Jump"
-;;   ;;   ("j" xref-find-definitions "Go")
-;;   ;;   ("o" dumb-jump-go-other-window "Other window")
-;;   ;;   ("e" dumb-jump-go-prefer-external "Go external")
-;;   ;;   ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
-;;   ;;   ("i" dumb-jump-go-prompt "Prompt")
-;;   ;;   ("l" dumb-jump-quick-look "Quick look")
-;;   ;;   ("b" xref-pop-marker-stack "Back"))
-;;   )
 
 (defun switch-previous-buffer ()
   (interactive)
@@ -2283,7 +1942,6 @@ If N is negative, search forwards for the -Nth following match."
   :init
   (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
 
-
 (defun modi/multi-pop-to-mark (orig-fun &rest args)
   "Call ORIG-FUN until the cursor moves.
 Try the repeated popping up to 10 times."
@@ -2322,13 +1980,6 @@ Try the repeated popping up to 10 times."
   :ensure t
   :init
   (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
-
-;; (use-package graphviz-dot-mode
-;;   :ensure t
-;;   :config
-;;   (setq graphviz-dot-indent-width 2))
-
-;; (use-package company-graphviz-dot)
 
 ;; Calendars should start with Monday as the first day of the week.
 (setq calendar-week-start-day 1)
