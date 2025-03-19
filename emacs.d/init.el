@@ -906,6 +906,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq vertico-multiform-commands
         '((consult-imenu buffer indexed))))
 
+(use-package vertico-directory
+  :init
+  (keymap-set vertico-map "RET" #'vertico-directory-enter)
+  (keymap-set vertico-map "DEL" #'vertico-directory-delete-char)
+  (keymap-set vertico-map "M-DEL" #'vertico-directory-delete-word)
+  (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy))
+
 ;; Completion
 ;; headlong might be useful for bookmark jumping
 
