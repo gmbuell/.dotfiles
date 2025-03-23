@@ -6,6 +6,7 @@
 ;; init.
 
 (setopt package-native-compile t)
+(setq native-comp-jit-compilation t)
 
 (setq gc-cons-threshold 100000000)
 (require 'package)
@@ -17,17 +18,13 @@
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 
-;; Bootstrap 'use-package'.
-(unless (package-installed-p 'use-package)
-  ;; (package-refresh-contents)
-  (package-install 'use-package))
+(require 'use-package)
+(setq use-package-always-ensure nil)
+(setq use-package-verbose t)
 
 ;; Always load newest byte code
 (setq load-prefer-newer t)
 
-(eval-when-compile
-  (require 'use-package)
-  (setq use-package-verbose t))
 (use-package bind-key
   :ensure t)
 
@@ -53,7 +50,7 @@
                 link-hint magit-todos marginalia markdown-mode
                 modern-cpp-font-lock mosey multifiles nov orderless origami
                 pheaver-breadcrumb phi-search popper pretty-hydra protobuf-mode
-                quelpa-use-package rainbow-delimiters region-bindings-mode
+                rainbow-delimiters region-bindings-mode
                 shelldon smart-mode-line smartparens smartscan symbol-overlay-mc
                 tree-sitter-go-mod vertico walkman wgrep xterm-color yaml-mode
                 yasnippet-snippets))
@@ -319,6 +316,7 @@ Git gutter:
 ;; Start with "C-c g"
 ;; http://daemianmack.com/magit-cheatsheet.html
 (use-package magit
+  :defer t
   :ensure t
   :bind ("C-c g" . unpackaged/magit-status)
   :init
@@ -688,22 +686,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :bind* (("C-a" . mosey-backward-bounce)
           ("C-e" . mosey-forward-bounce)))
 
-;; smart-mode-line
-;; https://github.com/Bruce-Connor/smart-mode-line
-(use-package smart-mode-line
-  :ensure t
-  :init
-  (setq sml/theme 'respectful)
-  (sml/setup)
-  :config
-  (setq sml/mode-width (quote full)
-        sml/mule-info nil
-        sml/position-percentage-format nil
-        sml/show-remote nil
-        sml/size-indication-format "")
-  (add-to-list 'sml/hidden-modes " GitGutter")
-  (add-to-list 'sml/hidden-modes " ARev"))
-
 ;; Nice fonts:
 ;; Hack https://github.com/chrissimpkins/Hack
 ;; Inconsolata-11
@@ -785,7 +767,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package yasnippet-snippets
   :ensure yasnippet-snippets
-  :requires (yasnippet))
+  :after (yasnippet))
 
 ;; persistent abbreviation file
 (setq abbrev-file-name (concat user-emacs-directory "abbrev_defs"))
@@ -837,7 +819,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package symbol-overlay-mc
   :ensure t
-  :requires (symbol-overlay)
+  :after (symbol-overlay)
   :bind (("M-a" . symbol-overlay-mc-mark-all)))
 
 (use-package casual
@@ -845,7 +827,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package casual-symbol-overlay
   :ensure t
-  :requires (casual)
+  :after (casual)
   :init
   (keymap-set symbol-overlay-map "C-o" #'casual-symbol-overlay-tmenu)
   :config
@@ -1173,7 +1155,7 @@ any directory proferred by `consult-dir'."
   (setq avy-keys (number-sequence ?a ?z)))
 
 (use-package ace-window
-  :requires (embark)
+  :after (embark)
   :ensure t
   :bind (("C-x o" . ace-window))
   :init
@@ -1280,12 +1262,12 @@ In that case, insert the number."
      (number-sequence 0 9))))
 
 (use-package corfu-indexed
-  :requires (corfu)
+  :after (corfu)
   :init
   (corfu-indexed-mode 1))
 
 (use-package corfu-history
-  :requires (corfu)
+  :after (corfu)
   :init
   (corfu-history-mode 1)
   (savehist-mode 1)
@@ -1423,7 +1405,7 @@ In that case, insert the number."
 ;;                 ("M-n" . copilot-next-completion)
 ;;                 ("M-p" . copilot-previous-completion))))
 
-;; Consider disableing complete if using copilot
+;; Consider disabling complete if using copilot
 (setq tab-always-indent 'complete)
 (defun gmbuell-indent-or-complete-common (arg)
   "Indent the current line or region, or complete the common part."
@@ -1464,7 +1446,7 @@ In that case, insert the number."
   )
 
 (use-package eglot
-  :requires (yasnippet)
+  :after (yasnippet)
   :ensure t
   :init
   (add-hook 'c-mode-hook 'eglot-ensure)
@@ -1580,7 +1562,7 @@ In that case, insert the number."
 ;; Consider also placeholder
 ;; https://github.com/oantolin/placeholder
 (use-package auto-yasnippet
-  :requires (yasnippet)
+  :after (yasnippet)
   :ensure t
   :bind (("M-w" . aya-create)
          ("M-W" . aya-expand))
@@ -1896,7 +1878,7 @@ delimiters instead of word delimiters."
 
 ;; Neato doc strings for hydras
 (use-package pretty-hydra
-  :requires hydra
+  :after hydra
   :ensure t)
 
 ;; (use-package breadcrumb
@@ -1954,47 +1936,47 @@ delimiters instead of word delimiters."
           ;;("M-O" . iflipb-previous-buffer)
           ("C-x k" . iflipb-kill-buffer)))
 
-(use-package popper
-  :ensure t
-  :bind (("C-t"   . my/popper-toggle-or-eshell)
-         :map help-mode-map
-         ("q" . my/popper-quit)
-         :map special-mode-map
-         ("q" . my/popper-quit)
-         )
-  :init
-  (setq popper-reference-buffers
-        '(;;"\\*Messages\\*"
-          ;; "Output\\*$"
-          "\\*Async Shell Command\\*"
-          help-mode
-          compilation-mode
-          flymake-diagnostics-buffer-mode
-          "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
-          "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
-          "^\\*term.*\\*$"   term-mode   ;term as a popup
-          "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
-          ;; "^\\*eldoc.*\\*$"  eldoc-mode  ; eldoc as a popup
-          ))
-  ;;(setq popper-group-function #'popper-group-by-project)
-  (setq popper-group-function #'popper-group-by-directory)
-  (popper-mode +1)
-  (popper-echo-mode +1)
-  (defun my/popper-quit ()
-    "Kill popper popup if one is active, otherwise quit window"
-    (interactive)
-    (if popper-open-popup-alist
-        (popper-kill-latest-popup)
-      (quit-window)))
-  (defun my/popper-toggle-or-eshell ()
-    "Toggle popup or create new eshell if no buried popups exist."
-    (interactive)
-    (if popper-open-popup-alist
-        (popper-toggle)
-      (let ((group (when popper-group-function (funcall popper-group-function))))
-        (if (null (alist-get group popper-buried-popup-alist nil nil 'equal))
-            (eshell t)
-          (popper-toggle))))))
+;; (use-package popper
+;;   :ensure t
+;;   :bind (("C-t"   . my/popper-toggle-or-eshell)
+;;          :map help-mode-map
+;;          ("q" . my/popper-quit)
+;;          :map special-mode-map
+;;          ("q" . my/popper-quit)
+;;          )
+;;   :init
+;;   (setq popper-reference-buffers
+;;         '(;;"\\*Messages\\*"
+;;           ;; "Output\\*$"
+;;           "\\*Async Shell Command\\*"
+;;           help-mode
+;;           compilation-mode
+;;           flymake-diagnostics-buffer-mode
+;;           "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
+;;           "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
+;;           "^\\*term.*\\*$"   term-mode   ;term as a popup
+;;           "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
+;;           ;; "^\\*eldoc.*\\*$"  eldoc-mode  ; eldoc as a popup
+;;           ))
+;;   ;;(setq popper-group-function #'popper-group-by-project)
+;;   (setq popper-group-function #'popper-group-by-directory)
+;;   (popper-mode +1)
+;;   (popper-echo-mode +1)
+;;   (defun my/popper-quit ()
+;;     "Kill popper popup if one is active, otherwise quit window"
+;;     (interactive)
+;;     (if popper-open-popup-alist
+;;         (popper-kill-latest-popup)
+;;       (quit-window)))
+;;   (defun my/popper-toggle-or-eshell ()
+;;     "Toggle popup or create new eshell if no buried popups exist."
+;;     (interactive)
+;;     (if popper-open-popup-alist
+;;         (popper-toggle)
+;;       (let ((group (when popper-group-function (funcall popper-group-function))))
+;;         (if (null (alist-get group popper-buried-popup-alist nil nil 'equal))
+;;             (eshell t)
+;;           (popper-toggle))))))
 
 ;; From https://stackoverflow.com/questions/13009908/eshell-search-history
 (defun my-eshell-previous-matching-input-from-input (arg)
@@ -2072,6 +2054,18 @@ Try the repeated popping up to 10 times."
 ;; Check out https://github.com/raxod502/prescient.el
 ;; And https://github.com/raxod502/selectrum
 
+(use-package palaver
+  :demand t
+  :init
+  (setq palaver-main-window-min-width 82)
+  :config
+  (palaver-mode 1)
+  :bind
+  (("C-c <down>" . palaver-toggle-bottom-drawer)
+   ("C-c <right>" . palaver-toggle-right-drawer)
+   ("C-c d m" . palaver-toggle-drawer-location)
+   ("C-x o" . palaver-other-window)))
+
 (require 'server)
 (unless (server-running-p) (server-start))
 (setenv "EDITOR" "TERM=xterm-24bits emacsclient -nw")
@@ -2086,3 +2080,6 @@ Try the repeated popping up to 10 times."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+
+(provide 'init)
+;;; init.el ends here
