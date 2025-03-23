@@ -18,7 +18,8 @@
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 
-(require 'use-package)
+(eval-when-compile
+  (require 'use-package))
 (setq use-package-always-ensure nil)
 (setq use-package-verbose t)
 
@@ -94,6 +95,7 @@
 
 (use-package dired
   :commands dired
+  :hook (dired-mode . dired-hide-details-mode)
   :config
   ;; Make dired "guess" target directory for some operations, like copy to
   ;; directory visited in other split buffer.
@@ -102,18 +104,14 @@
   (setq global-auto-revert-non-file-buffers t
         auto-revert-verbose nil)
   ;; Make dired re-use buffers when pushing RET or ^
-  (setq dired-kill-when-opening-new-dired-buffer t)
-  ;; Simplify listing
-  (add-hook 'dired-mode-hook 'dired-hide-details-mode))
+  (setq dired-kill-when-opening-new-dired-buffer t))
 
 (use-package dired-x
   :after (dired)
   :commands dired-jump
-  :config
-  (setq dired-omit-mode t)
-  ;; Make dired-omit-mode hide all "dotfiles"
-  (setq dired-omit-files
-        (concat dired-omit-files "\\|^\\..*$")))
+  :custom
+  (dired-omit-mode t)
+  (dired-omit-files (concat dired-omit-files "\\|^\\..*$")))
 
 ;; Additional syntax highlighting for dired
 (use-package diredfl
@@ -122,8 +120,8 @@
   ((dired-mode . diredfl-mode)
    ;; highlight parent and directory preview as well
    (dirvish-directory-view-mode . diredfl-mode))
-  :config
-  (set-face-attribute 'diredfl-dir-name nil :bold t))
+  :custom-face
+  (diredfl-dir-name ((t (:bold t)))))
 
 ;; Regexp for useful and useless buffers for smarter buffer switching
 (defvar spacemacs-useless-buffers-regexp '("*\.\+")
@@ -181,8 +179,7 @@ that uses 'font-lock-warning-face'."
 
 (use-package cc-mode
   :ensure t
-  :init
-  (add-hook 'c-mode-common-hook 'subword-mode))
+  :hook (c-mode-common . subword-mode))
 
 ;; Headers are c++, not c
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
@@ -193,7 +190,8 @@ that uses 'font-lock-warning-face'."
 ;; Get syntax hilighting for modern c++
 (use-package modern-cpp-font-lock
   :ensure t
-  :init (modern-c++-font-lock-global-mode t))
+  :config
+  (modern-c++-font-lock-global-mode t))
 
 
 ;; Save clipboard contents into kill-ring before replace them
@@ -278,11 +276,10 @@ that uses 'font-lock-warning-face'."
 ;; Shows git (and hg!) diff information in the gutter.
 (use-package git-gutter
   :ensure t
-  :init
-  (global-git-gutter-mode t)
+  :custom
+  (git-gutter:handled-backends '(git hg bzr svn))
   :config
-  (custom-set-variables
-   '(git-gutter:handled-backends '(git hg bzr svn))))
+  (global-git-gutter-mode t))
 
 (defhydra hydra-git-gutter (:body-pre (git-gutter-mode 1)
                             :hint nil)
@@ -316,12 +313,13 @@ Git gutter:
 ;; Start with "C-c g"
 ;; http://daemianmack.com/magit-cheatsheet.html
 (use-package magit
-  :defer t
   :ensure t
   :bind ("C-c g" . unpackaged/magit-status)
+  :custom
+  (auto-revert-check-vc-info t)
+  (vc-follow-symlinks t)
+  (magit-display-buffer-function #'display-buffer)
   :init
-  (setq auto-revert-check-vc-info t)
-  (setq vc-follow-symlinks t)
   (defun unpackaged/magit-status ()
     "Open a `magit-status' buffer and close the other window so only Magit is visible.
 If a file was visited in the buffer that was active when this
@@ -341,11 +339,7 @@ command was called, go to its unstaged changes section."
                          t)
                  do (condition-case nil
                         (magit-section-forward)
-                      (error (cl-return (magit-status-goto-initial-section-1))))))))
-  :config
-  ;; This changes Magit's default buffer display behavior but should make it
-  ;; more consistent.
-  (setopt magit-display-buffer-function #'display-buffer))
+                      (error (cl-return (magit-status-goto-initial-section-1)))))))))
 
 (defun my/google3-early-exit (orig-fun &rest args)
   (if (string-prefix-p "/google/src/cloud/" (buffer-file-name))
@@ -504,16 +498,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package saveplace
   :ensure t
+  :custom
+  (select-enable-clipboard t)
+  (select-enable-primary t)
+  (save-interprogram-paste-before-kill t)
+  (apropos-do-all t)
+  (mouse-yank-at-point t)
+  (save-place-file (concat user-emacs-directory "places"))
+  (backup-directory-alist `(("." . ,(concat user-emacs-directory "backups"))))
   :config
-  (setq select-enable-clipboard t
-        select-enable-primary t
-        save-interprogram-paste-before-kill t
-        apropos-do-all t
-        mouse-yank-at-point t
-        save-place-file (concat user-emacs-directory "places")
-        backup-directory-alist `(("." . ,(concat user-emacs-directory
-                                                 "backups"))))
-  :init
   (save-place-mode +1))
 
 ;; From http://steckerhalter.co.vu/steckemacs.html
@@ -585,18 +578,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
               :map c-mode-map
               ("C-k" . gmbuell-smart-kill-line)
               :map go-mode-map
-              ("C-k" . gmbuell-smart-kill-line)
-              )
+              ("C-k" . gmbuell-smart-kill-line))
+  :diminish smartparens-mode
+  :diminish smartparens-global-mode
+  :custom
+  (sp-override-key-bindings '(("C-<right>" . sp-slurp-hybrid-sexp)
+                            ("C-<left>" . sp-dedent-adjust-sexp)))
   :init
-  ;; smartparens-mode is incredibly difficult to diminish.
-  (add-hook 'smartparens-mode-hook (lambda () (diminish 'smartparens-mode)))
-  (diminish 'smartparens-mode)
-  (diminish 'smartparens-global-mode)
   (smartparens-global-mode t)
   (sp-use-smartparens-bindings)
-  (custom-set-variables '(sp-override-key-bindings
-                          '(("C-<right>" . sp-slurp-hybrid-sexp)
-                            ("C-<left>" . sp-dedent-adjust-sexp))))
   ;; Fix forward slurp spacing
   ;; https://github.com/Fuco1/smartparens/issues/297
   (sp-local-pair 'c-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
@@ -854,6 +844,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package dirvish
   :ensure t
+  :after (dired-x)
   :init
   (dirvish-override-dired-mode)
   :custom
@@ -1430,11 +1421,10 @@ In that case, insert the number."
   :ensure t
   :custom
   (flymake-fringe-indicator-position 'right-fringe)
-  ;; (flymake-show-diagnostics-at-end-of-line t)
+  :hook (find-file . flymake-find-file-hook)
   :config
   (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
   :init
-  (add-hook 'find-file-hook 'flymake-find-file-hook)
   (add-hook 'eglot-managed-mode-hook
             (lambda ()
               ;; Show flymake diagnostics first.
@@ -1442,21 +1432,14 @@ In that case, insert the number."
                     (cons #'flymake-eldoc-function
                           (remove #'flymake-eldoc-function eldoc-documentation-functions)))
               ;; Show all eldoc feedback.
-              (setq eldoc-documentation-strategy #'eldoc-documentation-compose)))
-  )
+              (setq eldoc-documentation-strategy #'eldoc-documentation-compose))))
 
 (use-package eglot
   :after (yasnippet)
   :ensure t
-  :init
-  (add-hook 'c-mode-hook 'eglot-ensure)
-  (add-hook 'c++-mode-hook 'eglot-ensure)
-  (add-hook 'go-mode-hook 'eglot-ensure)
-  (add-hook 'go-ts-mode-hook 'eglot-ensure)
-  (add-hook 'python-mode-hook 'eglot-ensure)
-  (add-hook 'python-ts-mode-hook 'eglot-ensure)
-  (add-hook 'protobuf-mode-hook 'eglot-ensure)
-  (setq eglot-stay-out-of '(flymake))
+  :hook ((c-mode c++-mode go-mode go-ts-mode python-mode python-ts-mode protobuf-mode) . eglot-ensure)
+  :custom
+  (eglot-stay-out-of '(flymake))
   :config
   (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-cross-file-rename")))
   (when (file-exists-p "/google/bin/releases/")
@@ -1511,8 +1494,7 @@ In that case, insert the number."
   :ensure t
   :demand t
   ;; Alternative bindings because hterm sucks at passing through keys
-  :bind* (
-          ("M-m e" . mc/edit-lines)
+  :bind* (("M-m e" . mc/edit-lines)
           ("M-m n" . mc/mark-next-like-this)
           ("M-m p" . mc/mark-previous-like-this)
           ("M-m a" . mc/mark-all-symbols-like-this-in-defun)
@@ -1555,7 +1537,7 @@ In that case, insert the number."
   :ensure t
   :demand t)
 (use-package phi-replace
-  ;; Doesn't have it's own package.
+  ;; Doesn't have its own package.
   :requires (phi-search)
   :demand t)
 
@@ -1566,18 +1548,16 @@ In that case, insert the number."
   :ensure t
   :bind (("M-w" . aya-create)
          ("M-W" . aya-expand))
-  :init
-  (setq aya-case-fold t))
-
 ;; Doesn't currently do anything because I've remapped M-w which is usually
 ;; kill-ring-save.
 ;; (use-package easy-kill :ensure t :config (global-set-key
 ;; [remap kill-ring-save] 'easy-kill))
+  :custom
+  (aya-case-fold t))
 
 (use-package rainbow-delimiters
   :ensure t
-  :init
-  (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
+  :hook (prog-mode . rainbow-delimiters-mode))
 
 ;; Protocol buffer support
 (use-package protobuf-mode
@@ -1741,8 +1721,8 @@ delimiters instead of word delimiters."
 
 (use-package bazel
   :ensure t
-  :init
-  (setq bazel-command '("bazel"))
+  :custom
+  (bazel-command '("bazel"))
   ;; :bind (("C-c C-c" . compile))
   )
 
@@ -1791,13 +1771,12 @@ delimiters instead of word delimiters."
   :init
   (add-to-list 'auto-mode-alist '("\\.go\\'" . go-ts-mode))
   (add-to-list 'auto-mode-alist '("\\.rl\\'" . go-mode))
-  (add-hook 'go-mode-hook #'yas-minor-mode)
-  (add-hook 'go-mode-hook #'eglot-ensure)
-  (add-hook 'go-mode-hook #'eglot-format-buffer-before-save)
-  (add-hook 'go-ts-mode-hook #'yas-minor-mode)
-  (add-hook 'go-ts-mode-hook #'eglot-ensure)
-  (add-hook 'go-ts-mode-hook #'eglot-format-buffer-before-save)
-  ;; (add-hook 'go-mode-hook #'eglot-organize-imports-before-save)
+  :hook ((go-mode . yas-minor-mode)
+         (go-mode . eglot-ensure)
+         (go-mode . eglot-format-buffer-before-save)
+         (go-ts-mode . yas-minor-mode)
+         (go-ts-mode . eglot-ensure)
+         (go-ts-mode . eglot-format-buffer-before-save))
   :config
   (defun my-custom-compile ()
     "Compile using custom compile command."
@@ -2001,8 +1980,7 @@ If N is negative, search forwards for the -Nth following match."
 
 (use-package eat
   :ensure t
-  :init
-  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
+  :hook (eshell-load . eat-eshell-visual-command-mode))
 
 (defun modi/multi-pop-to-mark (orig-fun &rest args)
   "Call ORIG-FUN until the cursor moves.
@@ -2040,8 +2018,7 @@ Try the repeated popping up to 10 times."
 
 (use-package nov
   :ensure t
-  :init
-  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
+  :mode ("\\.epub\\'" . nov-mode))
 
 ;; Calendars should start with Monday as the first day of the week.
 (setq calendar-week-start-day 1)
@@ -2056,8 +2033,8 @@ Try the repeated popping up to 10 times."
 
 (use-package palaver
   :demand t
-  :init
-  (setq palaver-main-window-min-width 82)
+  :custom
+  (palaver-main-window-min-width 82)
   :config
   (palaver-mode 1)
   :bind
