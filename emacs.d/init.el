@@ -39,22 +39,8 @@
  '(custom-safe-themes
    '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
      "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
- '(git-gutter:handled-backends '(git hg bzr svn))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
- '(package-selected-packages
-   '(ace-window anzu auto-yasnippet bash-completion bazel beginend cape
-                casual-symbol-overlay clipetty combobulate consult-dir
-                consult-eglot-embark corfu-terminal corfu-terminal-mode deft
-                diminish discover-my-major disproject doom-themes
-                dumb-jump eat expand-region flymake-popon fold-this git-gutter
-                gnu-elpa-keyring-update go-mode highlight-symbol iflipb
-                link-hint magit-todos marginalia markdown-mode
-                modern-cpp-font-lock mosey multifiles nov orderless origami
-                pheaver-breadcrumb phi-search popper pretty-hydra protobuf-mode
-                rainbow-delimiters region-bindings-mode
-                shelldon smart-mode-line smartparens smartscan symbol-overlay-mc
-                tree-sitter-go-mod vertico walkman wgrep xterm-color yaml-mode
-                yasnippet-snippets))
+ '(package-selected-packages nil)
  '(package-vc-selected-packages
    '((combobulate :url "https://github.com/mickeynp/combobulate.git" :branch
                   "master")
@@ -586,7 +572,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                             ("C-<left>" . sp-dedent-adjust-sexp)))
   :init
   (smartparens-global-mode t)
-  (sp-use-smartparens-bindings)
+  ;; Need to set up smartparens bindings in modes that combobulate doesn't
+  ;; support.
+  ;; (sp-use-smartparens-bindings)
   ;; Fix forward slurp spacing
   ;; https://github.com/Fuco1/smartparens/issues/297
   (sp-local-pair 'c-mode "(" nil :prefix "\\(\\sw\\|\\s_\\)*")
@@ -651,8 +639,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;;
   (use-package combobulate
     :ensure t
-    :vc (:url "https://github.com/mickeynp/combobulate.git"
-              :branch "master")
+    ;; Make sure to git clone https://github.com/mickeynp/combobulate
+    :load-path ("~/.emacs.d/combobulate")
     :custom
     ;; You can customize Combobulate's key prefix here.
     ;; Note that you may have to restart Emacs for this to take effect!
@@ -893,29 +881,48 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (setq read-file-name-completion-ignore-case t
       read-buffer-completion-ignore-case t
       completion-ignore-case t)
-(use-package orderless
+
+(use-package prescient
   :ensure t
   :custom
-  (completion-styles '(substring flex basic))
-  (orderless-smart-case t))
-  ;; :config
-  ;; Allow space in minibuffer completions
-  ;; (let ((map minibuffer-local-completion-map))
-  ;;   (define-key map (kbd "SPC") nil)))
+  (completion-preview-sort-function #'prescient-completion-sort)
+  (completion-styles '(prescient))
+  :config
+  (prescient-persist-mode 1))
+(use-package vertico-prescient
+  :ensure t
+  :after (prescient vertico)
+  :config
+  (vertico-prescient-mode 1))
+(use-package corfu-prescient
+  :ensure t
+  :after (prescient corfu)
+  :config
+  (corfu-prescient-mode 1))
 
-(defun flex-if-twiddle (pattern _index _total)
-  (when (string-suffix-p "~" pattern)
-    `(orderless-flex . ,(substring pattern 0 -1))))
+;; (use-package orderless
+;;   :ensure t
+;;   :custom
+;;   (completion-styles '(substring flex basic))
+;;   (orderless-smart-case t))
+;;   ;; :config
+;;   ;; Allow space in minibuffer completions
+;;   ;; (let ((map minibuffer-local-completion-map))
+;;   ;;   (define-key map (kbd "SPC") nil)))
 
-(defun first-initialism (pattern index _total)
-  (if (= index 0) 'orderless-initialism))
+;; (defun flex-if-twiddle (pattern _index _total)
+;;   (when (string-suffix-p "~" pattern)
+;;     `(orderless-flex . ,(substring pattern 0 -1))))
 
-(defun without-if-bang (pattern _index _total)
-  (cond
-   ((equal "!" pattern)
-    '(orderless-literal . ""))
-   ((string-prefix-p "!" pattern)
-    `(orderless-without-literal . ,(substring pattern 1)))))
+;; (defun first-initialism (pattern index _total)
+;;   (if (= index 0) 'orderless-initialism))
+
+;; (defun without-if-bang (pattern _index _total)
+;;   (cond
+;;    ((equal "!" pattern)
+;;     '(orderless-literal . ""))
+;;    ((string-prefix-p "!" pattern)
+;;     `(orderless-without-literal . ,(substring pattern 1)))))
 
 ;; (setq orderless-matching-styles '(orderless-regexp)
 ;;       orderless-style-dispatchers '(first-initialism
