@@ -262,6 +262,7 @@ that uses 'font-lock-warning-face'."
 ;; Shows git (and hg!) diff information in the gutter.
 (use-package git-gutter
   :ensure t
+  :diminish git-gutter-mode
   :custom
   (git-gutter:handled-backends '(git hg bzr svn))
   :config
@@ -572,6 +573,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                             ("C-<left>" . sp-dedent-adjust-sexp)))
   :init
   (smartparens-global-mode t)
+  ;; smartparens-mode is incredibly difficult to diminish.
+  (add-hook 'smartparens-mode-hook (lambda () (diminish 'smartparens-mode)))
   ;; Need to set up smartparens bindings in modes that combobulate doesn't
   ;; support.
   ;; (sp-use-smartparens-bindings)
