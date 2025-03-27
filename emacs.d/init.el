@@ -1469,6 +1469,160 @@ In that case, insert the number."
   ;;(add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("/google/bin/releases/grok/tools/kythe_languageserver" "--google3")))
   )
 
+(eval-when-compile
+  (require 'compile))
+
+(use-package compile-multi
+  :ensure t
+  :after (bazel)
+  :demand t
+  :bind (:map prog-mode-map
+              ("C-c C-c" . compile-multi))
+  :config
+  (defun my/compile-multi-bazel-available-targets ()
+  "Generate Bazel targets for compile-multi based on available targets and rules."
+  (when-let* ((file-name (or buffer-file-name default-directory))
+              (workspace-root (bazel--workspace-root file-name))
+              (package-dir (bazel--package-directory file-name workspace-root))
+              (package-name (bazel--package-name package-dir workspace-root))
+              (build-file (bazel--locate-build-file package-dir)))
+    (with-temp-buffer
+      (insert-file-contents build-file)
+      (let ((targets nil)
+            (rule-types (make-hash-table :test 'equal)))
+
+        ;; First pass: collect rule types
+        (goto-char (point-min))
+        (while (re-search-forward "\\([a-zA-Z0-9_]+\\)(\\s-*\n?\\s-*name\\s-*=\\s-*\"\\([^\"]+\\)\"" nil t)
+          (let ((rule-type (match-string 1))
+                (target-name (match-string 2)))
+            (puthash target-name rule-type rule-types)))
+
+        ;; Second pass: create appropriate actions based on target name and rule type
+        (maphash
+         (lambda (target-name rule-type)
+           (cond
+            ;; Test targets (_test suffix)
+            ((string-match-p "_test$" target-name)
+             (push (cons (format "bazel:test:%s" target-name)
+                         `(:command ,(format "bazel test %s:%s" package-name target-name)
+                           :annotation ,(format "Test %s (%s)" target-name rule-type)))
+                   targets))
+
+            ;; pkg_tar targets - no actions
+            ((string= rule-type "pkg_tar")
+             nil)
+
+            ;; oci_image targets - no actions
+            ((string= rule-type "oci_image")
+             nil)
+
+            ;; oci_push targets - only run action
+            ((string= rule-type "oci_push")
+             (push (cons (format "bazel:run:%s" target-name)
+                         `(:command ,(format "bazel run %s:%s" package-name target-name)
+                           :annotation ,(format "Run %s (%s)" target-name rule-type)))
+                   targets))
+
+            ;; _lib targets - only build action
+            ((string-match-p "_lib$" target-name)
+             (push (cons (format "bazel:build:%s" target-name)
+                         `(:command ,(format "bazel build %s:%s" package-name target-name)
+                           :annotation ,(format "Build %s (%s)" target-name rule-type)))
+                   targets))
+
+            ;; All other targets - build and run actions
+            (t
+             (push (cons (format "bazel:build:%s" target-name)
+                         `(:command ,(format "bazel build %s:%s" package-name target-name)
+                           :annotation ,(format "Build %s (%s)" target-name rule-type)))
+                   targets)
+             (push (cons (format "bazel:run:%s" target-name)
+                         `(:command ,(format "bazel run %s:%s" package-name target-name)
+                           :annotation ,(format "Run %s (%s)" target-name rule-type)))
+                   targets))))
+         rule-types)
+
+        ;; Add general package commands
+        (append targets
+                (list
+                 (cons "bazel:build-all"
+                       `(:command ,(format "bazel build //%s/..." package-name)
+                         :annotation ,(format "Build all targets in //%s" package-name)))
+                 (cons "bazel:test-all"
+                       `(:command ,(format "bazel test //%s/..." package-name)
+                         :annotation ,(format "Test all targets in //%s" package-name)))))))))
+
+  ;; Use project.el to find the project root for compile-multi
+  (defun my/project-root-or-default ()
+    "Return the project root or default directory."
+    (if-let ((project (project-current)))
+        (project-root project)
+      default-directory))
+
+  ;; Set compile-multi default directory to use project.el
+  (setq compile-multi-default-directory #'my/project-root-or-default)
+
+  ;; Setup compile-multi configuration for Bazel projects
+  (push '((lambda ()
+            (when buffer-file-name
+              (bazel--workspace-root buffer-file-name)))
+          ;; This function will generate targets when in a Bazel workspace
+          my/compile-multi-bazel-available-targets)
+        compile-multi-config))
+
+(use-package consult-compile-multi
+  :ensure t
+  :after compile-multi
+  :demand t
+  :config (consult-compile-multi-mode))
+
+(use-package compile-multi-embark
+  :ensure t
+  :after embark
+  :after compile-multi
+  :demand t
+  :config (compile-multi-embark-mode +1))
+
+(use-package projection
+  :ensure t
+  ;; Enable the `projection-hook' feature.
+  :hook (after-init . global-projection-hook-mode)
+
+  ;; Require projections immediately after project.el.
+  :config
+  (with-eval-after-load 'project
+    (require 'projection))
+
+  :config
+  ;; Uncomment if you want to disable prompts for compile commands customized in .dir-locals.el
+  ;; (put 'projection-commands-configure-project 'safe-local-variable #'stringp)
+  ;; (put 'projection-commands-build-project 'safe-local-variable #'stringp)
+  ;; (put 'projection-commands-test-project 'safe-local-variable #'stringp)
+  ;; (put 'projection-commands-run-project 'safe-local-variable #'stringp)
+  ;; (put 'projection-commands-package-project 'safe-local-variable #'stringp)
+  ;; (put 'projection-commands-install-project 'safe-local-variable #'stringp)
+
+  ;; Access pre-configured projection commands from a keybinding of your choice.
+  ;; Run `M-x describe-keymap projection-map` for a list of available commands.
+  :bind-keymap
+  ("C-x P" . projection-map))
+
+(use-package projection-multi
+  :ensure t
+  ;; Allow interactively selecting available compilation targets from the current
+  ;; project type.
+  :bind ( :map project-prefix-map
+          ("RET" . projection-multi-compile)))
+
+(use-package projection-multi-embark
+  :ensure t
+  :after embark
+  :after projection-multi
+  :demand t
+  ;; Add the projection set-command bindings to `compile-multi-embark-command-map'.
+  :config (projection-multi-embark-setup-command-map))
+
 ;; Tell eglot about go modules
 (require 'project)
 (bind-key "C-c h" 'project-find-file)
@@ -1796,17 +1950,17 @@ delimiters instead of word delimiters."
          (go-ts-mode . yas-minor-mode)
          (go-ts-mode . eglot-ensure)
          (go-ts-mode . eglot-format-buffer-before-save))
-  :config
-  (defun my-custom-compile ()
-    "Compile using custom compile command."
-    (interactive)
-    (compile (cond ((string-match-p "\\machine.rl\\'" buffer-file-name)
-                    "ragel -Z -G2 machine.rl -o machine.go")
-                   ((string-match-p "_test\\.go\\'" buffer-file-name)
-                    "bazel test -- \\:all")
-                   (t
-                    "bazel build :all"))))
-  :bind (("C-c C-c" . my-custom-compile))
+  ;; :config
+  ;; (defun my-custom-compile ()
+  ;;   "Compile using custom compile command."
+  ;;   (interactive)
+  ;;   (compile (cond ((string-match-p "\\machine.rl\\'" buffer-file-name)
+  ;;                   "ragel -Z -G2 machine.rl -o machine.go")
+  ;;                  ((string-match-p "_test\\.go\\'" buffer-file-name)
+  ;;                   "bazel test -- \\:all")
+  ;;                  (t
+  ;;                   "bazel build :all"))))
+  ;; :bind (("C-c C-c" . my-custom-compile))
   )
 
 ;; Install golangci-lint
