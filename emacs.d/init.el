@@ -1779,7 +1779,7 @@ _k_: previous error    _l_: last error
 ;; All rules are at http://go/be.
 (defvar google3-build-mode-rules
   '(
-;; Rules to Compile Code or Run Tests
+    ;; Rules to Compile Code or Run Tests
     cc_binary css_binary go_binary haskell_binary java_binary
     js_binary js_module_binary py_binary sh_binary szl_binary
     borgcfg_library cc_library cc_public_library css_library go_library
@@ -1795,21 +1795,22 @@ _k_: previous error    _l_: last error
     dart_pub_web_binary dart_vm_binary dart_vm_snapshot dart_vm_test
     dart_web_binary jspb_proto_library objc_proto_library pytype_binary
     pytype_library
-;; Rules to Generate Code and Data
+    ;; Rules to Generate Code and Data
     cc_embed_data genantlr gendeb gendpl GenJs gengxp genjh genjsp genlex
     genmsgcat genproto genprotohdf genprotojs genrpm genrule gentpl gentplvars
     genyacc go_wrap_cc gwt_application gwt_host gwt_module gwt_test java_genmsg
     java_plugin java_wrap_cc js_deps pkgfilegroup py_extension py_wrap_cc
     Fileset rosy_generator android_idl android_resources genquery genrosy
     genrule jslayout_template translations web_test
-;; "Make" Variables
+    ;; "Make" Variables
     vardef deflocal varref MarkAsFilenameComponent
-;; Other Stuff
+    ;; Other Stuff
     cc_fake_binary Description distribs exports_files glob filegroup include
     licenses load package package_group pinto_library pinto_library_mod
     pinto_module pinto_module_set set_inc_symlink subinclude
     PYTHON-PREPROCESSING-REQUIRED VERSION cc_inc_library action_listener
     extra_action genmpm pkg_library pkg_runfiles pkg_symlink
+    pkg_tar oci_image oci_push
     )
   "All BUILD rules.")
 
@@ -1860,6 +1861,7 @@ _k_: previous error    _l_: last error
     tc_project test test_class test_timeout testonly tests timeout tools
     trace_function triggers type urgency uriroot use_project_xmb use_testrunner
     user_copts version visibility weak_deps wrapper xmb
+    tars repository remote_tags image
     )
   "All possible attributes in BUILD files.
 No association with rules for now.")
