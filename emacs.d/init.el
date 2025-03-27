@@ -49,8 +49,6 @@
      (corfu-terminal-mode :url
                           "https://codeberg.org/akib/emacs-corfu-terminal.git"
                           :branch "main")))
- '(sp-override-key-bindings
-   '(("C-<right>" . sp-slurp-hybrid-sexp) ("C-<left>" . sp-dedent-adjust-sexp)))
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
 ;;  ;; custom-set-faces was added by Custom.
@@ -95,13 +93,15 @@
 (use-package dired-x
   :after (dired)
   :commands dired-jump
-  :custom
-  (dired-omit-mode t)
-  (dired-omit-files (concat dired-omit-files "\\|^\\..*$")))
+  :hook
+  (dired-mode-hook . dired-omit-mode)
+  :config
+  (setq dired-omit-files (concat dired-omit-files "\\|^\\..*$")))
 
 ;; Additional syntax highlighting for dired
 (use-package diredfl
   :ensure t
+  :after (dirvish)
   :hook
   ((dired-mode . diredfl-mode)
    ;; highlight parent and directory preview as well
@@ -410,10 +410,14 @@ buffer, otherwise just change the current paragraph."
                finally return fill-column))))
 
 ;; smerge-mode instead of ediff
+(defun my/save-and-bury ()
+  (interactive)
+  (save-buffer)
+  (bury-buffer))
 (use-package smerge-mode
   :config
   (defhydra unpackaged/smerge-hydra
-    (:color pink :hint nil :post (smerge-auto-leave))
+    (:color orange :hint nil :post (smerge-auto-leave))
     "
 ^Move^       ^Keep^               ^Diff^                 ^Other^
 ^^-----------^^-------------------^^---------------------^^-------
@@ -439,10 +443,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ("C" smerge-combine-with-next)
     ("r" smerge-resolve)
     ("k" smerge-kill-current)
-    ("ZZ" (lambda ()
-            (interactive)
-            (save-buffer)
-            (bury-buffer))
+    ("ZZ" my/save-and-burry
      "Save and bury buffer" :color blue)
     ("q" nil "cancel" :color blue))
   :hook (magit-diff-visit-file . (lambda ()
@@ -785,8 +786,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :config
   (setq walkman-keep-headers t)
   :bind (:map org-mode-map
-              ("C-c w" . walkman-transient)
-              ("C-c e" . walkman-at-point)
+              ("C-c w t" . walkman-transient)
+              ("C-c w p" . walkman-at-point)
               ))
 
 (use-package symbol-overlay
@@ -834,25 +835,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy))
 
 (use-package dirvish
+  :demand t
   :ensure t
-  :after (dired-x)
-  :init
-  (dirvish-override-dired-mode)
-  :custom
-  (dirvish-quick-access-entries ; It's a custom option, `setq' won't work
-   '(("h" "~/"                     "Home")
-     ("r" "~/repo/"                "repo")))
-  :config
-  ;; (dirvish-peek-mode)             ; Preview files in minibuffer
-  (dirvish-side-follow-mode)      ; similar to `treemacs-follow-mode'
-  (setq dirvish-mode-line-format
-        '(:left (sort symlink) :right (omit yank index)))
-  (setq dirvish-attributes           ; The order *MATTERS* for some attributes
-        '(vc-state subtree-state collapse git-msg file-time file-size)
-        dirvish-side-attributes
-        '(vc-state collapse file-size))
-  (setq dired-listing-switches
-        "-l --almost-all --human-readable --group-directories-first --no-group")
   :bind ; Bind `dirvish-fd|dirvish-side|dirvish-dwim' as you see fit
   (("C-c f" . dirvish-side)
    :map dirvish-mode-map          ; Dirvish inherits `dired-mode-map'
@@ -874,7 +858,24 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
    ("M-m" . dirvish-mark-menu)
    ("M-t" . dirvish-layout-toggle)
    ("M-e" . dirvish-emerge-menu)
-   ("M-j" . dirvish-fd-jump)))
+   ("M-j" . dirvish-fd-jump))
+  :init
+  (dirvish-override-dired-mode)
+  :custom
+  (dirvish-quick-access-entries ; It's a custom option, `setq' won't work
+   '(("h" "~/"                     "Home")
+     ("r" "~/repo/"                "repo")))
+  :config
+  ;; (dirvish-peek-mode)             ; Preview files in minibuffer
+  (dirvish-side-follow-mode)      ; similar to `treemacs-follow-mode'
+  (setq dirvish-mode-line-format
+        '(:left (sort symlink) :right (omit yank index)))
+  (setq dirvish-attributes           ; The order *MATTERS* for some attributes
+        '(vc-state subtree-state collapse git-msg file-time file-size)
+        dirvish-side-attributes
+        '(vc-state collapse file-size))
+  (setq dired-listing-switches
+        "-l --almost-all --human-readable --group-directories-first --no-group"))
 
 ;; Completion
 ;; headlong might be useful for bookmark jumping
@@ -1480,9 +1481,24 @@ In that case, insert the number."
 (use-package eldoc
   :diminish eldoc-mode)
 
+(use-package bazel
+  :ensure t
+  :demand t
+  :custom
+  (bazel-command '("bazel"))
+  ;; :bind (("C-c C-c" . compile))
+  )
+
 (use-package cape
   :ensure t
-  :demand t)
+  :demand t
+  :init
+  (add-hook 'eshell-mode-hook
+            (lambda ()
+              (add-to-list 'completion-at-point-functions #'cape-history))))
+
+(use-package pcmpl-args
+  :ensure t)
 
 ;; https://www.masteringemacs.org/article/text-expansion-hippie-expand
 (global-set-key [remap dabbrev-expand] 'hippie-expand)
@@ -1729,13 +1745,6 @@ delimiters instead of word delimiters."
       1 'font-lock-function-name-face)))
   (google3-build-mode-setup-imenu))
 
-(use-package bazel
-  :ensure t
-  :custom
-  (bazel-command '("bazel"))
-  ;; :bind (("C-c C-c" . compile))
-  )
-
 (setq auto-mode-alist
       (nconc
        (list
@@ -1822,33 +1831,6 @@ delimiters instead of word delimiters."
 (setq comint-prompt-read-only t)
 (setq comint-scroll-to-bottom-on-input t)
 
-(defun get-buffers-matching-mode (mode)
-  "Returns a list of buffers where their major-mode is equal to MODE"
-  (let ((buffer-mode-matches '()))
-    (dolist (buf (buffer-list))
-      (with-current-buffer buf
-        (if (eq mode major-mode)
-            (add-to-list 'buffer-mode-matches buf))))
-    buffer-mode-matches))
-
-(defun buffer-string* (buffer)
-  (with-current-buffer buffer
-    (buffer-string)))
-
-(defun buffer-whole-string (buffer)
-  (with-current-buffer buffer
-    (save-restriction
-      (widen)
-      (buffer-substring-no-properties (point-min) (point-max)))))
-
-(defun get-last-term-url ()
-  "Returns the last url in a terminal buffer."
-  (interactive)
-  (let ((result (caar (last (s-match-strings-all "https?://[^[:space:]\n.]+" (buffer-whole-string (car (get-buffers-matching-mode 'term-mode))))))))
-    (kill-new result)
-    result))
-;; (bind-key "C-c l" 'get-last-term-url)
-;; Instead try link-hint
 (use-package link-hint
   :ensure t
   :bind
@@ -2048,8 +2030,8 @@ Try the repeated popping up to 10 times."
   :config
   (palaver-mode 1)
   :bind
-  (("C-c <down>" . palaver-toggle-bottom-drawer)
-   ("C-c <right>" . palaver-toggle-right-drawer)
+  (("C-c d d" . palaver-toggle-bottom-drawer)
+   ("C-c d f" . palaver-toggle-right-drawer)
    ("C-c d m" . palaver-toggle-drawer-location)
    ("C-x o" . palaver-other-window)))
 
