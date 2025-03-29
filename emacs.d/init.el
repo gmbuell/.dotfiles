@@ -40,9 +40,12 @@
    '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
      "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
- '(package-selected-packages nil)
+ '(package-selected-packages '(breadcrumb mini-echo prism vundo))
  '(package-vc-selected-packages
-   '((combobulate :url "https://github.com/mickeynp/combobulate.git" :branch
+   '((prism :url "https://github.com/alphapapa/prism.el" :branch "master")
+     (breadcrumb :url "https://github.com/joaotavora/breadcrumb.git" :branch
+                 "master")
+     (combobulate :url "https://github.com/mickeynp/combobulate.git" :branch
                   "master")
      (flymake-popon :url "https://codeberg.org/akib/emacs-flymake-popon.git"
                     :branch "master")
@@ -2008,34 +2011,13 @@ delimiters instead of word delimiters."
   :after hydra
   :ensure t)
 
-;; (use-package breadcrumb
-;;   :quelpa (pheaver-breadcrumb :fetcher git :url
-;;                       "https://github.com/pheaver/breadcrumb.git")
-;;   :demand t)
-;; (defhydra hydra-breadcrumb
-;;   (:exit t)
-;;   "
-;; Breadcrumb bookmarks:
-;;   _<up>_:   prev   _S-<up>_:   local prev
-;;   _<down>_: next   _S-<down>_: local next
-;;   _s_: set  _c_: clear  _l_: list  _q_: quit
-;; "
-;;   ("<down>" bc-next nil :exit nil)
-;;   ("<up>" bc-previous nil :exit nil)
-;;   ("S-<down>" bc-local-next nil :exit nil)
-;;   ("S-<up>" bc-local-previous nil :exit nil)
-;;   ("l" bc-list nil)
-;;   ("s" bc-set nil)
-;;   ("c" bc-clear nil)
-;;   ("q" nil nil))
-
-;; A completely different breadcrumb which is a replacement for which-func-mode.
-;; Commented out because the name conflicts with the breadcrumb package above...
-;; (use-package breadcrumb
-;;   :quelpa (breadcrumb :fetcher git :url
-;;                       "https://github.com/joaotavora/breadcrumb.git")
-;;   :init
-;;   (breadcrumb-mode))
+;; A replacement for which-func-mode.
+(use-package breadcrumb
+  :ensure t
+  :vc (:url "https://github.com/joaotavora/breadcrumb.git"
+            :branch "master")
+  :init
+  (breadcrumb-mode))
 
 ;; 11/8/2024 Disable dogears because I'm not using it.
 ;; (use-package dogears
@@ -2176,13 +2158,10 @@ Try the repeated popping up to 10 times."
   (interactive)
   (insert (format-time-string "%-m-%-d-%y")))
 
-;; Check out https://github.com/raxod502/prescient.el
-;; And https://github.com/raxod502/selectrum
-
 (use-package palaver
   :demand t
   :custom
-  (palaver-main-window-min-width 82)
+  (palaver-main-window-min-width 80)
   :config
   (palaver-mode 1)
   :bind
@@ -2191,14 +2170,45 @@ Try the repeated popping up to 10 times."
    ("C-c d m" . palaver-toggle-drawer-location)
    ("C-x o" . palaver-other-window)))
 
+;; prism for highlighting modes without good syntax hilighting
+(use-package prism
+  :ensure t
+  :vc (:url "https://github.com/alphapapa/prism.el"
+            :branch "master"))
+
+(use-package vundo
+  :ensure t)
+
+(use-package dogears
+  :ensure t
+  :vc (:url "https://github.com/alphapapa/dogears.el"
+            :branch "master")
+  :bind (:map global-map
+              ("M-g d" . dogears-go)
+              ("M-g M-b" . dogears-back)
+              ("M-g M-f" . dogears-forward)
+              ("M-g M-d" . dogears-list))
+  :init
+  (add-hook 'prog-mode-hook #'dogears-mode))
+
+(use-package mini-echo
+  :ensure t
+  :custom
+  (mini-echo-right-padding 1)
+  ;; Other rules: project
+  (mini-echo-persistent-rule '(:long
+                               ("major-mode" "buffer-name" "vcs" "flymake")
+                               :short ("buffer-name" "flymake")))
+  :init
+  (mini-echo-mode)
+  (set-face-attribute 'mini-echo-minibuffer-window nil
+                      :background "modeline-bg")
+  )
+
 (require 'server)
 (unless (server-running-p) (server-start))
 (setenv "EDITOR" "TERM=xterm-24bits emacsclient -nw")
 
-
-;; Future enhancements:
-;; prism for highlighting modes without good syntax hilighting?
-;; https://github.com/alphapapa/prism.el
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
