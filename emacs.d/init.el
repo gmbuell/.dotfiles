@@ -40,7 +40,7 @@
    '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
      "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
- '(package-selected-packages '(breadcrumb mini-echo prism vundo))
+ '(package-selected-packages nil)
  '(package-vc-selected-packages
    '((prism :url "https://github.com/alphapapa/prism.el" :branch "master")
      (breadcrumb :url "https://github.com/joaotavora/breadcrumb.git" :branch
@@ -1951,7 +1951,8 @@ delimiters instead of word delimiters."
   (add-to-list 'auto-mode-alist '("\\.rl\\'" . go-mode))
   :hook ((go-mode . yas-minor-mode)
          (go-mode . eglot-ensure)
-         (go-mode . eglot-format-buffer-before-save)
+         ;; Switch to apheleia
+         ;; (go-mode . eglot-format-buffer-before-save)
          (go-ts-mode . yas-minor-mode)
          (go-ts-mode . eglot-ensure)
          (go-ts-mode . eglot-format-buffer-before-save))
@@ -2204,6 +2205,11 @@ Try the repeated popping up to 10 times."
   (set-face-attribute 'mini-echo-minibuffer-window nil
                       :background "modeline-bg")
   )
+
+(use-package apheleia
+  :ensure t
+  :init
+  (apheleia-global-mode +1))
 
 (require 'server)
 (unless (server-running-p) (server-start))
