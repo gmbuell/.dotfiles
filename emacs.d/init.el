@@ -40,7 +40,23 @@
    '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
      "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
- '(package-selected-packages nil)
+ '(package-selected-packages
+   '(ace-window aio anzu apheleia auto-yasnippet bash-completion bazel beginend
+                breadcrumb cape casual-symbol-overlay clipetty combobulate
+                consult-compile-multi consult-dir consult-eglot-embark
+                corfu-prescient corfu-terminal corfu-terminal-mode deft diminish
+                diredfl dirvish discover-my-major disproject docker dogears
+                doom-themes dumb-jump eat expand-region flymake-popon fold-this
+                git-gutter gnu-elpa-keyring-update go-mode gumshoe
+                highlight-symbol hydra-posframe iflipb link-hint magit-todos
+                marginalia markdown-mode meow mini-echo modern-cpp-font-lock
+                mosey multifiles nov orderless origami pcmpl-args
+                pheaver-breadcrumb phi-search popper pretty-hydra prism
+                projection-multi projection-multi-embark protobuf-mode
+                quelpa-use-package rainbow-delimiters region-bindings-mode
+                shelldon shrink-path smart-mode-line smartparens smartscan
+                symbol-overlay-mc vertico-prescient vundo walkman wgrep
+                xterm-color yaml-mode yasnippet-snippets))
  '(package-vc-selected-packages
    '((prism :url "https://github.com/alphapapa/prism.el" :branch "master")
      (breadcrumb :url "https://github.com/joaotavora/breadcrumb.git" :branch
@@ -66,7 +82,7 @@
 (when (and (fboundp 'menu-bar-mode) (not (eq menu-bar-mode -1)))
   (menu-bar-mode -1))
 (when (and (fboundp 'scroll-bar-mode) (not (eq scroll-bar-mode -1)))
-   (scroll-bar-mode -1))
+  (scroll-bar-mode -1))
 (when (and (fboundp 'tooltip-mode) (not (eq tooltip-mode -1)))
   (tooltip-mode -1))
 
@@ -219,6 +235,8 @@ that uses 'font-lock-warning-face'."
 (setq initial-scratch-message nil)
 ;; don't create backup~ files
 (setq make-backup-files nil)
+;; Disable autosave files too
+(setq auto-save-default nil)
 
 ;; remove annoying ellipsis when printing sexp in message buffer
 (setq eval-expression-print-length nil
@@ -272,7 +290,7 @@ that uses 'font-lock-warning-face'."
   (global-git-gutter-mode t))
 
 (defhydra hydra-git-gutter (:body-pre (git-gutter-mode 1)
-                            :hint nil)
+                                      :hint nil)
   "
 Git gutter:
   _j_: next hunk        _s_tage hunk     _q_uit
@@ -297,7 +315,7 @@ Git gutter:
               ;; clear the markup right away
               (sit-for 0.1)
               (git-gutter:clear))
-       :color blue))
+   :color blue))
 
 ;; Magit makes git inside emacs awesome.
 ;; Start with "C-c g"
@@ -574,7 +592,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :diminish smartparens-global-mode
   :custom
   (sp-override-key-bindings '(("C-<right>" . sp-slurp-hybrid-sexp)
-                            ("C-<left>" . sp-dedent-adjust-sexp)))
+                              ("C-<left>" . sp-dedent-adjust-sexp)))
   :init
   (smartparens-global-mode t)
   ;; smartparens-mode is incredibly difficult to diminish.
@@ -667,7 +685,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
               mosey-goto-end-of-code
               mosey-goto-beginning-of-comment-text
               end-of-line)
-    :prefix "c")
+            :prefix "c")
   :bind* (("C-a" . mosey-backward-bounce)
           ("C-e" . mosey-forward-bounce)))
 
@@ -679,9 +697,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; Note, these require: apt-get install ttf-droid ttfinconsolata
 ;; ttf-dejavu
 ;; Only load the theme if we are in a graphical display.
-  ;; (use-package gotham-theme
-  ;;   :ensure t
-  ;;   :init
+;; (use-package gotham-theme
+;;   :ensure t
+;;   :init
 ;;   (load-theme 'gotham t))
 ;; (use-package color-theme
 ;;   :if window-system
@@ -747,8 +765,21 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :diminish yas-minor-mode
   :config
   (add-to-list 'yas-snippet-dirs "~/.emacs.d/lisp/snippets")
-  :init
   (yas-global-mode 1))
+
+(with-eval-after-load 'yasnippet
+  (defun my/yas-docker-compose-bp ()
+    (interactive)
+    (yas-expand-snippet (yas-lookup-snippet "dockercomposebp" 'yaml-mode))))
+
+(use-package autoinsert
+  :after (yasnippet)
+  :config
+  (setq auto-insert-query nil)
+  (auto-insert-mode 1)
+  (add-hook 'find-file-hook 'auto-insert)
+  (setq auto-insert-alist nil) ;; remove this like to restore defaults
+  (add-to-list 'auto-insert-alist  '("docker-compose.yaml$" . [my/yas-docker-compose-bp])))
 
 (use-package yasnippet-snippets
   :ensure yasnippet-snippets
@@ -769,8 +800,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :ensure t
   :init
   (setq org-confirm-babel-evaluate nil
-      org-src-fontify-natively t
-      org-src-tab-acts-natively t)
+        org-src-fontify-natively t
+        org-src-tab-acts-natively t)
   :config
   ;; (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
   ;; Add shortcut to recalculate table
@@ -947,7 +978,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :after (vertico)
   :bind
   (("M-." . embark-act)          ;; Could also be embark-dwim for more of a
-                                  ;; direct xref substitute
+   ;; direct xref substitute
    ("C-h B" . embark-bindings))  ;; alternative for `describe-bindings'
 
   :init
@@ -1057,11 +1088,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                                    :exclude spacemacs-useless-buffers-regexp))))
     "Project buffer candidate source for `consult-buffer'.")
   (setq consult-buffer-sources '(consult--source-buffer-hidden
-                              consult--source-non-project-buffer
-                              consult--source-project-useful-buffer
-                              consult--source-project-recent-file
-                              consult--source-recent-file-hidden
-                              consult--source-non-project-recent-file))
+                                 consult--source-non-project-buffer
+                                 consult--source-project-useful-buffer
+                                 consult--source-project-recent-file
+                                 consult--source-recent-file-hidden
+                                 consult--source-non-project-recent-file))
   )
 
 (use-package consult-dir
@@ -1137,8 +1168,7 @@ any directory proferred by `consult-dir'."
 
 ;; wgrep mode to edit grep buffers (produced by embark-export)
 (use-package wgrep
-  :ensure t
-  :demand t)
+  :ensure t)
 
 (use-package marginalia
   :ensure t
@@ -1483,78 +1513,78 @@ In that case, insert the number."
               ("C-c C-c" . compile-multi))
   :config
   (defun my/compile-multi-bazel-available-targets ()
-  "Generate Bazel targets for compile-multi based on available targets and rules."
-  (when-let* ((file-name (or buffer-file-name default-directory))
-              (workspace-root (bazel--workspace-root file-name))
-              (package-dir (bazel--package-directory file-name workspace-root))
-              (package-name (bazel--package-name package-dir workspace-root))
-              (build-file (bazel--locate-build-file package-dir)))
-    (with-temp-buffer
-      (insert-file-contents build-file)
-      (let ((targets nil)
-            (rule-types (make-hash-table :test 'equal)))
+    "Generate Bazel targets for compile-multi based on available targets and rules."
+    (when-let* ((file-name (or buffer-file-name default-directory))
+                (workspace-root (bazel--workspace-root file-name))
+                (package-dir (bazel--package-directory file-name workspace-root))
+                (package-name (bazel--package-name package-dir workspace-root))
+                (build-file (bazel--locate-build-file package-dir)))
+      (with-temp-buffer
+        (insert-file-contents build-file)
+        (let ((targets nil)
+              (rule-types (make-hash-table :test 'equal)))
 
-        ;; First pass: collect rule types
-        (goto-char (point-min))
-        (while (re-search-forward "\\([a-zA-Z0-9_]+\\)(\\s-*\n?\\s-*name\\s-*=\\s-*\"\\([^\"]+\\)\"" nil t)
-          (let ((rule-type (match-string 1))
-                (target-name (match-string 2)))
-            (puthash target-name rule-type rule-types)))
+          ;; First pass: collect rule types
+          (goto-char (point-min))
+          (while (re-search-forward "\\([a-zA-Z0-9_]+\\)(\\s-*\n?\\s-*name\\s-*=\\s-*\"\\([^\"]+\\)\"" nil t)
+            (let ((rule-type (match-string 1))
+                  (target-name (match-string 2)))
+              (puthash target-name rule-type rule-types)))
 
-        ;; Second pass: create appropriate actions based on target name and rule type
-        (maphash
-         (lambda (target-name rule-type)
-           (cond
-            ;; Test targets (_test suffix)
-            ((string-match-p "_test$" target-name)
-             (push (cons (format "bazel:test:%s" target-name)
-                         `(:command ,(format "bazel test %s:%s" package-name target-name)
-                           :annotation ,(format "Test %s (%s)" target-name rule-type)))
-                   targets))
+          ;; Second pass: create appropriate actions based on target name and rule type
+          (maphash
+           (lambda (target-name rule-type)
+             (cond
+              ;; Test targets (_test suffix)
+              ((string-match-p "_test$" target-name)
+               (push (cons (format "bazel:test:%s" target-name)
+                           `(:command ,(format "bazel test %s:%s" package-name target-name)
+                                      :annotation ,(format "Test %s (%s)" target-name rule-type)))
+                     targets))
 
-            ;; pkg_tar targets - no actions
-            ((string= rule-type "pkg_tar")
-             nil)
+              ;; pkg_tar targets - no actions
+              ((string= rule-type "pkg_tar")
+               nil)
 
-            ;; oci_image targets - no actions
-            ((string= rule-type "oci_image")
-             nil)
+              ;; oci_image targets - no actions
+              ((string= rule-type "oci_image")
+               nil)
 
-            ;; oci_push targets - only run action
-            ((string= rule-type "oci_push")
-             (push (cons (format "bazel:run:%s" target-name)
-                         `(:command ,(format "bazel run %s:%s" package-name target-name)
-                           :annotation ,(format "Run %s (%s)" target-name rule-type)))
-                   targets))
+              ;; oci_push targets - only run action
+              ((string= rule-type "oci_push")
+               (push (cons (format "bazel:run:%s" target-name)
+                           `(:command ,(format "bazel run %s:%s" package-name target-name)
+                                      :annotation ,(format "Run %s (%s)" target-name rule-type)))
+                     targets))
 
-            ;; _lib targets - only build action
-            ((string-match-p "_lib$" target-name)
-             (push (cons (format "bazel:build:%s" target-name)
-                         `(:command ,(format "bazel build %s:%s" package-name target-name)
-                           :annotation ,(format "Build %s (%s)" target-name rule-type)))
-                   targets))
+              ;; _lib targets - only build action
+              ((string-match-p "_lib$" target-name)
+               (push (cons (format "bazel:build:%s" target-name)
+                           `(:command ,(format "bazel build %s:%s" package-name target-name)
+                                      :annotation ,(format "Build %s (%s)" target-name rule-type)))
+                     targets))
 
-            ;; All other targets - build and run actions
-            (t
-             (push (cons (format "bazel:build:%s" target-name)
-                         `(:command ,(format "bazel build %s:%s" package-name target-name)
-                           :annotation ,(format "Build %s (%s)" target-name rule-type)))
-                   targets)
-             (push (cons (format "bazel:run:%s" target-name)
-                         `(:command ,(format "bazel run %s:%s" package-name target-name)
-                           :annotation ,(format "Run %s (%s)" target-name rule-type)))
-                   targets))))
-         rule-types)
+              ;; All other targets - build and run actions
+              (t
+               (push (cons (format "bazel:build:%s" target-name)
+                           `(:command ,(format "bazel build %s:%s" package-name target-name)
+                                      :annotation ,(format "Build %s (%s)" target-name rule-type)))
+                     targets)
+               (push (cons (format "bazel:run:%s" target-name)
+                           `(:command ,(format "bazel run %s:%s" package-name target-name)
+                                      :annotation ,(format "Run %s (%s)" target-name rule-type)))
+                     targets))))
+           rule-types)
 
-        ;; Add general package commands
-        (append targets
-                (list
-                 (cons "bazel:build-all"
-                       `(:command ,(format "bazel build //%s/..." package-name)
-                         :annotation ,(format "Build all targets in //%s" package-name)))
-                 (cons "bazel:test-all"
-                       `(:command ,(format "bazel test //%s/..." package-name)
-                         :annotation ,(format "Test all targets in //%s" package-name)))))))))
+          ;; Add general package commands
+          (append targets
+                  (list
+                   (cons "bazel:build-all"
+                         `(:command ,(format "bazel build //%s/..." package-name)
+                                    :annotation ,(format "Build all targets in //%s" package-name)))
+                   (cons "bazel:test-all"
+                         `(:command ,(format "bazel test //%s/..." package-name)
+                                    :annotation ,(format "Test all targets in //%s" package-name)))))))))
 
   ;; Use project.el to find the project root for compile-multi
   (defun my/project-root-or-default ()
@@ -1640,7 +1670,6 @@ In that case, insert the number."
 
 (use-package bazel
   :ensure t
-  :demand t
   :custom
   (bazel-command '("bazel"))
   ;; :bind (("C-c C-c" . compile))
@@ -1648,7 +1677,6 @@ In that case, insert the number."
 
 (use-package cape
   :ensure t
-  :demand t
   :init
   (add-hook 'eshell-mode-hook
             (lambda ()
@@ -1684,14 +1712,14 @@ In that case, insert the number."
           ("M-m A" . mc/mark-all-symbols-like-this)
           ("M-m h" . mc-hide-unmatched-lines-mode)
           :map region-bindings-mode-map
-              ("a" . mc/mark-all-like-this)
-              ("p" . mc/mark-previous-like-this)
-              ("n" . mc/mark-next-like-this)
-              ("m" . mc/mark-more-like-this-extended)
-              ("f" . mc/skip-to-next-like-this)
-              ("P" . mc/unmark-previous-like-this)
-              ("N" . mc/unmark-next-like-this)
-              ("h" . mc-hide-unmatched-lines-mode)
+          ("a" . mc/mark-all-like-this)
+          ("p" . mc/mark-previous-like-this)
+          ("n" . mc/mark-next-like-this)
+          ("m" . mc/mark-more-like-this-extended)
+          ("f" . mc/skip-to-next-like-this)
+          ("P" . mc/unmark-previous-like-this)
+          ("N" . mc/unmark-next-like-this)
+          ("h" . mc-hide-unmatched-lines-mode)
           ))
 
 (use-package multifiles
@@ -1731,10 +1759,10 @@ In that case, insert the number."
   :ensure t
   :bind (("M-w" . aya-create)
          ("M-W" . aya-expand))
-;; Doesn't currently do anything because I've remapped M-w which is usually
-;; kill-ring-save.
-;; (use-package easy-kill :ensure t :config (global-set-key
-;; [remap kill-ring-save] 'easy-kill))
+  ;; Doesn't currently do anything because I've remapped M-w which is usually
+  ;; kill-ring-save.
+  ;; (use-package easy-kill :ensure t :config (global-set-key
+  ;; [remap kill-ring-save] 'easy-kill))
   :custom
   (aya-case-fold t))
 
@@ -1871,7 +1899,7 @@ No association with rules for now.")
 (defvar google3-build-mode-fileset
   '(
     entries FilesetEntry srcdir files destdir
-   )
+    )
   "Fileset attributes should only be available once fileset is subincluded.")
 (defun google3-build-mode-setup-imenu ()
   "Set up imenu to index target names in BUILD files."
@@ -1993,9 +2021,8 @@ delimiters instead of word delimiters."
 
 (use-package link-hint
   :ensure t
-  :bind
-  ("C-c l o" . link-hint-open-link)
-  ("C-c l c" . link-hint-copy-link))
+  :bind (:map eshell-mode-map
+              ("C-c w" . link-hint-copy-link)))
 
 ;; Show hydras overlayed in the middle of the frame
 (use-package hydra-posframe
@@ -2096,12 +2123,12 @@ With prefix argument N, search for Nth previous match.
 If N is negative, search forwards for the -Nth following match."
   (interactive "p")
   (if (not (memq last-command '(eshell-previous-matching-input-from-input
-                eshell-next-matching-input-from-input)))
+                                eshell-next-matching-input-from-input)))
       ;; Starting a new search
       (setq eshell-matching-input-from-input-string
-        (buffer-substring (save-excursion (eshell-bol) (point))
-                  (point))
-        eshell-history-index nil))
+            (buffer-substring (save-excursion (eshell-bol) (point))
+                              (point))
+            eshell-history-index nil))
   (eshell-previous-matching-input
    (regexp-quote eshell-matching-input-from-input-string)
    arg))
@@ -2166,9 +2193,9 @@ Try the repeated popping up to 10 times."
   :config
   (palaver-mode 1)
   :bind
-  (("C-c d d" . palaver-toggle-bottom-drawer)
-   ("C-c d f" . palaver-toggle-right-drawer)
-   ("C-c d m" . palaver-toggle-drawer-location)
+  (("C-c k" . palaver-toggle-bottom-drawer)
+   ("C-c l" . palaver-toggle-right-drawer)
+   ("C-c m" . palaver-toggle-drawer-location)
    ("C-x o" . palaver-other-window)))
 
 ;; prism for highlighting modes without good syntax hilighting
@@ -2203,13 +2230,15 @@ Try the repeated popping up to 10 times."
   :init
   (mini-echo-mode)
   (set-face-attribute 'mini-echo-minibuffer-window nil
-                      :background "modeline-bg")
-  )
+                      :background "#222323"))
 
 (use-package apheleia
   :ensure t
   :init
   (apheleia-global-mode +1))
+
+(use-package docker
+  :ensure t)
 
 (require 'server)
 (unless (server-running-p) (server-start))
