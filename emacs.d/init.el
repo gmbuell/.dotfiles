@@ -161,8 +161,10 @@
 (setq initial-major-mode 'text-mode)
 
 ;; use only spaces and no tabs
-(setq-default indent-tabs-mode nil
-              tab-width 2)
+(setq-default tab-width 2
+							go-ts-mode-indent-offset 2
+							;; indent-tabs-mode nil
+							)
 (set-default 'indicate-empty-lines t)
 
 ;; Text
@@ -550,6 +552,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       (setq deft-directory "~/Dropbox/notes")
       (when (not (file-exists-p deft-directory))
         (make-directory deft-directory t)))
+    (setq deft-default-extension "org")
     (setq deft-text-mode 'org-mode)
     (setq deft-use-filter-string-for-filename t)
     (setq deft-use-filename-as-title t)))
@@ -801,7 +804,12 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :init
   (setq org-confirm-babel-evaluate nil
         org-src-fontify-natively t
-        org-src-tab-acts-natively t)
+        org-src-tab-acts-natively t
+				org-todo-keywords
+				'((sequence "TODO" "IN-PROGRESS" "WAITING" "DONE")))
+	:bind (("C-c a" . org-agenda)
+				 ("C-c c" . org-capture)
+				 ("C-c b" . org-store-link))
   :config
   ;; (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
   ;; Add shortcut to recalculate table
@@ -876,6 +884,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
    :map dirvish-mode-map          ; Dirvish inherits `dired-mode-map'
    ("o" . dired-up-directory)     ; So you can adjust dired bindings here
    ("?"   . dirvish-dispatch)     ; contains most of sub-menus in dirvish extensions
+   ("." . dired-create-empty-file)
    ("a"   . dirvish-quick-access)
    ("f"   . dirvish-history-go-forward)
    ("b"   . dirvish-history-go-backward)
@@ -1678,9 +1687,10 @@ In that case, insert the number."
 (use-package cape
   :ensure t
   :init
-  (add-hook 'eshell-mode-hook
-            (lambda ()
-              (add-to-list 'completion-at-point-functions #'cape-history))))
+  ;; (add-hook 'eshell-mode-hook
+  ;;           (lambda ()
+  ;;             (add-to-list 'completion-at-point-functions #'cape-history)))
+  )
 
 (use-package pcmpl-args
   :ensure t)
