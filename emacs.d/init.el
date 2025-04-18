@@ -638,7 +638,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;;  M-x customize-group RET combobulate RET
   ;;
   (use-package combobulate
-    :ensure t
     ;; Make sure to git clone https://github.com/mickeynp/combobulate
     :load-path ("~/.emacs.d/combobulate")
     :custom
@@ -1290,7 +1289,6 @@ In that case, insert the number."
   (add-to-list 'savehist-additional-variables 'corfu-history))
 
 (use-package corfu-terminal
-  :ensure t
 	:load-path "~/.emacs.d/lisp/emacs-corfu-terminal/"
   :init
   (unless (display-graphic-p)
@@ -1298,11 +1296,9 @@ In that case, insert the number."
   )
 
 (use-package popon
-  :ensure t
 	:load-path "~/.emacs.d/lisp/emacs-popon/")
 
 (use-package flymake-popon
-  :ensure t
 	:load-path "~/.emacs.d/lisp/emacs-flymake-popon/"
   :diminish flymake-popon-mode
   :init
@@ -2175,14 +2171,12 @@ Try the repeated popping up to 10 times."
 
 ;; prism for highlighting modes without good syntax hilighting
 (use-package prism
-  :ensure t
 	:load-path "~/.emacs.d/lisp/prism.el/")
 
 (use-package vundo
   :ensure t)
 
 (use-package dogears
-  :ensure t
 	:load-path "~/.emacs.d/lisp/dogears.el/"
   :bind (:map global-map
               ("M-g d" . dogears-go)
