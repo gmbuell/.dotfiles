@@ -1,0 +1,24 @@
+[submodule "emacs.d/combobulate"]
+	path = emacs.d/combobulate
+	url = https://github.com/mickeynp/combobulate.git
+[submodule "emacs.d/lisp/prism.el"]
+	path = emacs.d/lisp/prism.el
+	url = https://github.com/alphapapa/prism.el
+[submodule "emacs.d/lisp/breadcrumb"]
+	path = emacs.d/lisp/breadcrumb
+	url = https://github.com/joaotavora/breadcrumb.git
+[submodule "emacs.d/lisp/emacs-flymake-popon"]
+	path = emacs.d/lisp/emacs-flymake-popon
+	url = https://codeberg.org/akib/emacs-flymake-popon.git
+[submodule "emacs.d/lisp/emacs-corfu-terminal"]
+	path = emacs.d/lisp/emacs-corfu-terminal
+	url = https://codeberg.org/akib/emacs-corfu-terminal.git
+[submodule "emacs.d/lisp/hydra-posframe"]
+	path = emacs.d/lisp/hydra-posframe
+	url = https://github.com/Ladicle/hydra-posframe.git
+[submodule "emacs.d/lisp/dogears.el"]
+	path = emacs.d/lisp/dogears.el
+	url = https://github.com/alphapapa/dogears.el
+[submodule "emacs.d/lisp/emacs-popon"]
+	path = emacs.d/lisp/emacs-popon
+	url = https://codeberg.org/akib/emacs-popon.git

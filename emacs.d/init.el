@@ -40,34 +40,6 @@
    '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
      "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
- '(package-selected-packages
-   '(ace-window aio anzu apheleia auto-yasnippet bash-completion bazel beginend
-                breadcrumb cape casual-symbol-overlay clipetty combobulate
-                consult-compile-multi consult-dir consult-eglot-embark
-                corfu-prescient corfu-terminal corfu-terminal-mode deft diminish
-                diredfl dirvish discover-my-major disproject docker dogears
-                doom-themes dumb-jump eat expand-region flymake-popon fold-this
-                git-gutter gnu-elpa-keyring-update go-mode gumshoe
-                highlight-symbol hydra-posframe iflipb link-hint magit-todos
-                marginalia markdown-mode meow mini-echo modern-cpp-font-lock
-                mosey multifiles nov orderless origami pcmpl-args
-                pheaver-breadcrumb phi-search popper pretty-hydra prism
-                projection-multi projection-multi-embark protobuf-mode
-                quelpa-use-package rainbow-delimiters region-bindings-mode
-                shelldon shrink-path smart-mode-line smartparens smartscan
-                symbol-overlay-mc vertico-prescient vundo walkman wgrep
-                xterm-color yaml-mode yasnippet-snippets))
- '(package-vc-selected-packages
-   '((prism :url "https://github.com/alphapapa/prism.el" :branch "master")
-     (breadcrumb :url "https://github.com/joaotavora/breadcrumb.git" :branch
-                 "master")
-     (combobulate :url "https://github.com/mickeynp/combobulate.git" :branch
-                  "master")
-     (flymake-popon :url "https://codeberg.org/akib/emacs-flymake-popon.git"
-                    :branch "master")
-     (corfu-terminal-mode :url
-                          "https://codeberg.org/akib/emacs-corfu-terminal.git"
-                          :branch "main")))
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
 ;;  ;; custom-set-faces was added by Custom.
@@ -1319,8 +1291,7 @@ In that case, insert the number."
 
 (use-package corfu-terminal
   :ensure t
-  :vc (:url "https://codeberg.org/akib/emacs-corfu-terminal.git"
-            :branch "main")
+	:load-path "~/.emacs.d/lisp/emacs-corfu-terminal/"
   :init
   (unless (display-graphic-p)
     (corfu-terminal-mode +1))
@@ -1328,13 +1299,11 @@ In that case, insert the number."
 
 (use-package popon
   :ensure t
-  :vc (:url "https://codeberg.org/akib/emacs-popon.git"
-            :branch "master"))
+	:load-path "~/.emacs.d/lisp/emacs-popon/")
 
 (use-package flymake-popon
   :ensure t
-  :vc (:url "https://codeberg.org/akib/emacs-flymake-popon.git"
-            :branch "master")
+	:load-path "~/.emacs.d/lisp/emacs-flymake-popon/"
   :diminish flymake-popon-mode
   :init
   (global-flymake-popon-mode))
@@ -2038,9 +2007,7 @@ delimiters instead of word delimiters."
 (use-package hydra-posframe
   ;; Only enable if we are running graphical mode.
   :if window-system
-  :ensure t
-  :vc (:url "https://github.com/Ladicle/hydra-posframe.git"
-            :branch "main")
+	:load-path "~/.emacs.d/lisp/hydra-posframe/"
   :hook (after-init . hydra-posframe-mode)
   :custom (hydra-posframe-border-width 5))
 
@@ -2051,9 +2018,7 @@ delimiters instead of word delimiters."
 
 ;; A replacement for which-func-mode.
 (use-package breadcrumb
-  :ensure t
-  :vc (:url "https://github.com/joaotavora/breadcrumb.git"
-            :branch "master")
+	:load-path "~/.emacs.d/lisp/breadcrumb/"
   :init
   (breadcrumb-mode))
 
@@ -2211,16 +2176,14 @@ Try the repeated popping up to 10 times."
 ;; prism for highlighting modes without good syntax hilighting
 (use-package prism
   :ensure t
-  :vc (:url "https://github.com/alphapapa/prism.el"
-            :branch "master"))
+	:load-path "~/.emacs.d/lisp/prism.el/")
 
 (use-package vundo
   :ensure t)
 
 (use-package dogears
   :ensure t
-  :vc (:url "https://github.com/alphapapa/dogears.el"
-            :branch "master")
+	:load-path "~/.emacs.d/lisp/dogears.el/"
   :bind (:map global-map
               ("M-g d" . dogears-go)
               ("M-g M-b" . dogears-back)
