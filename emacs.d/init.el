@@ -40,7 +40,18 @@
 	 '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
 		 "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
- '(package-selected-packages nil)
+ '(package-selected-packages
+	 '(ace-window anzu apheleia auto-yasnippet bazel beginend cape
+								casual-symbol-overlay clipetty consult-compile-multi consult-dir
+								consult-eglot-embark corfu-prescient deft diminish diredfl
+								dirvish discover-my-major disproject docker doom-themes eat
+								expand-region fold-this git-gutter go-mode iflipb link-hint
+								magit-todos marginalia markdown-mode mini-echo
+								modern-cpp-font-lock mosey multifiles nov pcmpl-args phi-search
+								pretty-hydra projection-multi projection-multi-embark
+								protobuf-mode rainbow-delimiters region-bindings-mode
+								smartparens symbol-overlay-mc vertico-prescient vundo walkman
+								wgrep yasnippet-snippets))
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
 ;;  ;; custom-set-faces was added by Custom.
@@ -1007,7 +1018,46 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (add-to-list 'display-buffer-alist
                '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
                  nil
-                 (window-parameters (mode-line-format . none)))))
+                 (window-parameters (mode-line-format . none))))
+	(defun embark-kmacro-target ()
+		"Target a textual kmacro in braces."
+		(save-excursion
+			(let ((beg (progn (skip-chars-backward "^{}\n") (point)))
+						(end (progn (skip-chars-forward "^{}\n") (point))))
+				(when (and (eq (char-before beg) ?{) (eq (char-after end) ?}))
+					`(kmacro ,(buffer-substring-no-properties beg end)
+									 . (,(1- beg) . ,(1+ end)))))))
+	(add-to-list 'embark-target-finders 'embark-kmacro-target)
+
+	(defun embark-kmacro-run (arg kmacro)
+		(interactive "p\nsKmacro: ")
+		(kmacro-call-macro arg t nil (kbd kmacro)))
+
+	(defun embark-kmacro-save (kmacro)
+		(interactive "sKmacro: ")
+		(kmacro-push-ring)
+		(setq last-kbd-macro (kbd kmacro)))
+
+	(defun embark-kmacro-name (kmacro name)
+		(interactive "sKmacro: \nSName: ")
+		(let ((last-kbd-macro (kbd kmacro)))
+			(kmacro-name-last-macro name)))
+
+	(defun embark-kmacro-bind (kmacro)
+		(interactive "sKmacro: \n")
+		(let ((last-kbd-macro (kbd kmacro)))
+			(kmacro-bind-to-key nil)))
+
+	(defvar-keymap embark-kmacro-map
+		:doc "Actions on kmacros."
+		:parent embark-general-map
+		"RET" #'embark-kmacro-run
+		"s" #'embark-kmacro-save
+		"n" #'embark-kmacro-name
+		"b" #'embark-kmacro-bind)
+
+	(add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map))
+	)
 
 (defun wrapper/consult-ripgrep (&optional dir given-initial)
 	"Pass the region to consult-ripgrep if available.
@@ -1019,6 +1069,10 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
 						 (when (use-region-p)
 							 (buffer-substring-no-properties (region-beginning) (region-end))))))
 		(consult-ripgrep dir initial)))
+
+;; ripgrep as grep
+(setq grep-command "rg -nS --no-heading "
+      grep-use-null-device nil)
 
 (use-package consult
   :ensure t
