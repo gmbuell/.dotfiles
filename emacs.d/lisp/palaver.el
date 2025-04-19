@@ -892,6 +892,8 @@ When in a drawer window, moves the buffer to the other drawer."
   "Window navigation that maintains the two-window philosophy.
 If ARG is provided, behaves like `other-window' with that argument.
 Otherwise:
+- If the minibuffer is active and we're not in it, switch to it first
+- If we're in the minibuffer, go back to the window before the minibuffer
 - If there's another main window, switch to it (like regular `other-window')
 - If there's only one main window and a drawer is open, switch to that drawer
 - If there's only one main window, no drawer is open, but a dired window exists, switch to that dired window
@@ -902,85 +904,105 @@ Otherwise:
   (if arg
       ;; With prefix arg, use regular other-window behavior
       (other-window (prefix-numeric-value arg))
-    ;; Get all main windows (not drawers)
+    ;; Get current window info
     (let* ((current (selected-window))
-           (is-drawer (window-parameter current 'window-side))
-           (is-right-drawer (eq is-drawer 'right))
-           (main-windows (palaver-get-main-windows))
-           (main-window-count (length main-windows))
-           (other-mains (seq-remove (lambda (w) (eq w current)) main-windows))
-           (target-window nil)
-           (close-right-drawer nil))
+           (minibuf (minibuffer-window))
+           (minibuf-active (minibuffer-window-active-p minibuf))
+           (in-minibuf (window-minibuffer-p current)))
 
       (cond
-       ;; In a drawer window
-       (is-drawer
-        (cond
-         ;; Last active main window is still alive
-         ((window-live-p palaver-last-active-main-window)
-          (setq target-window palaver-last-active-main-window))
-         ;; Otherwise, find any main window
-         (other-mains
-          (setq target-window (car other-mains))))
+       ;; Handle minibuffer cases first
+       ;; If we're in the minibuffer, exit back to previous window
+       (in-minibuf
+        (if (window-live-p palaver-last-active-main-window)
+            (select-window palaver-last-active-main-window)
+          ;; Fallback to some other window if last active is gone
+          (select-window (or (car (palaver-get-main-windows))
+                             (previous-window)))))
 
-        ;; If we're in the right drawer and there are two main windows,
-        ;; mark to close the drawer after selection
-        (when (and is-right-drawer (= main-window-count 2))
-          (setq close-right-drawer t)))
+       ;; If minibuffer is active and we're not in it, switch to it
+       (minibuf-active
+        (select-window minibuf))
 
-       ;; In a main window with no other main windows
-       ((null other-mains)
-        (cond
-         ;; Prefer right drawer if open
-         ((palaver-get-side-window 'right)
-          (setq target-window (palaver-get-side-window 'right)))
-         ;; Otherwise try bottom drawer
-         ((palaver-get-side-window 'bottom)
-          (setq target-window (palaver-get-side-window 'bottom)))
-         ;; Check for a dired window that's not the current window
-         (t
-          (let ((dired-window (seq-find (lambda (window)
-                                          (and (not (eq window current))
-                                               (with-current-buffer (window-buffer window)
-                                                 (derived-mode-p 'dired-mode))))
-                                        (window-list))))
-            (if dired-window
-                (setq target-window dired-window)
-              ;; No dired window, create a side-by-side split
-              (let ((new-win (split-window current nil 'right)))
-                ;; If we have a default buffer to show, use it
-                (with-selected-window new-win
-                  (when-let ((buf (seq-find
-                                   (lambda (b)
-                                     (and (buffer-file-name b)
-                                          (not (eq b (window-buffer current)))))
-                                   (buffer-list))))
-                    (switch-to-buffer buf)))
-                (setq target-window new-win)))))))
-
-       ;; One other main window - go to it
-       ((= (length other-mains) 1)
-        (setq target-window (car other-mains)))
-
-       ;; Multiple other windows - use regular other-window
+       ;; Otherwise, proceed with normal navigation logic
        (t
-        (setq target-window (next-window))))
+        (let* ((is-drawer (window-parameter current 'window-side))
+               (is-right-drawer (eq is-drawer 'right))
+               (main-windows (palaver-get-main-windows))
+               (main-window-count (length main-windows))
+               (other-mains (seq-remove (lambda (w) (eq w current)) main-windows))
+               (target-window nil)
+               (close-right-drawer nil))
 
-      ;; Always select the target window if we found one
-      (when (window-live-p target-window)
-        (select-window target-window)
-        ;; Update last active main window if we're in a main window
-        (when (palaver-is-main-window-p target-window)
-          (setq palaver-last-active-main-window target-window)
-          ;; Explicitly enforce the window width
-          (palaver-enforce-main-window-width target-window)))
+          (cond
+           ;; In a drawer window
+           (is-drawer
+            (cond
+             ;; Last active main window is still alive
+             ((window-live-p palaver-last-active-main-window)
+              (setq target-window palaver-last-active-main-window))
+             ;; Otherwise, find any main window
+             (other-mains
+              (setq target-window (car other-mains))))
 
-      ;; Close right drawer if needed
-      (when close-right-drawer
-        (palaver-hide-right-drawer))
+            ;; If we're in the right drawer and there are two main windows,
+            ;; mark to close the drawer after selection
+            (when (and is-right-drawer (= main-window-count 2))
+              (setq close-right-drawer t)))
 
-      ;; Always enforce the side-by-side layout after navigation
-      (palaver-enforce-side-by-side-layout))))
+           ;; In a main window with no other main windows
+           ((null other-mains)
+            (cond
+             ;; Prefer right drawer if open
+             ((palaver-get-side-window 'right)
+              (setq target-window (palaver-get-side-window 'right)))
+             ;; Otherwise try bottom drawer
+             ((palaver-get-side-window 'bottom)
+              (setq target-window (palaver-get-side-window 'bottom)))
+             ;; Check for a dired window that's not the current window
+             (t
+              (let ((dired-window (seq-find (lambda (window)
+                                              (and (not (eq window current))
+                                                   (with-current-buffer (window-buffer window)
+                                                     (derived-mode-p 'dired-mode))))
+                                            (window-list))))
+                (if dired-window
+                    (setq target-window dired-window)
+                  ;; No dired window, create a side-by-side split
+                  (let ((new-win (split-window current nil 'right)))
+                    ;; If we have a default buffer to show, use it
+                    (with-selected-window new-win
+                      (when-let ((buf (seq-find
+                                       (lambda (b)
+                                         (and (buffer-file-name b)
+                                              (not (eq b (window-buffer current)))))
+                                       (buffer-list))))
+                        (switch-to-buffer buf)))
+                    (setq target-window new-win)))))))
+
+           ;; One other main window - go to it
+           ((= (length other-mains) 1)
+            (setq target-window (car other-mains)))
+
+           ;; Multiple other windows - use regular other-window
+           (t
+            (setq target-window (next-window))))
+
+          ;; Always select the target window if we found one
+          (when (window-live-p target-window)
+            (select-window target-window)
+            ;; Update last active main window if we're in a main window
+            (when (palaver-is-main-window-p target-window)
+              (setq palaver-last-active-main-window target-window)
+              ;; Explicitly enforce the window width
+              (palaver-enforce-main-window-width target-window)))
+
+          ;; Close right drawer if needed
+          (when close-right-drawer
+            (palaver-hide-right-drawer))
+
+          ;; Always enforce the side-by-side layout after navigation
+          (palaver-enforce-side-by-side-layout)))))))
 
 ;;; --------------------------------------------------------
 ;;; Window Event Hooks

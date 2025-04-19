@@ -40,6 +40,7 @@
 	 '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
 		 "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
+ '(package-selected-packages nil)
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
 ;;  ;; custom-set-faces was added by Custom.
@@ -235,6 +236,17 @@ that uses 'font-lock-warning-face'."
   :ensure t
   :demand t
   :bind (("C-c r" . hydra-pause-resume)))
+
+;; Also region-bindings-mode early so I can use region-bindings-mode-map
+(use-package region-bindings-mode
+  :ensure t
+  :demand t
+  :init
+  (require 'region-bindings-mode)
+  (region-bindings-mode-enable))
+
+(require 'project)
+(bind-key "C-c h" 'project-find-file)
 
 ;; (setq whitespace-style '(face trailing lines-tail tabs)
 ;;       whitespace-line-column 80
@@ -834,6 +846,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package vertico
   :ensure t
+	:demand t
   :init
   (vertico-mode)
   :config
@@ -956,6 +969,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package embark
   :ensure t
+	:demand t
   :after (vertico)
   :bind
   (("M-." . embark-act)          ;; Could also be embark-dwim for more of a
@@ -995,8 +1009,20 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                  nil
                  (window-parameters (mode-line-format . none)))))
 
+(defun wrapper/consult-ripgrep (&optional dir given-initial)
+	"Pass the region to consult-ripgrep if available.
+
+DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
+	(interactive "P")
+	(let ((initial
+				 (or given-initial
+						 (when (use-region-p)
+							 (buffer-substring-no-properties (region-beginning) (region-end))))))
+		(consult-ripgrep dir initial)))
+
 (use-package consult
   :ensure t
+	:demand t
   :bind (;; ("M-i" . consult-imenu)
          ("C-x b" . consult-buffer)
          ("M-y" . consult-yank-pop)
@@ -1024,6 +1050,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
          ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
          ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
          ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
+				 :map region-bindings-mode-map
+         ("r" . wrapper/consult-ripgrep)
          )
   :init
   (require 'esh-mode)
@@ -1076,6 +1104,69 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                                  consult--source-non-project-recent-file))
   )
 
+(defun consult-ripgrep-up-directory ()
+	(interactive)
+	(let ((parent-dir (file-name-directory (directory-file-name default-directory))))
+		(when parent-dir
+      (run-at-time 0 nil
+                   #'consult-ripgrep
+                   parent-dir
+                   (ignore-errors
+                     (buffer-substring-no-properties
+                      (1+ (minibuffer-prompt-end)) (point-max))))))
+	(minibuffer-quit-recursive-edit))
+
+(defun consult-line-symbol-at-point ()
+  (interactive)
+  (consult-line (thing-at-point 'symbol)))
+
+(defvar consult--previous-point nil
+  "Location of point before entering minibuffer.
+Used to preselect nearest headings and imenu items.")
+
+(defun consult--set-previous-point (&optional arg1 arg2)
+  "Save location of point. Used before entering the minibuffer."
+  (setq consult--previous-point (point)))
+
+(advice-add #'consult-org-heading :before #'consult--set-previous-point)
+(advice-add #'consult-outline :before #'consult--set-previous-point)
+
+(advice-add #'vertico--update :after #'consult-vertico--update-choose)
+
+(defun consult-vertico--update-choose (&rest _)
+  "Pick the nearest candidate rather than the first after updating candidates."
+  (when (and consult--previous-point
+             (memq current-minibuffer-command
+                   '(consult-org-heading consult-outline)))
+    (setq vertico--index
+          (max 0 ; if none above, choose the first below
+               (1- (or (seq-position
+                        vertico--candidates
+                        consult--previous-point
+                        (lambda (cand point-pos) ; counts on candidate list being sorted
+                          (> (cl-case current-minibuffer-command
+                               (consult-outline
+                                (car (consult--get-location cand)))
+                               (consult-org-heading
+                                (get-text-property 0 'consult--candidate cand)))
+                             point-pos)))
+                       (length vertico--candidates))))))
+  (setq consult--previous-point nil))
+
+(require 'keymap) ;; keymap-substitute requires emacs version 29.1?
+(require 'cl-seq)
+
+(keymap-substitute project-prefix-map #'project-find-regexp #'consult-ripgrep)
+(cl-nsubstitute-if
+ '(consult-ripgrep "Find regexp")
+ (pcase-lambda (`(,cmd _)) (eq cmd #'project-find-regexp))
+ project-switch-commands)
+
+(add-hook 'eshell-mode-hook (lambda () (setq outline-regexp eshell-prompt-regexp)))
+
+(use-package hrm
+	:bind (("M-o" . hrm-notes)))
+
 (use-package consult-dir
   :ensure t
   :after (consult)
@@ -1118,24 +1209,6 @@ any directory proferred by `consult-dir'."
   ;; Replace `project-prefix-map' with `disproject-dispatch'.
   :bind ( :map ctl-x-map
           ("p" . disproject-dispatch)))
-
-;; 11/8/2024 disabled since dogears is temporarily disabled
-;; (defvar consult--source-dogears
-;;   (list :name     "Dogears"
-;;         :narrow   ?d
-;;         :category 'dogears
-;;         :items    (lambda ()
-;;                     (mapcar
-;;                      (lambda (place)
-;;                        (propertize (dogears--format-record place)
-;;                                    'consult--candidate place))
-;;                      dogears-list))
-;;         :action   (lambda (cand)
-;;                     (dogears-go (get-text-property 0 'consult--candidate cand)))))
-
-;; (defun consult-dogears ()
-;;   (interactive)
-;;   (consult--multi '(consult--source-dogears)))
 
 ;; Consult users will also want the embark-consult package.
 (use-package embark-consult
@@ -1635,8 +1708,6 @@ In that case, insert the number."
   :config (projection-multi-embark-setup-command-map))
 
 ;; Tell eglot about go modules
-(require 'project)
-(bind-key "C-c h" 'project-find-file)
 (defun project-find-go-module (dir)
   (when-let ((root (locate-dominating-file dir "go.mod")))
     (cons 'go-module root)))
@@ -1669,14 +1740,6 @@ In that case, insert the number."
 
 (require 'nadvice)
 (defun do-nothing (orig-fun &rest args) t)
-
-(use-package region-bindings-mode
-  :ensure t
-  :demand t
-  :init
-  (require 'region-bindings-mode)
-  (region-bindings-mode-enable))
-
 
 ;; It may be possible to use avy to set marks for multiple cursors.
 ;; I.e. avy-push-mark
@@ -2023,21 +2086,6 @@ delimiters instead of word delimiters."
   :config
   (breadcrumb-mode))
 
-;; 11/8/2024 Disable dogears because I'm not using it.
-;; (use-package dogears
-;;   :quelpa (dogears :fetcher github :repo "alphapapa/dogears.el"
-;;                    :files (:defaults (:exclude "helm-dogears.el")))
-;;   :bind (:map global-map
-;;               ("M-g d" . dogears-go)
-;;               ("M-g M-b" . dogears-back)
-;;               ("M-g M-f" . dogears-forward)
-;;               ("M-g M-d" . dogears-list)
-;;               ("M-g M-D" . dogears-sidebar))
-;;   :init
-;;   (add-hook 'prog-mode-hook #'dogears-mode))
-;; Another alternative is gumshoe
-;; https://github.com/Overdr0ne/gumshoe
-
 (defun switch-previous-buffer ()
   (interactive)
   (switch-to-buffer (other-buffer)))
@@ -2184,13 +2232,31 @@ Try the repeated popping up to 10 times."
 (use-package dogears
 	:load-path "lisp/dogears.el"
 	:demand t
+	:after (consult)
   :bind (:map global-map
               ("M-g d" . dogears-go)
               ("M-g M-b" . dogears-back)
               ("M-g M-f" . dogears-forward)
               ("M-g M-d" . dogears-list))
   :init
-  (add-hook 'prog-mode-hook #'dogears-mode))
+  (add-hook 'prog-mode-hook #'dogears-mode)
+	:config
+	(defvar consult--source-dogears
+		(list :name     "Dogears"
+					:narrow   ?d
+					:category 'dogears
+					:items    (lambda ()
+											(mapcar
+											 (lambda (place)
+												 (propertize (dogears--format-record place)
+																		 'consult--candidate place))
+											 dogears-list))
+					:action   (lambda (cand)
+											(dogears-go (get-text-property 0 'consult--candidate cand)))))
+
+	(defun consult-dogears ()
+		(interactive)
+		(consult--multi '(consult--source-dogears))))
 
 (use-package mini-echo
   :ensure t
