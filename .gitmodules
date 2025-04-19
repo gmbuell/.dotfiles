@@ -1,21 +1,28 @@
 [submodule "emacs.d/lisp/combobulate"]
 	path = emacs.d/lisp/combobulate
 	url = https://github.com/mickeynp/combobulate.git
+	shallow = true
 [submodule "emacs.d/lisp/prism.el"]
 	path = emacs.d/lisp/prism.el
 	url = https://github.com/alphapapa/prism.el
+	shallow = true
 [submodule "emacs.d/lisp/dogears.el"]
 	path = emacs.d/lisp/dogears.el
 	url = https://github.com/alphapapa/dogears.el
+	shallow = true
 [submodule "emacs.d/lisp/emacs-popon"]
 	path = emacs.d/lisp/emacs-popon
 	url = https://codeberg.org/akib/emacs-popon.git
+	shallow = true
 [submodule "emacs.d/lisp/breadcrumb"]
 	path = emacs.d/lisp/breadcrumb
 	url = https://github.com/joaotavora/breadcrumb.git
+	shallow = true
 [submodule "emacs.d/lisp/hydra-posframe"]
 	path = emacs.d/lisp/hydra-posframe
 	url = https://github.com/Ladicle/hydra-posframe.git
+	shallow = true
 [submodule "emacs.d/lisp/emacs-flymake-popon"]
 	path = emacs.d/lisp/emacs-flymake-popon
 	url = https://codeberg.org/akib/emacs-flymake-popon.git
+	shallow = true

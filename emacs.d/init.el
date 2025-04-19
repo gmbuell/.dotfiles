@@ -40,18 +40,7 @@
 	 '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
 		 "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
- '(package-selected-packages
-	 '(ace-window anzu apheleia auto-yasnippet bazel beginend cape
-								casual-symbol-overlay clipetty consult-compile-multi consult-dir
-								consult-eglot-embark corfu-prescient deft diminish diredfl
-								dirvish discover-my-major disproject docker doom-themes eat
-								expand-region fold-this git-gutter go-mode iflipb link-hint
-								magit-todos marginalia markdown-mode mini-echo
-								modern-cpp-font-lock mosey multifiles nov pcmpl-args phi-search
-								pretty-hydra projection-multi projection-multi-embark
-								protobuf-mode rainbow-delimiters region-bindings-mode
-								smartparens symbol-overlay-mc vertico-prescient vundo walkman
-								wgrep yasnippet-snippets))
+ '(package-selected-packages nil)
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
 ;;  ;; custom-set-faces was added by Custom.
@@ -662,7 +651,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;;
   (use-package combobulate
     ;; Make sure to git clone https://github.com/mickeynp/combobulate
-    :load-path "combobulate"
+    :load-path "lisp/combobulate"
 		:demand t
     :custom
     ;; You can customize Combobulate's key prefix here.
