@@ -2321,9 +2321,6 @@ Try the repeated popping up to 10 times."
   :init
   (apheleia-global-mode +1))
 
-(use-package docker
-  :ensure t)
-
 (require 'server)
 (unless (server-running-p) (server-start))
 (setenv "EDITOR" "TERM=xterm-24bits emacsclient -nw")
