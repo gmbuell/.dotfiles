@@ -1289,24 +1289,23 @@ In that case, insert the number."
   (savehist-mode 1)
   (add-to-list 'savehist-additional-variables 'corfu-history))
 
+(use-package popon
+	:load-path "lisp/emacs-popon"
+	:demand t)
 (use-package corfu-terminal
 	:load-path "lisp/emacs-corfu-terminal"
 	:if (not (display-graphic-p))
 	:demand t
-	:after (corfu)
-  :init
+	:after (corfu popon)
+  :config
 	(corfu-terminal-mode +1))
-
-(use-package popon
-	:load-path "lisp/emacs-popon"
-	:demand t)
 
 (use-package flymake-popon
 	:load-path "lisp/emacs-flymake-popon"
-	:after (popon)
+	:after (popon posframe)
 	:demand t
   :diminish flymake-popon-mode
-  :init
+  :config
   (global-flymake-popon-mode))
 
 
@@ -2021,7 +2020,7 @@ delimiters instead of word delimiters."
 (use-package breadcrumb
 	:load-path "lisp/breadcrumb"
 	:demand t
-  :init
+  :config
   (breadcrumb-mode))
 
 ;; 11/8/2024 Disable dogears because I'm not using it.
