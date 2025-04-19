@@ -37,8 +37,8 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
-     "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
+	 '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
+		 "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
@@ -639,7 +639,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;;
   (use-package combobulate
     ;; Make sure to git clone https://github.com/mickeynp/combobulate
-    :load-path ("~/.emacs.d/combobulate")
+    :load-path "combobulate"
+		:demand t
     :custom
     ;; You can customize Combobulate's key prefix here.
     ;; Note that you may have to restart Emacs for this to take effect!
@@ -1289,17 +1290,21 @@ In that case, insert the number."
   (add-to-list 'savehist-additional-variables 'corfu-history))
 
 (use-package corfu-terminal
-	:load-path "~/.emacs.d/lisp/emacs-corfu-terminal/"
+	:load-path "lisp/emacs-corfu-terminal"
+	:if (not (display-graphic-p))
+	:demand t
+	:after (corfu)
   :init
-  (unless (display-graphic-p)
-    (corfu-terminal-mode +1))
-  )
+	(corfu-terminal-mode +1))
 
 (use-package popon
-	:load-path "~/.emacs.d/lisp/emacs-popon/")
+	:load-path "lisp/emacs-popon"
+	:demand t)
 
 (use-package flymake-popon
-	:load-path "~/.emacs.d/lisp/emacs-flymake-popon/"
+	:load-path "lisp/emacs-flymake-popon"
+	:after (popon)
+	:demand t
   :diminish flymake-popon-mode
   :init
   (global-flymake-popon-mode))
@@ -2003,7 +2008,7 @@ delimiters instead of word delimiters."
 (use-package hydra-posframe
   ;; Only enable if we are running graphical mode.
   :if window-system
-	:load-path "~/.emacs.d/lisp/hydra-posframe/"
+	:load-path "lisp/hydra-posframe"
   :hook (after-init . hydra-posframe-mode)
   :custom (hydra-posframe-border-width 5))
 
@@ -2014,7 +2019,8 @@ delimiters instead of word delimiters."
 
 ;; A replacement for which-func-mode.
 (use-package breadcrumb
-	:load-path "~/.emacs.d/lisp/breadcrumb/"
+	:load-path "lisp/breadcrumb"
+	:demand t
   :init
   (breadcrumb-mode))
 
@@ -2171,13 +2177,14 @@ Try the repeated popping up to 10 times."
 
 ;; prism for highlighting modes without good syntax hilighting
 (use-package prism
-	:load-path "~/.emacs.d/lisp/prism.el/")
+	:load-path "lisp/prism.el")
 
 (use-package vundo
   :ensure t)
 
 (use-package dogears
-	:load-path "~/.emacs.d/lisp/dogears.el/"
+	:load-path "lisp/dogears.el"
+	:demand t
   :bind (:map global-map
               ("M-g d" . dogears-go)
               ("M-g M-b" . dogears-back)
@@ -2188,6 +2195,7 @@ Try the repeated popping up to 10 times."
 
 (use-package mini-echo
   :ensure t
+	:demand t
   :custom
   (mini-echo-right-padding 1)
   ;; Other rules: project
@@ -2201,6 +2209,7 @@ Try the repeated popping up to 10 times."
 
 (use-package apheleia
   :ensure t
+	:demand t
   :init
   (apheleia-global-mode +1))
 
