@@ -59,6 +59,35 @@
 (when (and (fboundp 'tooltip-mode) (not (eq tooltip-mode -1)))
   (tooltip-mode -1))
 
+(defgroup my-minuet nil
+  "Custom settings for minuet code completion."
+  :group 'tools)
+
+(defcustom my-minuet-enabled t
+	"If minuet should be enabled for code completion"
+	:type 'boolean
+	:group 'my-minuet)
+
+(defcustom my-minuet-model "starcoder2"
+  "The model to use with minuet."
+  :type 'string
+  :group 'my-minuet)
+
+(defcustom my-minuet-endpoint "http://192.168.1.4:8080/v1/completions"
+  "The endpoint URL for minuet API calls."
+  :type 'string
+  :group 'my-minuet)
+
+(defcustom my-minuet-api-key "TERM"
+  "The API key for minuet."
+  :type 'string
+  :group 'my-minuet)
+
+;; Load local config
+(let ((host-init-file (format "~/.emacs.d/init.%s.el" (system-name))))
+  (when (file-exists-p host-init-file)
+    (load-file host-init-file)))
+
 ;; ---------------------------------------------------------------------------
 ;; Navigation
 ;; ---------------------------------------------------------------------------
@@ -2331,55 +2360,64 @@ Try the repeated popping up to 10 times."
 	(apheleia-global-mode +1))
 
 (use-package minuet
-	:ensure t
-	:bind
-	(("M-/" . #'minuet-show-suggestion) ;; use overlay for completion
-	 ;; ("C-c m" . #'minuet-configure-provider)
-	 :map minuet-active-mode-map
+  :ensure t
+	:if my-minuet-enabled
+  :bind
+  (("M-/" . #'minuet-show-suggestion)
+   :map minuet-active-mode-map
 	 ;; These keymaps activate only when a minuet suggestion is displayed in the current buffer
-	 ("TAB" . #'minuet-accept-suggestion) ;; accept whole completion
-	 ;; Accept the first line of completion.
-	 ("C-e" . #'minuet-accept-suggestion-line)
-	 ("C-g" . #'minuet-dismiss-suggestion))
+   ("TAB" . #'minuet-accept-suggestion)
+   ("C-e" . #'minuet-accept-suggestion-line)
+   ("C-g" . #'minuet-dismiss-suggestion))
 
-	:init
-	;; if you want to enable auto suggestion.
-	;; Note that you can manually invoke completions without enable minuet-auto-suggestion-mode
-	(add-hook 'prog-mode-hook #'minuet-auto-suggestion-mode)
+  :init
+  (add-hook 'prog-mode-hook #'minuet-auto-suggestion-mode)
 
-	:config
-	(setq minuet-n-completions 1)
-	;; You can use M-x minuet-configure-provider to interactively configure provider and model
-	(setq minuet-provider 'openai-fim-compatible)
-	(setq minuet-context-window 4096)
-	(plist-put minuet-openai-fim-compatible-options :end-point "http://192.168.1.4:8080/v1/completions")
-	;; an arbitrary non-null environment variable as placeholder
-	(plist-put minuet-openai-fim-compatible-options :name "Llama.cpp")
-	(plist-put minuet-openai-fim-compatible-options :api-key "TERM")
-	;; The model is set by the llama-cpp server and cannot be altered
-	;; post-launch.
-	(plist-put minuet-openai-fim-compatible-options :model "starcoder2")
-	;; Llama.cpp does not support the `suffix` option in FIM completion.
-	;; Therefore, we must disable it and manually populate the special
-	;; tokens required for FIM completion.
-	(minuet-set-optional-options minuet-openai-fim-compatible-options :suffix nil :template)
-	(minuet-set-optional-options
-	 minuet-openai-fim-compatible-options
-	 :prompt
-	 (defun minuet-llama-cpp-fim-qwen-prompt-function (ctx)
-		 ;; Format for codegemma
-		 ;;(format "<|fim_prefix|>%s\n%s<|fim_suffix|>%s<|fim_middle|>"
-		 ;; Format for deepseekcoder-v2
-		 ;;(format "<｜fim▁begin｜>%s\n%s<｜fim▁hole｜>%s<｜fim▁end｜>"
-		 ;; Format for starcoder2
-		 (format "<fim_prefix>%s\n%s<fim_suffix>%s<fim_middle>"
-						 (plist-get ctx :language-and-tab)
-						 (plist-get ctx :before-cursor)
-						 (plist-get ctx :after-cursor)))
-	 :template)
-	(minuet-set-optional-options minuet-openai-fim-compatible-options :stop ["\n\n" "}" "<|endoftext|>"])
-	(minuet-set-optional-options minuet-openai-fim-compatible-options :max_tokens 64)
-	(minuet-set-optional-options minuet-openai-fim-compatible-options :top_p 0.9))
+  :config
+  (setq minuet-n-completions 1)
+  (setq minuet-provider 'openai-fim-compatible)
+  (setq minuet-context-window 4096)
+
+  ;; Apply the custom variables
+  (plist-put minuet-openai-fim-compatible-options :end-point my-minuet-endpoint)
+  (plist-put minuet-openai-fim-compatible-options :name "Llama.cpp")
+  (plist-put minuet-openai-fim-compatible-options :api-key my-minuet-api-key)
+  (plist-put minuet-openai-fim-compatible-options :model my-minuet-model)
+
+  ;; Disable suffix
+  (minuet-set-optional-options minuet-openai-fim-compatible-options :suffix nil :template)
+
+  ;; Set model-specific prompt function
+  (minuet-set-optional-options
+   minuet-openai-fim-compatible-options
+   :prompt
+   (cond
+    ((string= my-minuet-model "codegemma")
+     (lambda (ctx)
+       (format "<|fim_prefix|>%s\n%s<|fim_suffix|>%s<|fim_middle|>"
+               (plist-get ctx :language-and-tab)
+               (plist-get ctx :before-cursor)
+               (plist-get ctx :after-cursor))))
+
+    ((string= my-minuet-model "deepseekcoder-v2")
+     (lambda (ctx)
+       (format "<｜fim▁begin｜>%s\n%s<｜fim▁hole｜>%s<｜fim▁end｜>"
+               (plist-get ctx :language-and-tab)
+               (plist-get ctx :before-cursor)
+               (plist-get ctx :after-cursor))))
+
+    (t  ;; Default to starcoder2 format
+     (lambda (ctx)
+       (format "<fim_prefix>%s\n%s<fim_suffix>%s<fim_middle>"
+               (plist-get ctx :language-and-tab)
+               (plist-get ctx :before-cursor)
+               (plist-get ctx :after-cursor)))))
+   :template)
+
+  ;; Set common options
+  (minuet-set-optional-options minuet-openai-fim-compatible-options :stop ["\n\n" "}" "<|endoftext|>"])
+  (minuet-set-optional-options minuet-openai-fim-compatible-options :max_tokens 64)
+  (minuet-set-optional-options minuet-openai-fim-compatible-options :temperature 0))
 
 (require 'server)
 (unless (server-running-p) (server-start))
