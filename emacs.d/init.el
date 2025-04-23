@@ -597,27 +597,30 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (global-set-key (kbd "<deletechar>") 'backward-kill-word)
 
 (use-package treesit
-  :mode (("\\.tsx\\'" . tsx-ts-mode))
   :preface
   (defun mp-setup-install-grammars ()
     "Install Tree-sitter grammars if they are absent."
     (interactive)
     (dolist (grammar
-             ;; Note the version numbers. These are the versions that
-             ;; are known to work with Combobulate *and* Emacs.
-             '((css . ("https://github.com/tree-sitter/tree-sitter-css" "v0.20.0"))
-               (go . ("https://github.com/tree-sitter/tree-sitter-go" "v0.20.0"))
+             '((xml . ("https://github.com/tree-sitter-grammars/tree-sitter-xml" "v0.7.0" "xml/src"))
+							 (yaml . ("https://github.com/tree-sitter-grammars/tree-sitter-yaml" "v0.7.0"))
+							 (starlark . ("https://github.com/tree-sitter-grammars/tree-sitter-starlark" "v1.3.0"))
+							 (make . ("https://github.com/tree-sitter-grammars/tree-sitter-make" "v1.1.1"))
+							 (thrift . ("https://github.com/tree-sitter-grammars/tree-sitter-thrift" "main"))
+							 (bash . ("https://github.com/tree-sitter/tree-sitter-bash" "v0.23.3"))
+							 (c . ("https://github.com/tree-sitter/tree-sitter-c" "v0.23.5"))
+							 (cpp . ("https://github.com/tree-sitter/tree-sitter-cpp" "master"))
+							 (css . ("https://github.com/tree-sitter/tree-sitter-css" "v0.20.0"))
+               (go . ("https://github.com/tree-sitter/tree-sitter-go" "v0.23.4"))
+							 (dockerfile . ("https://github.com/camdencheek/tree-sitter-dockerfile" "v0.2.0"))
                (gomod . ("https://github.com/camdencheek/tree-sitter-go-mod" "v1.1.0"))
                (html . ("https://github.com/tree-sitter/tree-sitter-html" "v0.20.1"))
                (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "v0.20.1" "src"))
-               (json . ("https://github.com/tree-sitter/tree-sitter-json" "v0.20.2"))
+               (json . ("https://github.com/tree-sitter/tree-sitter-json" "v0.24.8"))
                (markdown . ("https://github.com/ikatyang/tree-sitter-markdown" "v0.7.1"))
-               (python . ("https://github.com/tree-sitter/tree-sitter-python" "v0.20.4"))
-               (rust . ("https://github.com/tree-sitter/tree-sitter-rust" "v0.21.2"))
+               (python . ("https://github.com/tree-sitter/tree-sitter-python" "v0.23.6"))
                (toml . ("https://github.com/tree-sitter/tree-sitter-toml" "v0.5.1"))
-               (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "tsx/src"))
-               (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "typescript/src"))
-               (yaml . ("https://github.com/ikatyang/tree-sitter-yaml" "v0.5.0"))))
+               (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "typescript/src"))))
       (add-to-list 'treesit-language-source-alist grammar)
       ;; Only install `grammar' if we don't already have it
       ;; installed. However, if you want to *update* a grammar then
@@ -1813,80 +1816,86 @@ In that case, insert the number."
   :bind (:map region-bindings-mode-map
               ("M" . mf/mirror-region-in-multifile)))
 
+(use-package treesit-fold
+  :load-path "lisp/treesit-fold"
+	:bind (("C-<return>" . treesit-fold-toggle))
+	:config
+	(setq treesit-fold-line-count-show t))
+
 (use-package fold-this
-  :ensure t
-  :demand t
-  :bind (:map region-bindings-mode-map
-              ("F" . fold-active-region-all)))
+	:ensure t
+	:demand t
+	:bind (:map region-bindings-mode-map
+							("F" . fold-active-region-all)))
 
 (use-package expand-region
-  :ensure t
-  :bind (("C-c e" . er/expand-region)
-         :map region-bindings-mode-map
-         ("u" . er/contract-region)
-         ("e" . er/expand-region)))
+	:ensure t
+	:bind (("C-c e" . er/expand-region)
+				 :map region-bindings-mode-map
+				 ("u" . er/contract-region)
+				 ("e" . er/expand-region)))
 
 ;; phi search works with multiple cursors But has weird behavior around trying
 ;; to move while in a search. Fortunately, multiple cursors mode seems to use it
 ;; automatically even if not set as default.
 (use-package phi-search
-  :ensure t
-  :demand t)
+	:ensure t
+	:demand t)
 (use-package phi-replace
-  ;; Doesn't have its own package.
-  :requires (phi-search)
-  :demand t)
+	;; Doesn't have its own package.
+	:requires (phi-search)
+	:demand t)
 
 ;; Consider also placeholder
 ;; https://github.com/oantolin/placeholder
 (use-package auto-yasnippet
-  :after (yasnippet)
-  :ensure t
-  :bind (("M-w" . aya-create)
-         ("M-W" . aya-expand))
-  ;; Doesn't currently do anything because I've remapped M-w which is usually
-  ;; kill-ring-save.
-  ;; (use-package easy-kill :ensure t :config (global-set-key
-  ;; [remap kill-ring-save] 'easy-kill))
-  :custom
-  (aya-case-fold t))
+	:after (yasnippet)
+	:ensure t
+	:bind (("M-w" . aya-create)
+				 ("M-W" . aya-expand))
+	;; Doesn't currently do anything because I've remapped M-w which is usually
+	;; kill-ring-save.
+	;; (use-package easy-kill :ensure t :config (global-set-key
+	;; [remap kill-ring-save] 'easy-kill))
+	:custom
+	(aya-case-fold t))
 
 (use-package rainbow-delimiters
-  :ensure t
-  :hook (prog-mode . rainbow-delimiters-mode))
+	:ensure t
+	:hook (prog-mode . rainbow-delimiters-mode))
 
 ;; Protocol buffer support
 (use-package protobuf-mode
-  :ensure t
-  :bind* (:map protobuf-mode-map
-               ("TAB" . indent-for-tab-command)))
+	:ensure t
+	:bind* (:map protobuf-mode-map
+							 ("TAB" . indent-for-tab-command)))
 
 (if (file-exists-p "/usr/share/emacs/site-lisp/emacs-google-config")
-    (progn
-      (use-package google-borg-helpers :load-path "/usr/share/emacs/site-lisp/emacs-google-config/third_party/elisp/google_borg_helpers/")
-      ;; Needed by borg-mode
-      (use-package aio
-        :ensure t)
-      (use-package borg-mode :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/")))
+		(progn
+			(use-package google-borg-helpers :load-path "/usr/share/emacs/site-lisp/emacs-google-config/third_party/elisp/google_borg_helpers/")
+			;; Needed by borg-mode
+			(use-package aio
+				:ensure t)
+			(use-package borg-mode :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/")))
 
 
 (defhydra hydra-next-error
-  (global-map "C-x")
-  "
+	(global-map "C-x")
+	"
 Compilation errors:
 _j_: next error        _h_: first error    _q_uit
 _k_: previous error    _l_: last error
 "
-  ("`" next-error     nil)
-  ("j" next-error     nil :bind nil)
-  ("k" previous-error nil :bind nil)
-  ("h" first-error    nil :bind nil)
-  ("l" (condition-case err
-           (while t
-             (next-error))
-         (user-error nil))
-   nil :bind nil)
-  ("q" nil            nil :color blue))
+	("`" next-error     nil)
+	("j" next-error     nil :bind nil)
+	("k" previous-error nil :bind nil)
+	("h" first-error    nil :bind nil)
+	("l" (condition-case err
+					 (while t
+						 (next-error))
+				 (user-error nil))
+	 nil :bind nil)
+	("q" nil            nil :color blue))
 
 (setq next-error-message-highlight t)
 
@@ -1894,152 +1903,152 @@ _k_: previous error    _l_: last error
 (require 'python)
 ;; All rules are at http://go/be.
 (defvar google3-build-mode-rules
-  '(
-    ;; Rules to Compile Code or Run Tests
-    cc_binary css_binary go_binary haskell_binary java_binary
-    js_binary js_module_binary py_binary sh_binary szl_binary
-    borgcfg_library cc_library cc_public_library css_library go_library
-    haskell_library java_library js_library proto_library proto_library_shell
-    py_library sh_library szl_library qt_library borgcfg_test cc_test go_test
-    haskell_test java_test js_test py_test saw_test sh_test szl_test test_suite
-    cc_plugin android_binary android_library android_test as_binary as_library
-    as_resource as_swc as_test java_import jsunit_test py_appengine_binary
-    scala_library szl_library go_appengine_binary go_appengine_library
-    java_proto_library java_lite_proto_library java_mutable_proto_library
-    py_proto_library py_clif_cc pyclif_proto_library haskell_proto_library
-    dart_proto_library dart_library dart_pub_library dart_pub_serve
-    dart_pub_web_binary dart_vm_binary dart_vm_snapshot dart_vm_test
-    dart_web_binary jspb_proto_library objc_proto_library pytype_binary
-    pytype_library
-    ;; Rules to Generate Code and Data
-    cc_embed_data genantlr gendeb gendpl GenJs gengxp genjh genjsp genlex
-    genmsgcat genproto genprotohdf genprotojs genrpm genrule gentpl gentplvars
-    genyacc go_wrap_cc gwt_application gwt_host gwt_module gwt_test java_genmsg
-    java_plugin java_wrap_cc js_deps pkgfilegroup py_extension py_wrap_cc
-    Fileset rosy_generator android_idl android_resources genquery genrosy
-    genrule jslayout_template translations web_test
-    ;; "Make" Variables
-    vardef deflocal varref MarkAsFilenameComponent
-    ;; Other Stuff
-    cc_fake_binary Description distribs exports_files glob filegroup include
-    licenses load package package_group pinto_library pinto_library_mod
-    pinto_module pinto_module_set set_inc_symlink subinclude
-    PYTHON-PREPROCESSING-REQUIRED VERSION cc_inc_library action_listener
-    extra_action genmpm pkg_library pkg_runfiles pkg_symlink
-    pkg_tar oci_image oci_push
-    )
-  "All BUILD rules.")
+	'(
+		;; Rules to Compile Code or Run Tests
+		cc_binary css_binary go_binary haskell_binary java_binary
+		js_binary js_module_binary py_binary sh_binary szl_binary
+		borgcfg_library cc_library cc_public_library css_library go_library
+		haskell_library java_library js_library proto_library proto_library_shell
+		py_library sh_library szl_library qt_library borgcfg_test cc_test go_test
+		haskell_test java_test js_test py_test saw_test sh_test szl_test test_suite
+		cc_plugin android_binary android_library android_test as_binary as_library
+		as_resource as_swc as_test java_import jsunit_test py_appengine_binary
+		scala_library szl_library go_appengine_binary go_appengine_library
+		java_proto_library java_lite_proto_library java_mutable_proto_library
+		py_proto_library py_clif_cc pyclif_proto_library haskell_proto_library
+		dart_proto_library dart_library dart_pub_library dart_pub_serve
+		dart_pub_web_binary dart_vm_binary dart_vm_snapshot dart_vm_test
+		dart_web_binary jspb_proto_library objc_proto_library pytype_binary
+		pytype_library
+		;; Rules to Generate Code and Data
+		cc_embed_data genantlr gendeb gendpl GenJs gengxp genjh genjsp genlex
+		genmsgcat genproto genprotohdf genprotojs genrpm genrule gentpl gentplvars
+		genyacc go_wrap_cc gwt_application gwt_host gwt_module gwt_test java_genmsg
+		java_plugin java_wrap_cc js_deps pkgfilegroup py_extension py_wrap_cc
+		Fileset rosy_generator android_idl android_resources genquery genrosy
+		genrule jslayout_template translations web_test
+		;; "Make" Variables
+		vardef deflocal varref MarkAsFilenameComponent
+		;; Other Stuff
+		cc_fake_binary Description distribs exports_files glob filegroup include
+		licenses load package package_group pinto_library pinto_library_mod
+		pinto_module pinto_module_set set_inc_symlink subinclude
+		PYTHON-PREPROCESSING-REQUIRED VERSION cc_inc_library action_listener
+		extra_action genmpm pkg_library pkg_runfiles pkg_symlink
+		pkg_tar oci_image oci_push
+		)
+	"All BUILD rules.")
 
 ;; These were just lumped together and uniq-ed.
 ;; To make it nicer, attributes should be highlighted only in correct rules.
 (defvar google3-build-mode-attributes
-  '(
-    abi abi_deps abi_srcs access actions alwayslink antlr_opts antlr_version
-    arch args artifacts attr base_inherits bootstrap_file borgcfgopts browsers
-    build_for_appengine builder buildpar cc cc_api_compatibility cc_api_version
-    cc_lib cc_plugin cc_stubby_versions classpath_resources closure_compliant
-    cmd compatible_with compile compiled compiler compiler_class compiler_flags
-    compiler_jvm_flags compiler_opts compress config_files configs constraints
-    copts cpp_flags create_executable dart_api_version data debug_key
-    default_hdrs_check default_strict_java_deps default_visibility defines
-    defines_main defs depend deploy_env deploy_manifest_lines deprecation deps
-    descriptor dexopts distrib_methods distribs distro documentation_flags
-    dplcopts dump_codex dynamic embedopts enable_api_override
-    encrypted encrypted_data_acl encrypted_file_umask
-    entities entries entry_points env executable exported_deps exports
-    expression external_libraries externs externs_list extra_actions
-    extra_control_fields extra_inherits extra_inputs extra_module_contents
-    extra_outputs extra_requires extractor file_umask filegroups flaky
-    flash_player_version flash_version flatten flex_version gc_goopts
-    gc_linkopts gccgo_goopts gccgo_linkopts ghcopts go_api_version goopts group
-    gwtxml has_services heuristic_label_expansion hdrs hdrs_check headers
-    headers_check html_body i18nwarn implementation implements include_libraries
-    includes inherit_default_requires input instrumentation
-    internal_bootstrap_hack jars java_api_version java_memory_limit
-    java_stubby_noloas java_stubby_version javacopts js_api_version js_codegen
-    js_libs jvm_flags lang legacy legacy_override_module library licences
-    license_types licenses link_name link_target linkopts linkshared linkstamp
-    linkstatic load_externs local locale_srcs locales logtype long_description
-    main main_class main_is malloc max_blaze_version merge_deps message
-    min_blaze_version mnemonics mod_name mode mods module_id module_target msgs
-    mtasc_version name namespace neverlink nocopts obsolete opts out
-    out_templates output_languages output_licenses output_sar output_to_bindir
-    outs outs_template owner package_dir package_name package_path
-    package_prefix packager packages paropts parser_config path plugins
-    post_activate_commands postinst postrm pre_deactivate_commands prefix
-    preinst preprocessor prerm priority processor_class
-    proguard_generate_mapping proguard_spec pubs py_api_version release
-    rename_to replica_cleanup_policy resaw_table resource resource_xml resources
-    restricted_to rpm_builder rpm_name runtime saw_flags scalacopts schemas scope
-    section servlets shard_count shell_class short_description size sourcetype
-    spec src srcjar srcs stamp strict strict_java_deps strip strip_prefix
-    stylesheet stylesheettype suites szlopts tags target target_platforms
-    tc_project test test_class test_timeout testonly tests timeout tools
-    trace_function triggers type urgency uriroot use_project_xmb use_testrunner
-    user_copts version visibility weak_deps wrapper xmb
-    tars repository remote_tags image
-    )
-  "All possible attributes in BUILD files.
+	'(
+		abi abi_deps abi_srcs access actions alwayslink antlr_opts antlr_version
+		arch args artifacts attr base_inherits bootstrap_file borgcfgopts browsers
+		build_for_appengine builder buildpar cc cc_api_compatibility cc_api_version
+		cc_lib cc_plugin cc_stubby_versions classpath_resources closure_compliant
+		cmd compatible_with compile compiled compiler compiler_class compiler_flags
+		compiler_jvm_flags compiler_opts compress config_files configs constraints
+		copts cpp_flags create_executable dart_api_version data debug_key
+		default_hdrs_check default_strict_java_deps default_visibility defines
+		defines_main defs depend deploy_env deploy_manifest_lines deprecation deps
+		descriptor dexopts distrib_methods distribs distro documentation_flags
+		dplcopts dump_codex dynamic embedopts enable_api_override
+		encrypted encrypted_data_acl encrypted_file_umask
+		entities entries entry_points env executable exported_deps exports
+		expression external_libraries externs externs_list extra_actions
+		extra_control_fields extra_inherits extra_inputs extra_module_contents
+		extra_outputs extra_requires extractor file_umask filegroups flaky
+		flash_player_version flash_version flatten flex_version gc_goopts
+		gc_linkopts gccgo_goopts gccgo_linkopts ghcopts go_api_version goopts group
+		gwtxml has_services heuristic_label_expansion hdrs hdrs_check headers
+		headers_check html_body i18nwarn implementation implements include_libraries
+		includes inherit_default_requires input instrumentation
+		internal_bootstrap_hack jars java_api_version java_memory_limit
+		java_stubby_noloas java_stubby_version javacopts js_api_version js_codegen
+		js_libs jvm_flags lang legacy legacy_override_module library licences
+		license_types licenses link_name link_target linkopts linkshared linkstamp
+		linkstatic load_externs local locale_srcs locales logtype long_description
+		main main_class main_is malloc max_blaze_version merge_deps message
+		min_blaze_version mnemonics mod_name mode mods module_id module_target msgs
+		mtasc_version name namespace neverlink nocopts obsolete opts out
+		out_templates output_languages output_licenses output_sar output_to_bindir
+		outs outs_template owner package_dir package_name package_path
+		package_prefix packager packages paropts parser_config path plugins
+		post_activate_commands postinst postrm pre_deactivate_commands prefix
+		preinst preprocessor prerm priority processor_class
+		proguard_generate_mapping proguard_spec pubs py_api_version release
+		rename_to replica_cleanup_policy resaw_table resource resource_xml resources
+		restricted_to rpm_builder rpm_name runtime saw_flags scalacopts schemas scope
+		section servlets shard_count shell_class short_description size sourcetype
+		spec src srcjar srcs stamp strict strict_java_deps strip strip_prefix
+		stylesheet stylesheettype suites szlopts tags target target_platforms
+		tc_project test test_class test_timeout testonly tests timeout tools
+		trace_function triggers type urgency uriroot use_project_xmb use_testrunner
+		user_copts version visibility weak_deps wrapper xmb
+		tars repository remote_tags image
+		)
+	"All possible attributes in BUILD files.
 No association with rules for now.")
 (defvar google3-build-mode-fileset
-  '(
-    entries FilesetEntry srcdir files destdir
-    )
-  "Fileset attributes should only be available once fileset is subincluded.")
+	'(
+		entries FilesetEntry srcdir files destdir
+		)
+	"Fileset attributes should only be available once fileset is subincluded.")
 (defun google3-build-mode-setup-imenu ()
-  "Set up imenu to index target names in BUILD files."
-  (when (eq major-mode 'google3-build-mode)
-    (setq imenu-generic-expression '((nil "name = \"\\(.*\\)\"" 1)))
-    (setq imenu-create-index-function 'imenu-default-create-index-function)))
+	"Set up imenu to index target names in BUILD files."
+	(when (eq major-mode 'google3-build-mode)
+		(setq imenu-generic-expression '((nil "name = \"\\(.*\\)\"" 1)))
+		(setq imenu-create-index-function 'imenu-default-create-index-function)))
 
 (defun google3-build-mode-regexp (symbols)
-  "Return an optimized regular expression matching the given SYMBOLS list.
+	"Return an optimized regular expression matching the given SYMBOLS list.
 Similar to `regexp-opt' with `'words', but using symbol
 delimiters instead of word delimiters."
-  (concat "\\_<" (regexp-opt (mapcar 'symbol-name symbols) t) "\\_>"))
+	(concat "\\_<" (regexp-opt (mapcar 'symbol-name symbols) t) "\\_>"))
 
 (define-derived-mode google3-build-mode python-mode
-  "build"
-  "Major mode for editing BUILD files"
-  ;; The default C-c C-c, `python-send-buffer', is pointless in BUILD files.
-  (define-key google3-build-mode-map "\C-c\C-c" 'comment-region)
-  ;; Set indentation offset to 4 for BUILD files.  This is mandated by
-  ;; go/build-style.
-  (set (make-local-variable 'python-indent-offset) 4)
-  (font-lock-add-keywords
-   'google3-build-mode
-   `(
-     (,(google3-build-mode-regexp google3-build-mode-rules)
-      1 font-lock-type-face)
-     (,(google3-build-mode-regexp google3-build-mode-attributes)
-      1 'font-lock-keyword-face)
-     (,(google3-build-mode-regexp google3-build-mode-fileset)
-      1 'font-lock-function-name-face)))
-  (google3-build-mode-setup-imenu))
+	"build"
+	"Major mode for editing BUILD files"
+	;; The default C-c C-c, `python-send-buffer', is pointless in BUILD files.
+	(define-key google3-build-mode-map "\C-c\C-c" 'comment-region)
+	;; Set indentation offset to 4 for BUILD files.  This is mandated by
+	;; go/build-style.
+	(set (make-local-variable 'python-indent-offset) 4)
+	(font-lock-add-keywords
+	 'google3-build-mode
+	 `(
+		 (,(google3-build-mode-regexp google3-build-mode-rules)
+			1 font-lock-type-face)
+		 (,(google3-build-mode-regexp google3-build-mode-attributes)
+			1 'font-lock-keyword-face)
+		 (,(google3-build-mode-regexp google3-build-mode-fileset)
+			1 'font-lock-function-name-face)))
+	(google3-build-mode-setup-imenu))
 
 (setq auto-mode-alist
-      (nconc
-       (list
-        (cons "\\.pyplan\\'" 'python-mode)
-        ;; MPM package definition files are Python syntax.
-        (cons "/pkgdef\\'" 'python-mode)
-        (cons "/BUILD\\'" 'google3-build-mode)
-        (cons "\\.proto\\'" 'protobuf-mode)
-        (cons "\\.protodevel\\'" 'protobuf-mode)
-        ;; Mendel files
-        (cons "mendel/.*\\.gcl\\'" 'mendel-mode)
-        (cons "gws.*\\.gcl\\'" 'mendel-mode)
-        ;; Various Borg-related files
-        (cons "\\.bcl\\'" 'borg-mode)
-        (cons "\\.borg\\'" 'borg-mode)
-        (cons "\\.btcfg\\'" 'borg-mode)
-        (cons "\\.gcl\\'" 'borg-mode)
-        (cons "\\.gclx\\'" 'borg-mode)
-        (cons "\\.mcl\\'" 'borg-mode)
-        (cons "\\.mw\\'" 'borg-mode)
-        ;; Dremel query files
-        (cons "\\.dremel\\'" 'sql-mode))
-       auto-mode-alist))
+			(nconc
+			 (list
+				(cons "\\.pyplan\\'" 'python-mode)
+				;; MPM package definition files are Python syntax.
+				(cons "/pkgdef\\'" 'python-mode)
+				(cons "/BUILD\\'" 'google3-build-mode)
+				(cons "\\.proto\\'" 'protobuf-mode)
+				(cons "\\.protodevel\\'" 'protobuf-mode)
+				;; Mendel files
+				(cons "mendel/.*\\.gcl\\'" 'mendel-mode)
+				(cons "gws.*\\.gcl\\'" 'mendel-mode)
+				;; Various Borg-related files
+				(cons "\\.bcl\\'" 'borg-mode)
+				(cons "\\.borg\\'" 'borg-mode)
+				(cons "\\.btcfg\\'" 'borg-mode)
+				(cons "\\.gcl\\'" 'borg-mode)
+				(cons "\\.gclx\\'" 'borg-mode)
+				(cons "\\.mcl\\'" 'borg-mode)
+				(cons "\\.mw\\'" 'borg-mode)
+				;; Dremel query files
+				(cons "\\.dremel\\'" 'sql-mode))
+			 auto-mode-alist))
 
 (setenv "GOPATH" (concat (getenv "HOME") "/go"))
 (setenv "PATH" (concat (getenv "PATH") ":" (getenv "HOME") "/go/bin"))
@@ -2051,36 +2060,36 @@ delimiters instead of word delimiters."
 ;; Also need to do more setup to get this to work with bazel.
 ;; https://github.com/bazelbuild/rules_go/wiki/Editor-setup
 (defun eglot-format-buffer-before-save ()
-  (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+	(add-hook 'before-save-hook #'eglot-format-buffer -10 t))
 ;; (defun eglot-organize-imports-before-save ()
 ;;   (add-hook 'before-save-hook
 ;;             (lambda ()
 ;;               (call-interactively 'eglot-code-action-organize-imports))
 ;;             nil t))
 (use-package go-mode
-  :ensure t
-  :init
-  (add-to-list 'auto-mode-alist '("\\.go\\'" . go-ts-mode))
-  (add-to-list 'auto-mode-alist '("\\.rl\\'" . go-mode))
-  :hook ((go-mode . yas-minor-mode)
-         (go-mode . eglot-ensure)
-         ;; Switch to apheleia
-         ;; (go-mode . eglot-format-buffer-before-save)
-         (go-ts-mode . yas-minor-mode)
-         (go-ts-mode . eglot-ensure)
-         (go-ts-mode . eglot-format-buffer-before-save))
-  ;; :config
-  ;; (defun my-custom-compile ()
-  ;;   "Compile using custom compile command."
-  ;;   (interactive)
-  ;;   (compile (cond ((string-match-p "\\machine.rl\\'" buffer-file-name)
-  ;;                   "ragel -Z -G2 machine.rl -o machine.go")
-  ;;                  ((string-match-p "_test\\.go\\'" buffer-file-name)
-  ;;                   "bazel test -- \\:all")
-  ;;                  (t
-  ;;                   "bazel build :all"))))
-  ;; :bind (("C-c C-c" . my-custom-compile))
-  )
+	:ensure t
+	:init
+	(add-to-list 'auto-mode-alist '("\\.go\\'" . go-ts-mode))
+	(add-to-list 'auto-mode-alist '("\\.rl\\'" . go-mode))
+	:hook ((go-mode . yas-minor-mode)
+				 (go-mode . eglot-ensure)
+				 ;; Switch to apheleia
+				 ;; (go-mode . eglot-format-buffer-before-save)
+				 (go-ts-mode . yas-minor-mode)
+				 (go-ts-mode . eglot-ensure)
+				 (go-ts-mode . eglot-format-buffer-before-save))
+	;; :config
+	;; (defun my-custom-compile ()
+	;;   "Compile using custom compile command."
+	;;   (interactive)
+	;;   (compile (cond ((string-match-p "\\machine.rl\\'" buffer-file-name)
+	;;                   "ragel -Z -G2 machine.rl -o machine.go")
+	;;                  ((string-match-p "_test\\.go\\'" buffer-file-name)
+	;;                   "bazel test -- \\:all")
+	;;                  (t
+	;;                   "bazel build :all"))))
+	;; :bind (("C-c C-c" . my-custom-compile))
+	)
 
 ;; Install golangci-lint
 ;; curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.50.1
@@ -2105,40 +2114,40 @@ delimiters instead of word delimiters."
 (setq comint-scroll-to-bottom-on-input t)
 
 (use-package link-hint
-  :ensure t
-  :bind (:map eshell-mode-map
-              ("C-c w" . link-hint-copy-link)))
+	:ensure t
+	:bind (:map eshell-mode-map
+							("C-c w" . link-hint-copy-link)))
 
 ;; Show hydras overlayed in the middle of the frame
 (use-package hydra-posframe
-  ;; Only enable if we are running graphical mode.
-  :if window-system
+	;; Only enable if we are running graphical mode.
+	:if window-system
 	:load-path "lisp/hydra-posframe"
-  :hook (after-init . hydra-posframe-mode)
-  :custom (hydra-posframe-border-width 5))
+	:hook (after-init . hydra-posframe-mode)
+	:custom (hydra-posframe-border-width 5))
 
 ;; Neato doc strings for hydras
 (use-package pretty-hydra
-  :after hydra
-  :ensure t)
+	:after hydra
+	:ensure t)
 
 ;; A replacement for which-func-mode.
 (use-package breadcrumb
 	:load-path "lisp/breadcrumb"
 	:demand t
-  :config
-  (breadcrumb-mode))
+	:config
+	(breadcrumb-mode))
 
 (defun switch-previous-buffer ()
-  (interactive)
-  (switch-to-buffer (other-buffer)))
+	(interactive)
+	(switch-to-buffer (other-buffer)))
 ;;(bind-key "M-o" 'switch-previous-buffer)
 (use-package iflipb
-  :ensure t
-  :bind* (
-          ;;("M-o" . iflipb-next-buffer)
-          ;;("M-O" . iflipb-previous-buffer)
-          ("C-x k" . iflipb-kill-buffer)))
+	:ensure t
+	:bind* (
+					;;("M-o" . iflipb-next-buffer)
+					;;("M-O" . iflipb-previous-buffer)
+					("C-x k" . iflipb-kill-buffer)))
 
 ;; (use-package popper
 ;;   :ensure t
@@ -2184,56 +2193,56 @@ delimiters instead of word delimiters."
 
 ;; From https://stackoverflow.com/questions/13009908/eshell-search-history
 (defun my-eshell-previous-matching-input-from-input (arg)
-  "Search backwards through input history for match for current input.
+	"Search backwards through input history for match for current input.
 \(Previous history elements are earlier commands.)
 With prefix argument N, search for Nth previous match.
 If N is negative, search forwards for the -Nth following match."
-  (interactive "p")
-  (if (not (memq last-command '(eshell-previous-matching-input-from-input
-                                eshell-next-matching-input-from-input)))
-      ;; Starting a new search
-      (setq eshell-matching-input-from-input-string
-            (buffer-substring (save-excursion (eshell-bol) (point))
-                              (point))
-            eshell-history-index nil))
-  (eshell-previous-matching-input
-   (regexp-quote eshell-matching-input-from-input-string)
-   arg))
+	(interactive "p")
+	(if (not (memq last-command '(eshell-previous-matching-input-from-input
+																eshell-next-matching-input-from-input)))
+			;; Starting a new search
+			(setq eshell-matching-input-from-input-string
+						(buffer-substring (save-excursion (eshell-bol) (point))
+															(point))
+						eshell-history-index nil))
+	(eshell-previous-matching-input
+	 (regexp-quote eshell-matching-input-from-input-string)
+	 arg))
 
 ;; override eshell-previous-matching-input-from-input, because it limits the search is from the beginning.
 (advice-add 'eshell-previous-matching-input-from-input :override #'my-eshell-previous-matching-input-from-input)
 
 (use-package eat
-  :ensure t
-  :hook (eshell-load . eat-eshell-visual-command-mode))
+	:ensure t
+	:hook (eshell-load . eat-eshell-visual-command-mode))
 
 (defun modi/multi-pop-to-mark (orig-fun &rest args)
-  "Call ORIG-FUN until the cursor moves.
+	"Call ORIG-FUN until the cursor moves.
 Try the repeated popping up to 10 times."
-  (let ((p (point)))
-    (dotimes (i 10)
-      (when (= p (point))
-        (apply orig-fun args)))))
+	(let ((p (point)))
+		(dotimes (i 10)
+			(when (= p (point))
+				(apply orig-fun args)))))
 (advice-add 'pop-to-mark-command :around
-            #'modi/multi-pop-to-mark)
+						#'modi/multi-pop-to-mark)
 (setq set-mark-command-repeat-pop t)
 
 (use-package beginend
-  :ensure t
-  :config
-  (dolist (mode (cons 'beginend-global-mode (mapcar #'cdr beginend-modes)))
-    (diminish mode))
-  (beginend-global-mode))
+	:ensure t
+	:config
+	(dolist (mode (cons 'beginend-global-mode (mapcar #'cdr beginend-modes)))
+		(diminish mode))
+	(beginend-global-mode))
 
 ;; Make .sh files executable upon save.
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
 (use-package help-fns+
-  :bind ("C-h M-k" . describe-keymap)) ; For autoloading.
+	:bind ("C-h M-k" . describe-keymap)) ; For autoloading.
 
 (use-package discover-my-major
-  :ensure t
-  :bind ("C-h C-m" . discover-my-major))
+	:ensure t
+	:bind ("C-h C-m" . discover-my-major))
 
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
@@ -2242,47 +2251,47 @@ Try the repeated popping up to 10 times."
 (setq-default buffer-file-coding-system 'utf-8)
 
 (use-package nov
-  :ensure t
-  :mode ("\\.epub\\'" . nov-mode))
+	:ensure t
+	:mode ("\\.epub\\'" . nov-mode))
 
 ;; Calendars should start with Monday as the first day of the week.
 (setq calendar-week-start-day 1)
 
 (defun date ()
-  "Insert today's date in MM-DD-YY format."
-  (interactive)
-  (insert (format-time-string "%-m-%-d-%y")))
+	"Insert today's date in MM-DD-YY format."
+	(interactive)
+	(insert (format-time-string "%-m-%-d-%y")))
 
 (use-package palaver
-  :demand t
-  :custom
-  (palaver-main-window-min-width 80)
-  :config
-  (palaver-mode 1)
-  :bind
-  (("C-c k" . palaver-toggle-bottom-drawer)
-   ("C-c l" . palaver-toggle-right-drawer)
-   ("C-c m" . palaver-toggle-drawer-location)
-   ("C-x o" . palaver-other-window)))
+	:demand t
+	:custom
+	(palaver-main-window-min-width 80)
+	:config
+	(palaver-mode 1)
+	:bind
+	(("C-c k" . palaver-toggle-bottom-drawer)
+	 ("C-c l" . palaver-toggle-right-drawer)
+	 ("C-c m" . palaver-toggle-drawer-location)
+	 ("C-x o" . palaver-other-window)))
 
 ;; prism for highlighting modes without good syntax hilighting
 (use-package prism
 	:load-path "lisp/prism.el")
 
 (use-package vundo
-  :ensure t)
+	:ensure t)
 
 (use-package dogears
 	:load-path "lisp/dogears.el"
 	:demand t
 	:after (consult)
-  :bind (:map global-map
-              ("M-g d" . dogears-go)
-              ("M-g M-b" . dogears-back)
-              ("M-g M-f" . dogears-forward)
-              ("M-g M-d" . dogears-list))
-  :init
-  (add-hook 'prog-mode-hook #'dogears-mode)
+	:bind (:map global-map
+							("M-g d" . dogears-go)
+							("M-g M-b" . dogears-back)
+							("M-g M-f" . dogears-forward)
+							("M-g M-d" . dogears-list))
+	:init
+	(add-hook 'prog-mode-hook #'dogears-mode)
 	:config
 	(defvar consult--source-dogears
 		(list :name     "Dogears"
@@ -2302,72 +2311,72 @@ Try the repeated popping up to 10 times."
 		(consult--multi '(consult--source-dogears))))
 
 (use-package mini-echo
-  :ensure t
+	:ensure t
 	:demand t
-  :custom
-  (mini-echo-right-padding 1)
-  ;; Other rules: project
-  (mini-echo-persistent-rule '(:long
-                               ("major-mode" "buffer-name" "vcs" "flymake")
-                               :short ("buffer-name" "flymake")))
-  :init
-  (mini-echo-mode)
-  (set-face-attribute 'mini-echo-minibuffer-window nil
-                      :background "#222323"))
+	:custom
+	(mini-echo-right-padding 1)
+	;; Other rules: project
+	(mini-echo-persistent-rule '(:long
+															 ("major-mode" "buffer-name" "vcs" "flymake")
+															 :short ("buffer-name" "flymake")))
+	:init
+	(mini-echo-mode)
+	(set-face-attribute 'mini-echo-minibuffer-window nil
+											:background "#222323"))
 
 (use-package apheleia
-  :ensure t
+	:ensure t
 	:demand t
-  :init
-  (apheleia-global-mode +1))
+	:init
+	(apheleia-global-mode +1))
 
 (use-package minuet
 	:ensure t
-  :bind
-  (("M-/" . #'minuet-show-suggestion) ;; use overlay for completion
-   ;; ("C-c m" . #'minuet-configure-provider)
-   :map minuet-active-mode-map
-   ;; These keymaps activate only when a minuet suggestion is displayed in the current buffer
-   ("TAB" . #'minuet-accept-suggestion) ;; accept whole completion
-   ;; Accept the first line of completion.
-   ("C-e" . #'minuet-accept-suggestion-line)
-   ("C-g" . #'minuet-dismiss-suggestion))
+	:bind
+	(("M-/" . #'minuet-show-suggestion) ;; use overlay for completion
+	 ;; ("C-c m" . #'minuet-configure-provider)
+	 :map minuet-active-mode-map
+	 ;; These keymaps activate only when a minuet suggestion is displayed in the current buffer
+	 ("TAB" . #'minuet-accept-suggestion) ;; accept whole completion
+	 ;; Accept the first line of completion.
+	 ("C-e" . #'minuet-accept-suggestion-line)
+	 ("C-g" . #'minuet-dismiss-suggestion))
 
-  :init
-  ;; if you want to enable auto suggestion.
-  ;; Note that you can manually invoke completions without enable minuet-auto-suggestion-mode
-  (add-hook 'prog-mode-hook #'minuet-auto-suggestion-mode)
+	:init
+	;; if you want to enable auto suggestion.
+	;; Note that you can manually invoke completions without enable minuet-auto-suggestion-mode
+	(add-hook 'prog-mode-hook #'minuet-auto-suggestion-mode)
 
-  :config
+	:config
 	(setq minuet-n-completions 1)
-  ;; You can use M-x minuet-configure-provider to interactively configure provider and model
-  (setq minuet-provider 'openai-fim-compatible)
+	;; You can use M-x minuet-configure-provider to interactively configure provider and model
+	(setq minuet-provider 'openai-fim-compatible)
 	(setq minuet-context-window 4096)
 	(plist-put minuet-openai-fim-compatible-options :end-point "http://192.168.1.4:8080/v1/completions")
-  ;; an arbitrary non-null environment variable as placeholder
-  (plist-put minuet-openai-fim-compatible-options :name "Llama.cpp")
-  (plist-put minuet-openai-fim-compatible-options :api-key "TERM")
-  ;; The model is set by the llama-cpp server and cannot be altered
-  ;; post-launch.
-  (plist-put minuet-openai-fim-compatible-options :model "starcoder2")
+	;; an arbitrary non-null environment variable as placeholder
+	(plist-put minuet-openai-fim-compatible-options :name "Llama.cpp")
+	(plist-put minuet-openai-fim-compatible-options :api-key "TERM")
+	;; The model is set by the llama-cpp server and cannot be altered
+	;; post-launch.
+	(plist-put minuet-openai-fim-compatible-options :model "starcoder2")
 	;; Llama.cpp does not support the `suffix` option in FIM completion.
-  ;; Therefore, we must disable it and manually populate the special
-  ;; tokens required for FIM completion.
-  (minuet-set-optional-options minuet-openai-fim-compatible-options :suffix nil :template)
-  (minuet-set-optional-options
-   minuet-openai-fim-compatible-options
-   :prompt
-   (defun minuet-llama-cpp-fim-qwen-prompt-function (ctx)
+	;; Therefore, we must disable it and manually populate the special
+	;; tokens required for FIM completion.
+	(minuet-set-optional-options minuet-openai-fim-compatible-options :suffix nil :template)
+	(minuet-set-optional-options
+	 minuet-openai-fim-compatible-options
+	 :prompt
+	 (defun minuet-llama-cpp-fim-qwen-prompt-function (ctx)
 		 ;; Format for codegemma
 		 ;;(format "<|fim_prefix|>%s\n%s<|fim_suffix|>%s<|fim_middle|>"
 		 ;; Format for deepseekcoder-v2
 		 ;;(format "<｜fim▁begin｜>%s\n%s<｜fim▁hole｜>%s<｜fim▁end｜>"
 		 ;; Format for starcoder2
-     (format "<fim_prefix>%s\n%s<fim_suffix>%s<fim_middle>"
-             (plist-get ctx :language-and-tab)
-             (plist-get ctx :before-cursor)
-             (plist-get ctx :after-cursor)))
-   :template)
+		 (format "<fim_prefix>%s\n%s<fim_suffix>%s<fim_middle>"
+						 (plist-get ctx :language-and-tab)
+						 (plist-get ctx :before-cursor)
+						 (plist-get ctx :after-cursor)))
+	 :template)
 	(minuet-set-optional-options minuet-openai-fim-compatible-options :stop ["\n\n" "}" "<|endoftext|>"])
 	(minuet-set-optional-options minuet-openai-fim-compatible-options :max_tokens 64)
 	(minuet-set-optional-options minuet-openai-fim-compatible-options :top_p 0.9))

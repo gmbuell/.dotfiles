@@ -26,3 +26,7 @@
 	path = emacs.d/lisp/emacs-flymake-popon
 	url = https://codeberg.org/akib/emacs-flymake-popon.git
 	shallow = true
+[submodule "emacs.d/lisp/treesit-fold"]
+	path = emacs.d/lisp/treesit-fold
+	url = https://github.com/emacs-tree-sitter/treesit-fold.git
+	shallow = true
