@@ -99,10 +99,11 @@
 (put 'my-clangd-args 'safe-local-variable #'listp)
 
 ;; Custom function to create the clangd command
-(defun my-clangd-command ()
-  "Return the command to run clangd based on current settings."
+(defun my-clangd-command (interactive-p)
+  "Return the command to run clangd based on current settings.
+INTERACTIVE-P is non-nil if called interactively."
   (if my-clangd-args
-      (append (list my-clangd-binary) my-clangd-args)
+      (cons my-clangd-binary my-clangd-args)
     (list my-clangd-binary)))
 
 ;; Example host-specific configuration
