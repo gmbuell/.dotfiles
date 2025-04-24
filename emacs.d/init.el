@@ -83,6 +83,38 @@
   :type 'string
   :group 'my-minuet)
 
+;; Define custom variables for clangd
+(defcustom my-clangd-binary "clangd"
+  "Path to the clangd binary."
+  :type 'string
+  :group 'development)
+
+(defcustom my-clangd-args nil
+  "List of arguments to pass to clangd."
+  :type '(repeat string)
+  :group 'development)
+
+;; Mark variables as safe for file-local values
+(put 'my-clangd-binary 'safe-local-variable #'stringp)
+(put 'my-clangd-args 'safe-local-variable #'listp)
+
+;; Custom function to create the clangd command
+(defun my-clangd-command ()
+  "Return the command to run clangd based on current settings."
+  (if my-clangd-args
+      (append (list my-clangd-binary) my-clangd-args)
+    (list my-clangd-binary)))
+
+;; Example host-specific configuration
+;; (setq my-clangd-binary "/path/to/custom/clangd")
+;; (setq my-clangd-args '("--header-insertion=never" "--clang-tidy"))
+
+;; Or with .dir-locals.el
+;; ((c++-mode . ((my-clangd-binary . "/path/to/project/specific/clangd")
+;;               (my-clangd-args . ("--header-insertion=never" "--clang-tidy"))))
+;;  (c-mode . ((my-clangd-binary . "/path/to/project/specific/clangd")
+;;             (my-clangd-args . ("--header-insertion=never" "--clang-tidy")))))
+
 ;; Load local config
 (let ((host-init-file (format "~/.emacs.d/init.%s.el" (system-name))))
   (when (file-exists-p host-init-file)
@@ -191,7 +223,7 @@ that uses 'font-lock-warning-face'."
   :hook (c-mode-common . subword-mode))
 
 ;; Headers are c++, not c
-(add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
+(add-to-list 'auto-mode-alist '("\\.h\\'" . c++-ts-mode))
 
 ;; Stop indenting in namespaces
 (c-set-offset 'innamespace 0)
@@ -199,6 +231,7 @@ that uses 'font-lock-warning-face'."
 ;; Get syntax hilighting for modern c++
 (use-package modern-cpp-font-lock
   :ensure t
+	:disabled t
   :config
   (modern-c++-font-lock-global-mode t))
 
@@ -544,6 +577,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (set-default 'imenu-auto-rescan t)
 ;; Teach imenu to recognize TEST_F
 (add-hook 'c++-mode
+          (lambda ()
+            (when (s-ends-with? "_test.cc" buffer-file-name)
+              (setq-local
+               imenu-generic-expression
+               '(("Class" "^\\(template[        ]*<[^>]+>[      ]*\\)?\\(class\\|struct\\)[     ]+\\([[:alnum:]_]+\\(<[^>]+>\\)?\\)\\([         \n]\\|\\\\\n\\)*[:{]" 3)
+                 ("Test" "^ *TEST\\(?:_F\\)?([^,]+,\n? *\\(.+\\)) {$" 1))))))
+(add-hook 'c++-ts-mode
           (lambda ()
             (when (s-ends-with? "_test.cc" buffer-file-name)
               (setq-local
@@ -1607,11 +1647,11 @@ In that case, insert the number."
 (use-package eglot
   :after (yasnippet)
   :ensure t
-  :hook ((c-mode c++-mode go-mode go-ts-mode python-mode python-ts-mode protobuf-mode) . eglot-ensure)
+  :hook ((c-mode c-ts-mode c++-mode c++-ts-mode go-mode go-ts-mode python-mode python-ts-mode protobuf-mode) . eglot-ensure)
   :custom
   (eglot-stay-out-of '(flymake))
   :config
-  (add-to-list 'eglot-server-programs '((c++-mode c-mode) . ("clangd" "-cross-file-rename")))
+	(add-to-list 'eglot-server-programs '((c++-mode c++-ts-mode c-mode c-ts-mode) . my-clangd-command))
   (when (file-exists-p "/google/bin/releases/")
     (add-to-list
      'eglot-server-programs
