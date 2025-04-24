@@ -2399,9 +2399,21 @@ Try the repeated popping up to 10 times."
 	:init
 	(apheleia-global-mode +1))
 
+(defun my-minuet-endpoint-reachable-p ()
+  "Check if minuet endpoint is reachable and my-minuet-enabled is true."
+  (when my-minuet-enabled
+    (condition-case nil
+        (let* ((url-request-method "HEAD")
+               (url-request-timeout 2)
+               (status (url-http-symbol-value-in-buffer
+                        'url-http-response-status
+                        (url-retrieve-synchronously my-minuet-endpoint nil nil 2))))
+          (and status (>= status 200) (< status 400)))
+      (error nil))))
+
 (use-package minuet
   :ensure t
-	:if my-minuet-enabled
+	:if (and my-minuet-enabled (my-minuet-endpoint-reachable-p))
   :bind
   (("M-/" . #'minuet-show-suggestion)
    :map minuet-active-mode-map
