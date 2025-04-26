@@ -198,8 +198,7 @@ INTERACTIVE-P is non-nil if called interactively."
 ;; use only spaces and no tabs
 (setq-default tab-width 2
 							go-ts-mode-indent-offset 2
-							;; indent-tabs-mode nil
-							)
+							indent-tabs-mode nil)
 (set-default 'indicate-empty-lines t)
 
 ;; Text
@@ -666,6 +665,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; For chromebook:
 (global-set-key (kbd "<deletechar>") 'backward-kill-word)
 
+(add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-ts-mode))
+
 (use-package treesit
   :preface
   (defun mp-setup-install-grammars ()
@@ -830,7 +831,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (with-eval-after-load 'yasnippet
   (defun my/yas-docker-compose-bp ()
     (interactive)
-    (yas-expand-snippet (yas-lookup-snippet "dockercomposebp" 'yaml-mode))))
+    (yas-expand-snippet (yas-lookup-snippet "dockercomposebp" 'yaml-ts-mode))))
 
 (use-package autoinsert
   :after (yasnippet)
@@ -1840,6 +1841,24 @@ In that case, insert the number."
   ;; :bind (("C-c C-c" . compile))
   )
 
+(use-package eshell
+  :hook ((eshell-mode . (lambda () (setq-local corfu-auto nil
+                                               corfu-quit-at-boundary t
+                                               corfu-quit-no-match t))))
+  :custom
+  (eshell-scroll-to-bottom-on-input 'all)
+  ;; (eshell-scroll-to-bottom-on-output 'all)
+  (eshell-kill-processes-on-exit t)
+  (eshell-history-size 10000)
+  (eshell-buffer-maximum-lines 10000)
+  (eshell-hist-ignoredups t)
+  (eshell-glob-case-insensitive t)
+  (eshell-error-if-no-glob t)
+  (eshell-term-name "xterm-256color"))
+
+(use-package pcmpl-args
+  :after pcomplete)
+
 (use-package cape
   :ensure t
   :init
@@ -2136,6 +2155,7 @@ delimiters instead of word delimiters."
 ;;             (lambda ()
 ;;               (call-interactively 'eglot-code-action-organize-imports))
 ;;             nil t))
+
 (use-package go-mode
 	:ensure t
 	:init
@@ -2147,7 +2167,8 @@ delimiters instead of word delimiters."
 				 ;; (go-mode . eglot-format-buffer-before-save)
 				 (go-ts-mode . yas-minor-mode)
 				 (go-ts-mode . eglot-ensure)
-				 (go-ts-mode . eglot-format-buffer-before-save))
+				 (go-mode . (lambda () (setq indent-tabs-mode t)))
+				 (go-ts-mode . (lambda () (setq indent-tabs-mode t))))
 	;; :config
 	;; (defun my-custom-compile ()
 	;;   "Compile using custom compile command."
