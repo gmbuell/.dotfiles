@@ -1248,10 +1248,33 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
                                    :as #'consult--buffer-pair
                                    :exclude spacemacs-useless-buffers-regexp))))
     "Project buffer candidate source for `consult-buffer'.")
+  ;; Define a new source for useful buffers
+  (defvar consult--source-useful-buffer
+    `(:name     "Useful Buffer"
+                :narrow   ?u
+                :category buffer
+                :face     consult-buffer
+                :history  buffer-name-history
+                :state    ,#'consult--buffer-state
+                :items
+                ,(lambda ()
+                   (consult--buffer-query
+                    :sort 'visibility
+                    :as #'consult--buffer-pair
+                    :predicate
+                    (lambda (buf)
+                      (let ((buf-name (buffer-name buf)))
+                        (or (string-match-p "\\*eat\\*" buf-name)
+                            ;; Add more useful buffer patterns here as needed
+                            ;; Example: (string-match-p "\\*shell\\*" buf-name)
+                            ;; Example: (string-match-p "\\*eshell\\*" buf-name)
+                            ))))))
+    "Useful buffer candidate source for `consult-buffer'.")
   (setq consult-buffer-sources '(consult--source-buffer-hidden
                                  consult--source-non-project-buffer
                                  consult--source-project-useful-buffer
                                  consult--source-project-recent-file
+                                 consult--source-useful-buffer
                                  consult--source-recent-file-hidden
                                  consult--source-non-project-recent-file))
   )
