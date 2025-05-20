@@ -128,7 +128,18 @@ INTERACTIVE-P is non-nil if called interactively."
 ;;             (my-clangd-args . ("--header-insertion=never" "--clang-tidy")))))
 
 ;; Load local config
-(let ((host-init-file (format "~/.emacs.d/init.%s.el" (system-name))))
+(defun short-system-name ()
+  "Return a shortened version of the system name.
+For domain names with multiple components, returns the second-to-last component.
+For simple hostnames, returns the full hostname."
+  (let* ((full-name (system-name))
+         (components (split-string full-name "\\.")))
+    (if (> (length components) 1)
+        ;; If multiple components, return the second-to-last one
+        (nth (- (length components) 2) components)
+      ;; Otherwise return the full name
+      full-name)))
+(let ((host-init-file (format "~/.emacs.d/init.%s.el" (short-system-name))))
   (when (file-exists-p host-init-file)
     (load-file host-init-file)))
 
