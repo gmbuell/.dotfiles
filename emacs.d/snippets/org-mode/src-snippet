@@ -1,0 +1,7 @@
+# name: src-snippet
+# key: <s
+# --
+#+NAME: ${1}
+#+begin_src sh :async ${3}
+  ${2}
+#+end_src
