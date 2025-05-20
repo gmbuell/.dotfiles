@@ -37,10 +37,21 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-	 '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
-		 "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
+   '("9b21c848d09ba7df8af217438797336ac99cbbbc87a08dc879e9291673a6a631"
+     "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" default))
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
- '(package-selected-packages nil)
+ '(package-selected-packages
+   '(ace-window anzu apheleia auto-yasnippet bazel beginend cape
+                casual-symbol-overlay clipetty consult-compile-multi consult-dir
+                consult-eglot-embark corfu-prescient deft diminish diredfl
+                dirvish discover-my-major disproject docker doom-themes eat
+                expand-region fold-this git-gutter go-mode iflipb link-hint
+                magit-todos marginalia markdown-mode mini-echo minuet
+                modern-cpp-font-lock mosey multifiles nov ob-async pcmpl-args
+                phi-search pretty-hydra projection-multi projection-multi-embark
+                protobuf-mode rainbow-delimiters region-bindings-mode
+                smartparens symbol-overlay-mc vertico-prescient vundo walkman
+                wgrep yasnippet-snippets))
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
 ;;  ;; custom-set-faces was added by Custom.
@@ -825,7 +836,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :ensure t
   :diminish yas-minor-mode
   :config
-  (add-to-list 'yas-snippet-dirs "~/.emacs.d/lisp/snippets")
   (yas-global-mode 1))
 
 (with-eval-after-load 'yasnippet
@@ -872,14 +882,22 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;; (bind-key "C-c SPC" 'ace-jump-mode org-mode-map)
   ;; Add shortcut to recalculate table
   ;; (bind-key "M-r" '(lambda () (interactive)(org-table-recalculate t)) org-mode-map)
+  (defun org-babel-execute:eshell (body _params)
+    (with-temp-buffer
+      (eshell-command body t)
+      (buffer-string)))
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((shell . t)
      (comint . t)
      (sqlite . t)
      (emacs-lisp . t)
-     ;;(dremel . t)
-     )))
+     (eshell . t)
+     ))
+  (require 'org-tempo))
+
+(use-package ob-async
+  :ensure t)
 
 (use-package walkman
   :ensure t
@@ -1041,6 +1059,14 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (setq savehist-save-minibuffer-history t)
 (add-hook 'after-init-hook #'savehist-mode)
 
+(defun with-minibuffer-keymap (keymap)
+  (lambda (fn &rest args)
+    (minibuffer-with-setup-hook
+        (lambda ()
+          (use-local-map
+           (make-composed-keymap keymap (current-local-map))))
+      (apply fn args))))
+
 (use-package embark
   :ensure t
 	:demand t
@@ -1054,14 +1080,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;; Optionally replace the key help with a completing-read interface
   (setq prefix-help-command #'embark-prefix-help-command)
   ;; Make embark behave like helm
-  (defun with-minibuffer-keymap (keymap)
-    (lambda (fn &rest args)
-      (minibuffer-with-setup-hook
-          (lambda ()
-            (use-local-map
-             (make-composed-keymap keymap (current-local-map))))
-        (apply fn args))))
-
   (defvar embark-completing-read-prompter-map
     (let ((map (make-sparse-keymap)))
       (define-key map (kbd "TAB") 'abort-recursive-edit)
@@ -1122,6 +1140,12 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 	(add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map))
 	)
 
+(defun gmbuell/consult-ripgrep (&optional dir initial)
+  "Start consult-ripgrep search in the current directory"
+  (interactive "P")
+  (consult-ripgrep (or dir default-directory) initial)
+  )
+
 (defun wrapper/consult-ripgrep (&optional dir given-initial)
 	"Pass the region to consult-ripgrep if available.
 
@@ -1131,7 +1155,7 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
 				 (or given-initial
 						 (when (use-region-p)
 							 (buffer-substring-no-properties (region-beginning) (region-end))))))
-		(consult-ripgrep dir initial)))
+		(gmbuell/consult-ripgrep dir initial)))
 
 ;; ripgrep as grep
 (setq grep-command "rg -nS --no-heading "
@@ -1155,7 +1179,7 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
          ("M-s c" . consult-locate)
          ("M-s g" . consult-grep)
          ("M-s G" . consult-git-grep)
-         ("M-s r" . consult-ripgrep)
+         ("M-s r" . gmbuell/consult-ripgrep)
          ("M-s l" . consult-line)
          ("M-s L" . consult-line-multi)
          ("M-s k" . consult-keep-lines)
@@ -1221,7 +1245,7 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
                                  consult--source-non-project-recent-file))
   )
 
-(defun consult-ripgrep-up-directory ()
+(defun gmbuell/consult-ripgrep-up-directory ()
 	(interactive)
 	(let ((parent-dir (file-name-directory (directory-file-name default-directory))))
 		(when parent-dir
@@ -1232,6 +1256,13 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
                      (buffer-substring-no-properties
                       (1+ (minibuffer-prompt-end)) (point-max))))))
 	(minibuffer-quit-recursive-edit))
+
+(defvar gmbuell/consult-ripgrep-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "M-o") #'gmbuell/consult-ripgrep-up-directory)
+    map))
+(advice-add 'consult-ripgrep :around
+            (with-minibuffer-keymap gmbuell/consult-ripgrep-map))
 
 (defun consult-line-symbol-at-point ()
   (interactive)
@@ -1282,7 +1313,7 @@ Used to preselect nearest headings and imenu items.")
 (add-hook 'eshell-mode-hook (lambda () (setq outline-regexp eshell-prompt-regexp)))
 
 (use-package hrm
-	:bind (("M-o" . hrm-notes)))
+	:bind (("C-c C-h" . hrm-notes)))
 
 (use-package consult-dir
   :ensure t
@@ -1673,11 +1704,14 @@ In that case, insert the number."
 (eval-when-compile
   (require 'compile))
 
+(use-package cc-mode)
+
 (use-package compile-multi
   :ensure t
-  :after (bazel)
   :demand t
   :bind (:map prog-mode-map
+              ("C-c C-c" . compile-multi)
+              :map c++-mode-map
               ("C-c C-c" . compile-multi))
   :config
   (defun my/compile-multi-bazel-available-targets ()
@@ -2495,7 +2529,7 @@ Try the repeated popping up to 10 times."
 
 (require 'server)
 (unless (server-running-p) (server-start))
-(setenv "EDITOR" "TERM=xterm-24bits emacsclient -nw")
+(setenv "EDITOR" "emacsclient")
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
