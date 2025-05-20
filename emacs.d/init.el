@@ -1724,6 +1724,8 @@ In that case, insert the number."
               ("C-c C-c" . compile-multi)
               :map c++-mode-map
               ("C-c C-c" . compile-multi))
+  :init
+  (add-hook 'c++-ts-mode (progn (require 'c-ts-mode) (bind-key "C-c C-c" 'compile-multi c++-ts-mode-map)))
   :config
   (defun my/compile-multi-bazel-available-targets ()
     "Generate Bazel targets for compile-multi based on available targets and rules."
