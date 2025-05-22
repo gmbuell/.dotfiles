@@ -762,15 +762,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :init
   (defmosey '(beginning-of-line
               back-to-indentation
-              sp-backward-sexp  ;; Moves across lines
-              sp-end-of-sexp    ;; Might be bad
-              sp-forward-sexp   ;; Moves across lines
               mosey-goto-end-of-code
               mosey-goto-beginning-of-comment-text
               end-of-line)
             :prefix "c")
-  :bind* (("C-a" . mosey-backward-bounce)
-          ("C-e" . mosey-forward-bounce)))
+  :bind (:map prog-mode-map
+              ("C-a" . mosey-backward-bounce)
+              ("C-e" . mosey-forward-bounce)))
 
 ;; Nice fonts:
 ;; Hack https://github.com/chrissimpkins/Hack
