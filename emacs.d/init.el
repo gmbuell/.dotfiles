@@ -1256,18 +1256,36 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
                 :state    ,#'consult--buffer-state
                 :items
                 ,(lambda ()
-                   (consult--buffer-query
-                    :sort 'visibility
-                    :as #'consult--buffer-pair
-                    :predicate
-                    (lambda (buf)
-                      (let ((buf-name (buffer-name buf)))
-                        (or (string-match-p "\\*eat\\*" buf-name)
-                            (string-match-p "\\*Embark" buf-name)
-                            ;; Add more useful buffer patterns here as needed
-                            ;; Example: (string-match-p "\\*shell\\*" buf-name)
-                            ;; Example: (string-match-p "\\*eshell\\*" buf-name)
-                            ))))))
+                   (let ((results '())
+                         (current-file (buffer-file-name)))
+                     ;; Add related file if it exists
+                     (when current-file
+                       (let* ((base-name (file-name-sans-extension current-file))
+                              (extension (file-name-extension current-file))
+                              (related-file nil))
+                         (cond
+                          ((string= extension "h")
+                           (setq related-file (concat base-name ".cpp")))
+                          ((string= extension "cpp")
+                           (setq related-file (concat base-name ".h"))))
+                         (when (and related-file (file-exists-p related-file))
+                           (let ((related-buffer (find-file-noselect related-file)))
+                             (setq results (list (consult--buffer-pair related-buffer)))))))
+
+                     ;; Add the existing useful buffers
+                     (append results
+                             (consult--buffer-query
+                              :sort 'visibility
+                              :as #'consult--buffer-pair
+                              :predicate
+                              (lambda (buf)
+                                (let ((buf-name (buffer-name buf)))
+                                  (or (string-match-p "\\*eat\\*" buf-name)
+                                      (string-match-p "\\*Embark" buf-name)
+                                      ;; Add more useful buffer patterns here as needed
+                                      ;; Example: (string-match-p "\\*shell\\*" buf-name)
+                                      ;; Example: (string-match-p "\\*eshell\\*" buf-name)
+                                      ))))))))
     "Useful buffer candidate source for `consult-buffer'.")
   (defvar consult--source-org-buffer
     `(:name     "Org Buffer"
@@ -1286,11 +1304,11 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
                       (let ((buf-name (buffer-name buf)))
                         (string-match-p ".org$" buf-name))))))
     "Org buffer candidate source for `consult-buffer'.")
-  (setq consult-buffer-sources '(consult--source-useful-buffer
-                                 consult--source-org-buffer
+  (setq consult-buffer-sources '(consult--source-org-buffer
                                  consult--source-buffer-hidden
                                  consult--source-non-project-buffer
                                  consult--source-project-useful-buffer
+                                 consult--source-useful-buffer
                                  consult--source-project-recent-file
                                  consult--source-recent-file-hidden
                                  consult--source-non-project-recent-file))
