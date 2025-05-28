@@ -349,22 +349,43 @@ should appear in. Otherwise returns nil."
         ;; Check for explicit drawer status
         (if palaver-drawer-status
             (progn
-              (setq result '(:drawer t))
-              ;; Add the preferred side if it's set
-              (when palaver-preferred-drawer-side
-                (plist-put result :side palaver-preferred-drawer-side)))
+              ;; Special case: Don't treat *scratch* as drawer if it would
+              ;; leave no main windows (e.g., in emacsclient -nw startup)
+              ;; even if it was previously marked as a drawer buffer
+              (if (and (string= (buffer-name buffer) "*scratch*")
+                       (or (= (length (window-list)) 1)
+                           (zerop (length (palaver-get-main-windows)))))
+                  ;; Reset drawer status for *scratch* in single-window scenarios
+                  (progn
+                    (setq palaver-drawer-status nil
+                          palaver-preferred-drawer-side nil)
+                    (setq result nil))
+                ;; Normal case: buffer was previously marked as drawer
+                (progn
+                  (setq result '(:drawer t))
+                  ;; Add the preferred side if it's set
+                  (when palaver-preferred-drawer-side
+                    (plist-put result :side palaver-preferred-drawer-side)))))
           ;; Otherwise, check against rules
           (catch 'found
             (dolist (rule palaver-drawer-rules)
               (let ((props (palaver-match-drawer-rule buffer rule)))
                 (when props
-                  (setq result props)
-                  (setq palaver-drawer-status 'drawer)
-                  ;; Store the preferred side if specified
-                  (when-let ((side (plist-get props :side)))
-                    (setq palaver-preferred-drawer-side side))
-                  (throw 'found props))))))))
-    result))
+                  ;; Special case: Don't treat *scratch* as drawer if it would
+                  ;; leave no main windows (e.g., in emacsclient -nw startup)
+                  (when (and (string= (buffer-name buffer) "*scratch*")
+                             (or (= (length (window-list)) 1)
+                                 (zerop (length (palaver-get-main-windows)))))
+                    (setq props nil))
+
+                  (when props
+                    (setq result props)
+                    (setq palaver-drawer-status 'drawer)
+                    ;; Store the preferred side if specified
+                    (when-let ((side (plist-get props :side)))
+                      (setq palaver-preferred-drawer-side side))
+                    (throw 'found props))))))))
+      result)))
 
 (defun palaver-buffer-drawer-side (buffer-or-name)
   "Determine which drawer side BUFFER-OR-NAME should use.
