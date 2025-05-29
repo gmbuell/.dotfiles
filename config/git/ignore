@@ -294,3 +294,4 @@ Makefile.in
 
 # Google
 **/.*blaze*
+**/.claude/settings.local.json
