@@ -30,3 +30,6 @@
 	path = emacs.d/lisp/treesit-fold
 	url = https://github.com/emacs-tree-sitter/treesit-fold.git
 	shallow = true
+[submodule "emacs.d/lisp/gptel"]
+	path = emacs.d/lisp/gptel
+	url = https://github.com/karthink/gptel.git
