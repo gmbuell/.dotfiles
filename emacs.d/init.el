@@ -45,8 +45,8 @@
                 casual-symbol-overlay clipetty consult-compile-multi consult-dir
                 consult-eglot-embark corfu-prescient deft diminish diredfl
                 dirvish discover-my-major disproject docker doom-themes eat
-                expand-region fold-this git-gutter go-mode iflipb link-hint
-                magit-todos marginalia markdown-mode mini-echo minuet
+                expand-region fold-this git-gutter go-mode gptel iflipb
+                link-hint magit-todos marginalia markdown-mode mini-echo minuet
                 modern-cpp-font-lock mosey multifiles nov ob-async pcmpl-args
                 phi-search pretty-hydra projection-multi projection-multi-embark
                 protobuf-mode rainbow-delimiters region-bindings-mode
@@ -2597,6 +2597,15 @@ Try the repeated popping up to 10 times."
   (minuet-set-optional-options minuet-openai-fim-compatible-options :stop ["\n\n" "}" "<|endoftext|>"])
   (minuet-set-optional-options minuet-openai-fim-compatible-options :max_tokens 64)
   (minuet-set-optional-options minuet-openai-fim-compatible-options :temperature 0))
+
+(use-package gptel
+  :load-path "lisp/gptel"
+  :config
+  (gptel-make-openai "llama-cpp"
+    :stream t
+    :protocol "http"
+    :host "localhost:8000"
+    :models '(test)))
 
 (require 'server)
 (unless (server-running-p) (server-start))
