@@ -1097,6 +1097,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (advice-add 'embark-completing-read-prompter :around
               (with-minibuffer-keymap embark-completing-read-prompter-map))
   (define-key vertico-map (kbd "TAB") 'embark-act-with-completing-read)
+  (define-key vertico-map (kbd "M-.") 'embark-export)
 
   (defun embark-act-with-completing-read (&optional arg)
     (interactive "P")
@@ -1937,7 +1938,19 @@ In that case, insert the number."
   (cdr project))
 (add-hook 'project-find-functions #'project-find-go-module)
 (use-package eldoc
-  :diminish eldoc-mode)
+  :diminish eldoc-mode
+  :config
+  (global-eldoc-mode -1)
+  (defun my-eldoc-show-and-pin ()
+    "Show ElDoc documentation in a buffer that won't auto-update."
+    (interactive)
+    (eldoc-print-current-symbol-info t)
+    (eldoc-doc-buffer t))
+  (defun eldoc-freeze ()
+    "Disable ElDoc auto-updates."
+    (interactive)
+    (global-eldoc-mode -1)
+    (message "ElDoc auto-update disabled. Use M-x global-eldoc-mode to re-enable.")))
 
 (use-package bazel
   :ensure t
