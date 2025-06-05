@@ -2614,6 +2614,7 @@ Try the repeated popping up to 10 times."
 (use-package gptel
   :load-path "lisp/gptel"
   :config
+  (require 'gptel-curl)
   (gptel-make-openai "llama-cpp"
     :stream t
     :protocol "http"
