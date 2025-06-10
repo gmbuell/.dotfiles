@@ -26,6 +26,7 @@
 ;; - Automatic main window width adjustment
 ;; - Integration with Emacs 29 window management
 ;; - Context-aware buffer switching
+;; - Compatible with Hydra
 
 ;;; Basic Usage:
 
@@ -226,9 +227,21 @@ Each rule has properties including:
                                (plist :inline t))))
   :group 'palaver)
 
+;; Track if hydra is active
+(defvar palaver--hydra-active-p nil
+  "Non-nil when a hydra is currently active.")
+
 ;;; --------------------------------------------------------
 ;;; Helper functions for drawer buffer management
 ;;; --------------------------------------------------------
+
+(defun palaver-buffer-is-hydra-related-p (buffer)
+  "Return non-nil if BUFFER is related to hydra functionality."
+  (when (buffer-live-p buffer)
+    (let ((name (buffer-name buffer)))
+      (or (string-match-p "^[ ]?\\*LV\\*$" name)
+          (string-match-p "^[ ]?\\*hydra-" name)
+          (string-match-p "^[ ]?\\*Hydra" name)))))
 
 (defun palaver-get-project-root ()
   "Get current project root or a default identifier."
@@ -342,6 +355,10 @@ Checks if buffer is already displayed in a side window."
   "Return non-nil if BUFFER-OR-NAME should be displayed in a drawer window.
 If the buffer matches a rule, returns properties including which drawer it
 should appear in. Otherwise returns nil."
+  ;; Never treat hydra-related buffers as drawer buffers
+  (when (palaver-buffer-is-hydra-related-p buffer-or-name)
+    (return-from palaver-buffer-is-drawer-p nil))
+
   (let* ((buffer (get-buffer buffer-or-name))
          (result nil))
     (when buffer
@@ -429,11 +446,18 @@ Returns 'bottom, 'right, or nil if not a drawer buffer."
   (car (seq-filter (lambda (window) (palaver-window-is-side-p window side))
                    (window-list))))
 
+(defun palaver-window-is-hydra-related-p (window)
+  "Return non-nil if WINDOW is displaying a hydra-related buffer."
+  (and window
+       (window-live-p window)
+       (palaver-buffer-is-hydra-related-p (window-buffer window))))
+
 (defun palaver-is-main-window-p (window)
-  "Return t if WINDOW is a main window (not a side or minibuffer window)."
+  "Return t if WINDOW is a main window (not a side, minibuffer, or hydra window)."
   (and (window-live-p window)
        (not (window-parameter window 'window-side))
-       (not (window-minibuffer-p window))))
+       (not (window-minibuffer-p window))
+       (not (palaver-window-is-hydra-related-p window))))
 
 (defun palaver-get-main-windows ()
   "Get a list of all main windows."
@@ -515,7 +539,9 @@ Ensures narrow windows use truncated lines instead of wrapping."
 (defun palaver-enforce-main-window-width (window)
   "Ensure that main WINDOW is at least `palaver-main-window-min-width' wide.
 This is called when a main window is selected."
-  (when (and (window-live-p window)
+  ;; Skip enforcement when hydra is active
+  (when (and (not palaver--hydra-active-p)
+             (window-live-p window)
              (palaver-is-main-window-p window)
              (< (window-width window) palaver-main-window-min-width))
     (let* ((main-windows (palaver-get-main-windows))
@@ -543,34 +569,36 @@ This is called when a main window is selected."
 (defun palaver-enforce-side-by-side-layout ()
   "Enforce that main windows are always side by side, never stacked.
 If windows are vertically stacked, rearranges them horizontally."
-  (let ((main-windows (palaver-get-main-windows)))
-    (when (>= (length main-windows) 2)
-      ;; Sort windows by their position (left to right)
-      (setq main-windows
-            (sort main-windows
-                  (lambda (a b)
-                    (< (car (window-edges a)) (car (window-edges b))))))
+  ;; Skip enforcement when hydra is active
+  (when (not palaver--hydra-active-p)
+    (let ((main-windows (palaver-get-main-windows)))
+      (when (>= (length main-windows) 2)
+        ;; Sort windows by their position (left to right)
+        (setq main-windows
+              (sort main-windows
+                    (lambda (a b)
+                      (< (car (window-edges a)) (car (window-edges b))))))
 
-      ;; Check if any windows are stacked vertically
-      (let ((stacked-windows nil))
-        (dolist (i (number-sequence 0 (1- (length main-windows))))
-          (let* ((win1 (nth i main-windows))
-                 (win2 (and (< (1+ i) (length main-windows))
-                            (nth (1+ i) main-windows)))
-                 (win1-edges (and win1 (window-edges win1))))
-            (when (and win1 win2
-                       (= (nth 0 win1-edges) (nth 0 (window-edges win2)))  ; Same left edge
-                       (window-live-p win1) (window-live-p win2))
-              (push (cons win1 win2) stacked-windows))))
+        ;; Check if any windows are stacked vertically
+        (let ((stacked-windows nil))
+          (dolist (i (number-sequence 0 (1- (length main-windows))))
+            (let* ((win1 (nth i main-windows))
+                   (win2 (and (< (1+ i) (length main-windows))
+                              (nth (1+ i) main-windows)))
+                   (win1-edges (and win1 (window-edges win1))))
+              (when (and win1 win2
+                         (= (nth 0 win1-edges) (nth 0 (window-edges win2)))  ; Same left edge
+                         (window-live-p win1) (window-live-p win2))
+                (push (cons win1 win2) stacked-windows))))
 
-        ;; Fix any stacked windows
-        (dolist (pair stacked-windows)
-          (let* ((win1 (car pair))
-                 (win2 (cdr pair))
-                 (buf2 (window-buffer win2)))
-            (delete-window win2)
-            (let ((new-win (split-window win1 nil 'right)))
-              (set-window-buffer new-win buf2))))))))
+          ;; Fix any stacked windows
+          (dolist (pair stacked-windows)
+            (let* ((win1 (car pair))
+                   (win2 (cdr pair))
+                   (buf2 (window-buffer win2)))
+              (delete-window win2)
+              (let ((new-win (split-window win1 nil 'right)))
+                (set-window-buffer new-win buf2)))))))))
 
 ;;; --------------------------------------------------------
 ;;; Drawer Window Display Functions
@@ -693,10 +721,11 @@ ALIST is passed to 'display-buffer-in-side-window' internally."
 
 (defun palaver-update-drawers ()
   "Update drawer state after window configuration change."
-  ;; Skip if we're in a minibuffer or if palaver mode is not active
+  ;; Skip if we're in a minibuffer, if palaver mode is not active, or if hydra is active
   (unless (or (minibuffer-window-active-p (selected-window))
               (not palaver-mode)
-              (frame-parent))
+              (frame-parent)
+              palaver--hydra-active-p)
     ;; Check if drawers are open and update state
     (setq palaver-bottom-drawer-open (palaver-get-side-window 'bottom))
     (setq palaver-right-drawer-open (palaver-get-side-window 'right))
@@ -1053,13 +1082,30 @@ Otherwise:
   (customize-variable 'palaver-drawer-rules))
 
 ;;; --------------------------------------------------------
+;;; Hydra Integration
+;;; --------------------------------------------------------
+
+(defun palaver-hydra-pre-command-hook ()
+  "Hook to detect when a hydra is activated."
+  (when (and (boundp 'hydra-curr-map) hydra-curr-map)
+    (setq palaver--hydra-active-p t)))
+
+(defun palaver-hydra-post-command-hook ()
+  "Hook to detect when a hydra is deactivated."
+  (unless (and (boundp 'hydra-curr-map) hydra-curr-map)
+    (setq palaver--hydra-active-p nil)))
+
+;;; --------------------------------------------------------
 ;;; Hook Setup Functions
 ;;; --------------------------------------------------------
 
 (defun palaver-mode-setup-hooks ()
   "Set up hooks for drawer mode."
   (add-hook 'window-configuration-change-hook #'palaver-update-drawers)
-  (add-hook 'window-selection-change-functions #'palaver-window-selected-hook))
+  (add-hook 'window-selection-change-functions #'palaver-window-selected-hook)
+  ;; Add hydra detection hooks
+  (add-hook 'pre-command-hook #'palaver-hydra-pre-command-hook)
+  (add-hook 'post-command-hook #'palaver-hydra-post-command-hook))
 
 (defun palaver-mode-remove-hooks ()
   "Remove hooks for drawer mode."
@@ -1067,7 +1113,10 @@ Otherwise:
   (remove-hook 'window-selection-change-functions #'palaver-window-selected-hook)
   (advice-remove 'quit-window #'palaver-quit-window-advice)
   (advice-remove 'other-window #'palaver-other-window-width-advice)
-  (remove-hook 'kill-buffer-hook #'palaver-clean-killed-drawer-buffer))
+  (remove-hook 'kill-buffer-hook #'palaver-clean-killed-drawer-buffer)
+  ;; Remove hydra detection hooks
+  (remove-hook 'pre-command-hook #'palaver-hydra-pre-command-hook)
+  (remove-hook 'post-command-hook #'palaver-hydra-post-command-hook))
 
 ;;; --------------------------------------------------------
 ;;; Integration with Other Packages
@@ -1131,6 +1180,7 @@ Otherwise:
                                                       :predicate (lambda (buffer)
                                                                    (not (palaver-buffer-is-drawer-p buffer)))))))
     "Project main buffer candidate source for palaver."))
+
 ;; Handle displaying non-drawer buffers from a drawer window
 (defun palaver-display-in-main-window (buffer alist)
   "Display non-drawer BUFFER in a main window when triggered from a drawer.
@@ -1160,12 +1210,19 @@ Prefers reusing the single main window if there is only one."
         target-window))))
 
 (setq display-buffer-alist
-      `(;; Let dired-mode buffers handle their own display logic
+      `(;; Hydra/LV buffers should never be treated as drawer buffers
+        ((lambda (buffer _)
+           (palaver-buffer-is-hydra-related-p buffer))
+         (display-buffer-at-bottom)
+         (window-height . fit-window-to-buffer))
+
+        ;; Let dired-mode buffers handle their own display logic
         ;; This is important for packages like dirvish-side
         ((lambda (buffer _)
            (with-current-buffer buffer
              (derived-mode-p 'dired-mode)))
          nil)
+
         ;; Handle buffers that should be in drawers
         ((lambda (buffer _)
            (palaver-buffer-is-drawer-p buffer))
@@ -1235,7 +1292,8 @@ between drawer and regular window status."
 
     ;; Reset variables
     (setq palaver-bottom-drawer-open nil
-          palaver-right-drawer-open nil)
+          palaver-right-drawer-open nil
+          palaver--hydra-active-p nil)
     (clrhash palaver-drawer-buffers-by-project)))
 
 ;;; --------------------------------------------------------
