@@ -905,9 +905,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
      ))
   (require 'org-tempo))
 
-(use-package ob-async
-  :ensure t)
-
 (use-package walkman
   :ensure t
   :config
