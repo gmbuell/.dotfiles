@@ -534,7 +534,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ("C" smerge-combine-with-next)
     ("r" smerge-resolve)
     ("k" smerge-kill-current)
-    ("ZZ" my/save-and-burry
+    ("ZZ" my/save-and-bury
      "Save and bury buffer" :color blue)
     ("q" nil "cancel" :color blue))
   :hook (magit-diff-visit-file . (lambda ()
