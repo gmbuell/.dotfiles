@@ -1280,6 +1280,7 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
                                 (let ((buf-name (buffer-name buf)))
                                   (or (string-match-p "\\*eat\\*" buf-name)
                                       (string-match-p "\\*Embark" buf-name)
+                                      (string-match-p ".org$" buf-name)
                                       ;; Add more useful buffer patterns here as needed
                                       ;; Example: (string-match-p "\\*shell\\*" buf-name)
                                       ;; Example: (string-match-p "\\*eshell\\*" buf-name)
@@ -1302,11 +1303,11 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
                       (let ((buf-name (buffer-name buf)))
                         (string-match-p ".org$" buf-name))))))
     "Org buffer candidate source for `consult-buffer'.")
-  (setq consult-buffer-sources '(consult--source-org-buffer
+  (setq consult-buffer-sources '(consult--source-useful-buffer
+                                 consult--source-project-useful-buffer
+                                 ;;consult--source-org-buffer
                                  consult--source-buffer-hidden
                                  consult--source-non-project-buffer
-                                 consult--source-project-useful-buffer
-                                 consult--source-useful-buffer
                                  consult--source-project-recent-file
                                  consult--source-recent-file-hidden
                                  consult--source-non-project-recent-file))
