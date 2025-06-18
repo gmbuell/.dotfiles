@@ -1242,8 +1242,50 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
             (consult--buffer-query :sort 'visibility
                                    :directory root
                                    :as #'consult--buffer-pair
-                                   :exclude spacemacs-useless-buffers-regexp))))
+                                   :exclude spacemacs-useless-buffers-regexp
+                                   :predicate
+                                   (lambda (buf)
+                                     (let ((buf-name (buffer-name buf)))
+                                       (and
+                                        ;; Exclude current buffer
+                                        (not (eq buf (current-buffer)))
+                                        ;; Exclude most recent non-current buffer
+                                        (not (eq buf (car (cdr (buffer-list)))))
+                                        ;; Exclude useful buffer patterns to avoid duplication
+                                        (not (consult--useful-buffer-p buf))
+)))))))
     "Project buffer candidate source for `consult-buffer'.")
+  ;; Helper function to find most recent non-current buffer
+  (defun consult--find-most-recent-non-current-buffer ()
+    "Find the most recently used buffer that is not the current buffer, 
+minibuffer, or hidden buffer."
+    (let ((buffers (cdr (buffer-list)))  ; Skip current buffer
+          (found nil))
+      (while (and buffers (not found))
+        (let* ((buf (car buffers))
+               (buf-name (buffer-name buf)))
+          (when (and buf-name
+                     ;; Not a minibuffer
+                     (not (minibufferp buf))
+                     ;; Not a hidden buffer (starting with space)
+                     (not (string-prefix-p " " buf-name)))
+            (setq found buf))
+          (setq buffers (cdr buffers))))
+      found))
+
+  ;; Helper function to check if buffer matches useful buffer patterns
+  (defun consult--useful-buffer-p (buf)
+    "Return t if BUF matches useful buffer patterns and is not the current buffer."
+    (and (not (eq buf (current-buffer)))  ; Exclude current buffer
+         (let ((buf-name (buffer-name buf)))
+           (or (string-match-p "\\*eat\\*" buf-name)
+               (string-match-p "\\*Embark" buf-name)
+               (string-match-p ".org$" buf-name)
+               ;; Add more useful buffer patterns here as needed
+               ;; Example: (string-match-p "\\*shell\\*" buf-name)
+               ;; Example: (string-match-p "\\*eshell\\*" buf-name)
+               ))))
+
   ;; Define a new source for useful buffers
   (defvar consult--source-useful-buffer
     `(:name     "Useful Buffer"
@@ -1271,20 +1313,32 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
                              (setq results (list (consult--buffer-pair related-buffer)))))))
 
                      ;; Add the existing useful buffers
-                     (append results
-                             (consult--buffer-query
-                              :sort 'visibility
-                              :as #'consult--buffer-pair
-                              :predicate
-                              (lambda (buf)
-                                (let ((buf-name (buffer-name buf)))
-                                  (or (string-match-p "\\*eat\\*" buf-name)
-                                      (string-match-p "\\*Embark" buf-name)
-                                      (string-match-p ".org$" buf-name)
-                                      ;; Add more useful buffer patterns here as needed
-                                      ;; Example: (string-match-p "\\*shell\\*" buf-name)
-                                      ;; Example: (string-match-p "\\*eshell\\*" buf-name)
-                                      ))))))))
+                     ;; Add the most recently used buffer first
+                     (let* ((most-recent-buf (consult--find-most-recent-non-current-buffer))
+                            (most-recent-pair (when most-recent-buf
+                                                (consult--buffer-pair most-recent-buf)))
+                            (useful-buffers (consult--buffer-query
+                                             :sort nil
+                                             :as #'consult--buffer-pair
+                                             :predicate
+                                             #'consult--useful-buffer-p)))
+                       ;; Sort by buffer list order (most recent first)
+                       (setq useful-buffers
+                             (sort useful-buffers
+                                   (lambda (a b)
+                                     (let ((buf-a (cdr a))
+                                           (buf-b (cdr b)))
+                                       (< (cl-position buf-a (buffer-list))
+                                          (cl-position buf-b (buffer-list)))))))
+                       ;; Filter out the most recent buffer from useful buffers to avoid duplication
+                       (when most-recent-buf
+                         (setq useful-buffers
+                               (seq-remove (lambda (pair) (eq (cdr pair) most-recent-buf))
+                                           useful-buffers)))
+                       ;; Combine results: most recent buffer first, then related files, then useful buffers
+                       (append (when most-recent-pair (list most-recent-pair))
+                               results
+                               useful-buffers)))))
     "Useful buffer candidate source for `consult-buffer'.")
   (defvar consult--source-org-buffer
     `(:name     "Org Buffer"
