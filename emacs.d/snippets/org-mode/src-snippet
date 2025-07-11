@@ -2,6 +2,6 @@
 # key: <s
 # --
 #+NAME: ${1}
-#+begin_src sh :async ${3}
-  ${2}
+#+begin_src bash :dir ~${2} :session ${1} :async
+  ${3}
 #+end_src
