@@ -43,15 +43,17 @@
  '(package-selected-packages
    '(ace-window anzu apheleia auto-yasnippet bazel beginend cape
                 casual-symbol-overlay clipetty consult-compile-multi consult-dir
-                consult-eglot-embark corfu-prescient deft diminish diredfl
-                dirvish discover-my-major disproject docker doom-themes eat
-                expand-region fold-this git-gutter go-mode gptel iflipb
+                consult-eglot-embark corfu-prescient cpp-func-impl deft diminish
+                diredfl dirvish discover-my-major disproject docker doom-themes
+                eat expand-region fold-this git-gutter go-mode gptel iflipb
                 link-hint magit-todos marginalia markdown-mode mini-echo minuet
                 modern-cpp-font-lock mosey multifiles nov ob-async pcmpl-args
                 phi-search pretty-hydra projection-multi projection-multi-embark
                 protobuf-mode rainbow-delimiters region-bindings-mode
-                smartparens symbol-overlay-mc vertico-prescient vundo walkman
-                wgrep yasnippet-snippets))
+                smartparens symbol-overlay-mc ultra-scroll vertico-prescient
+                vundo walkman wgrep yasnippet-snippets))
+ '(package-vc-selected-packages
+   '((cpp-func-impl :url "https://github.com/dheerajshenoy/cpp-func-impl")))
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
 ;;  ;; custom-set-faces was added by Custom.
@@ -2708,6 +2710,18 @@ Try the repeated popping up to 10 times."
     :protocol "http"
     :host "localhost:8000"
     :models '(test)))
+
+(use-package ultra-scroll
+  :ensure t
+  :config
+  (ultra-scroll-mode 1))
+
+(use-package cpp-func-impl
+  :ensure t
+  :vc (cpp-func-impl :url "https://github.com/dheerajshenoy/cpp-func-impl")
+  :commands (cpp-func-impl-implement cpp-func-impl-implement-all cpp-func-impl-concrete-class)
+  :custom
+  (cpp-func-impl-comment-string "// TODO: `%m` `%d` `%t` `%c`"))
 
 (require 'server)
 (unless (server-running-p) (server-start))
