@@ -148,6 +148,7 @@ For simple hostnames, returns the full hostname."
 ;; ---------------------------------------------------------------------------
 ;; Auto refresh
 (global-auto-revert-mode 1)
+(setq revert-without-query (list "."))
 (add-to-list 'global-auto-revert-ignore-modes 'Buffer-menu-mode)
 (setq auto-revert-check-vc-info t)
 ;; Slow down auto revert.
