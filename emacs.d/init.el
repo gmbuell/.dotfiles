@@ -1946,33 +1946,37 @@ In that case, insert the number."
          (locate-dominating-file buffer-file-name "go.mod")))
 
   ;; Setup compile-multi configuration for Bazel projects
-  (push '(my/bazel-project-p
-          ;; This function will generate targets when in a Bazel workspace
-          my/compile-multi-bazel-available-targets)
-        compile-multi-config)
+  (add-to-list 'compile-multi-config
+               `(,(lambda ()
+                    (and buffer-file-name
+                         (bazel--workspace-root buffer-file-name)))
+                 ,#'my/compile-multi-bazel-available-targets))
 
   ;; Setup compile-multi configuration for Go projects
-  (push '(my/go-project-p
-          ("go:build" . (:command "go build ." :annotation "Build current package"))
-          ("go:build-all" . (:command "go build ./..." :annotation "Build all packages"))
-          ("go:test" . (:command "go test ." :annotation "Test current package"))
-          ("go:test-all" . (:command "go test ./..." :annotation "Test all packages"))
-          ("go:test-verbose" . (:command "go test -v ." :annotation "Test current package (verbose)"))
-          ("go:test-all-verbose" . (:command "go test -v ./..." :annotation "Test all packages (verbose)"))
-          ("go:test-race" . (:command "go test -race ." :annotation "Test current package (race detection)"))
-          ("go:test-all-race" . (:command "go test -race ./..." :annotation "Test all packages (race detection)"))
-          ("go:run" . (:command "go run ." :annotation "Run current package"))
-          ("go:clean" . (:command "go clean" :annotation "Clean build cache"))
-          ("go:mod-tidy" . (:command "go mod tidy" :annotation "Tidy dependencies"))
-          ("go:mod-download" . (:command "go mod download" :annotation "Download dependencies"))
-          ("go:vet" . (:command "go vet ." :annotation "Vet current package"))
-          ("go:vet-all" . (:command "go vet ./..." :annotation "Vet all packages"))
-          ("go:fmt" . (:command "go fmt ." :annotation "Format current package"))
-          ("go:fmt-all" . (:command "go fmt ./..." :annotation "Format all packages"))
-          ("go:bench" . (:command "go test -bench=. ." :annotation "Run benchmarks in current package"))
-          ("go:bench-all" . (:command "go test -bench=. ./..." :annotation "Run benchmarks in all packages"))
-          ("go:bench-mem" . (:command "go test -bench=. -benchmem ." :annotation "Run benchmarks with memory stats")))
-        compile-multi-config))
+  (add-to-list 'compile-multi-config
+               `(,(lambda ()
+                    (and buffer-file-name
+                         (string-match-p "\\.go$" buffer-file-name)
+                         (locate-dominating-file buffer-file-name "go.mod")))
+                 ("go:build" . (:command "go build ." :annotation "Build current package"))
+                 ("go:build-all" . (:command "go build ./..." :annotation "Build all packages"))
+                 ("go:test" . (:command "go test ." :annotation "Test current package"))
+                 ("go:test-all" . (:command "go test ./..." :annotation "Test all packages"))
+                 ("go:test-verbose" . (:command "go test -v ." :annotation "Test current package (verbose)"))
+                 ("go:test-all-verbose" . (:command "go test -v ./..." :annotation "Test all packages (verbose)"))
+                 ("go:test-race" . (:command "go test -race ." :annotation "Test current package (race detection)"))
+                 ("go:test-all-race" . (:command "go test -race ./..." :annotation "Test all packages (race detection)"))
+                 ("go:run" . (:command "go run ." :annotation "Run current package"))
+                 ("go:clean" . (:command "go clean" :annotation "Clean build cache"))
+                 ("go:mod-tidy" . (:command "go mod tidy" :annotation "Tidy dependencies"))
+                 ("go:mod-download" . (:command "go mod download" :annotation "Download dependencies"))
+                 ("go:vet" . (:command "go vet ." :annotation "Vet current package"))
+                 ("go:vet-all" . (:command "go vet ./..." :annotation "Vet all packages"))
+                 ("go:fmt" . (:command "go fmt ." :annotation "Format current package"))
+                 ("go:fmt-all" . (:command "go fmt ./..." :annotation "Format all packages"))
+                 ("go:bench" . (:command "go test -bench=. ." :annotation "Run benchmarks in current package"))
+                 ("go:bench-all" . (:command "go test -bench=. ./..." :annotation "Run benchmarks in all packages"))
+                 ("go:bench-mem" . (:command "go test -bench=. -benchmem ." :annotation "Run benchmarks with memory stats")))))
 
 (use-package consult-compile-multi
   :ensure t
