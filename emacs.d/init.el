@@ -1934,19 +1934,25 @@ In that case, insert the number."
   ;; Set compile-multi default directory to use project.el
   (setq compile-multi-default-directory #'my/project-root-or-default)
 
+  (defun my/bazel-project-p ()
+    "Check if current buffer is in a Bazel workspace."
+    (when buffer-file-name
+      (bazel--workspace-root buffer-file-name)))
+
+  (defun my/go-project-p ()
+    "Check if current buffer is in a Go project."
+    (and buffer-file-name
+         (string-match-p "\\.go$" buffer-file-name)
+         (locate-dominating-file buffer-file-name "go.mod")))
+
   ;; Setup compile-multi configuration for Bazel projects
-  (push '((lambda ()
-            (when buffer-file-name
-              (bazel--workspace-root buffer-file-name)))
+  (push '(my/bazel-project-p
           ;; This function will generate targets when in a Bazel workspace
           my/compile-multi-bazel-available-targets)
         compile-multi-config)
 
   ;; Setup compile-multi configuration for Go projects
-  (push '((lambda ()
-            (and buffer-file-name
-                 (string-match-p "\\.go$" buffer-file-name)
-                 (locate-dominating-file buffer-file-name "go.mod")))
+  (push '(my/go-project-p
           ("go:build" . (:command "go build ." :annotation "Build current package"))
           ("go:build-all" . (:command "go build ./..." :annotation "Build all packages"))
           ("go:test" . (:command "go test ." :annotation "Test current package"))
@@ -2710,11 +2716,6 @@ Try the repeated popping up to 10 times."
     :protocol "http"
     :host "localhost:8000"
     :models '(test)))
-
-(use-package ultra-scroll
-  :ensure t
-  :config
-  (ultra-scroll-mode 1))
 
 (use-package cpp-func-impl
   :ensure t
