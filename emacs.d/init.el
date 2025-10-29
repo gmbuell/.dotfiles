@@ -43,15 +43,16 @@
  '(package-selected-packages
    '(ace-window anzu apheleia auto-yasnippet bazel beginend cape
                 casual-symbol-overlay clipetty consult-compile-multi consult-dir
-                consult-eglot-embark corfu-prescient cpp-func-impl deft diminish
-                diredfl dirvish discover-my-major disproject docker doom-themes
-                eat expand-region fold-this git-gutter go-mode gptel iflipb
-                link-hint magit-todos marginalia markdown-mode mini-echo minuet
-                modern-cpp-font-lock mosey multifiles nov ob-async pcmpl-args
-                phi-search pretty-hydra projection-multi projection-multi-embark
-                protobuf-mode rainbow-delimiters region-bindings-mode
-                smartparens symbol-overlay-mc ultra-scroll vertico-prescient
-                vundo walkman wgrep yasnippet-snippets))
+                consult-eglot-embark copy-as-format corfu-prescient
+                cpp-func-impl deft diminish diredfl dirvish discover-my-major
+                disproject docker doom-themes eat expand-region fold-this
+                git-gutter git-link go-mode gptel iflipb link-hint magit-todos
+                marginalia markdown-mode mini-echo minuet modern-cpp-font-lock
+                mosey multifiles nov ob-async pcmpl-args phi-search pretty-hydra
+                projection-multi projection-multi-embark protobuf-mode
+                rainbow-delimiters region-bindings-mode smartparens
+                symbol-overlay-mc ultra-scroll vertico-prescient vundo walkman
+                wgrep yasnippet-snippets))
  '(package-vc-selected-packages
    '((cpp-func-impl :url "https://github.com/dheerajshenoy/cpp-func-impl")))
  '(warning-suppress-log-types '((comp))))
@@ -2524,6 +2525,30 @@ If N is negative, search forwards for the -Nth following match."
 (use-package eat
 	:ensure t
 	:hook (eshell-load . eat-eshell-visual-command-mode))
+
+;; install required inheritenv dependency:
+(use-package inheritenv
+  :vc (:url "https://github.com/purcell/inheritenv" :rev :newest))
+;; install claude-code.el
+(use-package claude-code :ensure t
+  :vc (:url "https://github.com/stevemolitor/claude-code.el" :rev :newest)
+  :config
+  ;; optional IDE integration with Monet
+  ;; (add-hook 'claude-code-process-environment-functions #'monet-start-server-function)
+  ;; (monet-mode 1)
+
+  (claude-code-mode)
+  :bind-keymap ("C-c c" . claude-code-command-map)
+
+  ;; Optionally define a repeat map so that "M" will cycle thru Claude auto-accept/plan/confirm modes after invoking claude-code-cycle-mode / C-c M.
+  :bind
+  (:repeat-map my-claude-code-map ("M" . claude-code-cycle-mode)))
+
+(use-package git-link
+  :ensure t)
+
+(use-package copy-as-format
+  :ensure t)
 
 (defun modi/multi-pop-to-mark (orig-fun &rest args)
 	"Call ORIG-FUN until the cursor moves.
