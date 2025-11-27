@@ -42,8 +42,8 @@
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
    '(ace-window anzu apheleia auto-yasnippet bazel beginend cape
-                casual-symbol-overlay clipetty consult-compile-multi consult-dir
-                consult-eglot-embark copy-as-format corfu-prescient
+                casual-symbol-overlay claude-code clipetty consult-compile-multi
+                consult-dir consult-eglot-embark copy-as-format corfu-prescient
                 cpp-func-impl deft diminish diredfl dirvish discover-my-major
                 disproject docker doom-themes eat expand-region fold-this
                 git-gutter git-link go-mode gptel iflipb link-hint magit-todos
@@ -54,7 +54,8 @@
                 symbol-overlay-mc ultra-scroll vertico-prescient vundo walkman
                 wgrep yasnippet-snippets))
  '(package-vc-selected-packages
-   '((cpp-func-impl :url "https://github.com/dheerajshenoy/cpp-func-impl")))
+   '((claude-code :url "https://github.com/stevemolitor/claude-code.el")
+     (cpp-func-impl :url "https://github.com/dheerajshenoy/cpp-func-impl")))
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
 ;;  ;; custom-set-faces was added by Custom.
@@ -2525,6 +2526,48 @@ If N is negative, search forwards for the -Nth following match."
 (use-package eat
 	:ensure t
 	:hook (eshell-load . eat-eshell-visual-command-mode))
+
+;; This configuration enables consult-history to work with eat shell.
+;; Add this to your init.el after your eat and consult configuration.
+
+;; Add eat-mode to consult's mode-histories list
+(with-eval-after-load 'consult
+  (add-to-list 'consult-mode-histories
+               '(eat-mode eat--line-input-ring eat--line-input-ring-index
+                          (lambda () (goto-char (eat-term-end eat-terminal))))))
+
+;; Automatically load shell history before consult-history runs in eat buffers
+(defun eat--ensure-history-loaded ()
+  "Ensure shell history is loaded in eat buffers.
+In semi-char mode, always reload the shell history file to get the latest
+commands. In line-mode, only load if the history ring is empty."
+  (when (and (eq major-mode 'eat-mode)
+             eat-terminal
+             (or eat--semi-char-mode  ; Always reload in semi-char mode
+                 (not (boundp 'eat--line-input-ring))
+                 (not eat--line-input-ring)
+                 (ring-empty-p eat--line-input-ring)))
+    (let* ((shell (file-name-nondirectory shell-file-name))
+           (history-file (cond
+                          ((string-match-p "bash" shell)
+                           (expand-file-name "~/.bash_history"))
+                          ((string-match-p "zsh" shell)
+                           (expand-file-name "~/.zsh_history"))
+                          (t nil)))
+           (format (cond
+                    ((string-match-p "bash" shell) "bash")
+                    ((string-match-p "zsh" shell) "zsh")
+                    (t nil))))
+      (when (and history-file format (file-exists-p history-file))
+        (when eat--semi-char-mode
+          (message "Reloading shell history from %s..." history-file))
+        (eat-line-load-input-history-from-file history-file format)
+        (when eat--semi-char-mode
+          (message "Loaded %d history items" (ring-length eat--line-input-ring)))))))
+
+;; Add advice to consult-history to auto-load shell history in eat buffers
+(with-eval-after-load 'consult
+  (advice-add 'consult-history :before #'eat--ensure-history-loaded))
 
 ;; install required inheritenv dependency:
 (use-package inheritenv
