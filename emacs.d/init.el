@@ -2059,7 +2059,43 @@ In that case, insert the number."
   :custom
   (bazel-command '("bazel"))
   ;; :bind (("C-c C-c" . compile))
-  )
+  :config
+  ;; Fix compilation-mode to open real source files instead of Bazel execroot cache files.
+  ;; When Bazel runs tests, it operates in a sandboxed execroot directory and prints
+  ;; "Entering directory" messages that cause compilation-mode to resolve relative paths
+  ;; to the cache instead of the actual workspace sources. This advice intercepts
+  ;; compilation-find-file and redirects execroot paths to the real workspace.
+
+  (defun my/bazel-fix-compilation-find-file (orig-fun marker filename directory &rest formats)
+    "Transform Bazel execroot cache paths to real workspace source paths.
+This is advice for `compilation-find-file' that detects when a file path
+points to Bazel's execroot cache and redirects it to the actual source file
+in the workspace."
+    (let* ((dir-str (if (stringp directory) directory (format "%s" directory)))
+           (file-str (if (stringp filename) filename (format "%s" filename)))
+           (full-path (expand-file-name file-str dir-str)))
+      (if (string-match "/execroot/_main/\\(.+\\)" full-path)
+          ;; Execroot path detected - attempt transformation
+          (let* ((workspace-relative-path (match-string 1 full-path))
+                 (workspace-root (or
+                                  (when (boundp 'compilation-directory)
+                                    (bazel--workspace-root compilation-directory))
+                                  (bazel--workspace-root default-directory)
+                                  (when buffer-file-name
+                                    (bazel--workspace-root buffer-file-name))))
+                 (real-path (when workspace-root
+                              (expand-file-name workspace-relative-path workspace-root))))
+            (if (and real-path (file-exists-p real-path))
+                ;; Successfully transformed - open real workspace file
+                (apply orig-fun marker (file-name-nondirectory real-path)
+                       (file-name-directory real-path) formats)
+              ;; Transformation failed - fall back to original path
+              (apply orig-fun marker filename directory formats)))
+        ;; Not an execroot path - use original behavior
+        (apply orig-fun marker filename directory formats))))
+
+  (with-eval-after-load 'compile
+    (advice-add 'compilation-find-file :around #'my/bazel-fix-compilation-find-file)))
 
 (use-package eshell
   :hook ((eshell-mode . (lambda () (setq-local corfu-auto nil
