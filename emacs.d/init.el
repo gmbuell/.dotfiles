@@ -1214,23 +1214,23 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
   :config
   (setq consult-preview-key "M-.")
   (defvar consult--source-recent-file-hidden
-    `(:hidden t :narrow (?a . "File") :enabled ,(lambda () (consult--project-root)) ,@consult--source-recent-file)
-    "Like `consult--source-recent-file' but hidden by default.")
+    `(:hidden t :narrow (?a . "File") :enabled ,(lambda () (consult--project-root)) ,@consult-source-recent-file)
+    "Like `consult-source-recent-file' but hidden by default.")
   (defvar consult--source-buffer-hidden
-    `(:hidden t :narrow (?a . "Buffer") :enabled ,(lambda () (consult--project-root)) ,@consult--source-buffer)
-    "Like `consult--source-buffer' but hidden by default.")
+    `(:hidden t :narrow (?a . "Buffer") :enabled ,(lambda () (consult--project-root)) ,@consult-source-buffer)
+    "Like `consult-source-buffer' but hidden by default.")
   ;; Define non-hidden buffer source for non-project contexts
   (defvar consult--source-non-project-buffer
     `(:enabled ,(lambda () (not (consult--project-root)))
                :narrow (?b . "Buffer")
-               ,@consult--source-buffer)
+               ,@consult-source-buffer)
     "Buffer candidate source for when not in a project.")
 
   ;; Define non-hidden recent file source for non-project contexts
   (defvar consult--source-non-project-recent-file
     `(:enabled ,(lambda () (not (consult--project-root)))
                :narrow (?f . "File")
-               ,@consult--source-recent-file)
+               ,@consult-source-recent-file)
     "Recent file candidate source for when not in a project.")
   ;; Excludes star buffers
   (defvar consult--source-project-useful-buffer
@@ -1367,7 +1367,7 @@ minibuffer, or hidden buffer."
                                  ;;consult--source-org-buffer
                                  consult--source-buffer-hidden
                                  consult--source-non-project-buffer
-                                 consult--source-project-recent-file
+                                 consult-source-project-recent-file
                                  consult--source-recent-file-hidden
                                  consult--source-non-project-recent-file))
   )
