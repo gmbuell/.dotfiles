@@ -952,6 +952,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package dirvish
   :demand t
+  :init
+  (add-to-list 'load-path
+               (expand-file-name "extensions" (file-name-directory (locate-library "dirvish"))))
   :bind ; Bind `dirvish-fd|dirvish-side|dirvish-dwim' as you see fit
   (("C-c f" . dirvish-side)
    :map dirvish-mode-map          ; Dirvish inherits `dired-mode-map'
@@ -2758,6 +2761,7 @@ Try the repeated popping up to 10 times."
   :load-path "lisp/gptel"
   :config
   (require 'gptel-request)
+  (require 'gptel-openai)
   (gptel-make-openai "llama-cpp"
     :stream t
     :protocol "http"
