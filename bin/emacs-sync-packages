@@ -3,10 +3,46 @@ set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ELPA_DIR="$DOTFILES_DIR/emacs.d/elpa"
+LISP_DIR="$DOTFILES_DIR/emacs.d/lisp"
 INIT_EL="$DOTFILES_DIR/emacs.d/init.el"
 
-echo "Refreshing ELPA packages into $ELPA_DIR..."
+# Vendored lisp/ packages and their upstream repos
+declare -A LISP_REPOS=(
+  [breadcrumb]="https://github.com/joaotavora/breadcrumb.git"
+  [claude-code]="https://github.com/stevemolitor/claude-code.el.git"
+  [combobulate]="https://github.com/mickeynp/combobulate.git"
+  [cpp-func-impl]="https://github.com/dheerajshenoy/cpp-func-impl.git"
+  [dogears.el]="https://github.com/alphapapa/dogears.el.git"
+  [emacs-corfu-terminal]="https://codeberg.org/akib/emacs-corfu-terminal.git"
+  [emacs-flymake-popon]="https://codeberg.org/akib/emacs-flymake-popon.git"
+  [emacs-popon]="https://codeberg.org/akib/emacs-popon.git"
+  [gptel]="https://github.com/karthink/gptel.git"
+  [hydra-posframe]="https://github.com/Ladicle/hydra-posframe.git"
+  [inheritenv]="https://github.com/purcell/inheritenv.git"
+  [prism.el]="https://github.com/alphapapa/prism.el.git"
+  [treesit-fold]="https://github.com/emacs-tree-sitter/treesit-fold.git"
+)
 
+# Update vendored lisp/ packages
+echo "=== Updating lisp/ packages ==="
+for pkg in "${!LISP_REPOS[@]}"; do
+  dir="$LISP_DIR/$pkg"
+  url="${LISP_REPOS[$pkg]}"
+  echo "Updating $pkg..."
+  tmpdir=$(mktemp -d)
+  if git clone --depth 1 "$url" "$tmpdir" 2>&1; then
+    rm -rf "$tmpdir/.git"
+    rm -rf "$dir"
+    mv "$tmpdir" "$dir"
+  else
+    echo "  WARNING: Failed to clone $pkg, keeping existing version"
+    rm -rf "$tmpdir"
+  fi
+done
+
+# Update ELPA packages
+echo ""
+echo "=== Updating ELPA packages ==="
 emacs --batch \
   --eval "(setq package-user-dir \"$ELPA_DIR\")" \
   --eval "(setq package-native-compile t)" \
@@ -19,5 +55,6 @@ emacs --batch \
   --eval "(load \"$INIT_EL\" nil t)" \
   --eval "(package-install-selected-packages t)"
 
+echo ""
 echo "Done. Review changes with: cd $DOTFILES_DIR && git status"
-echo "Then commit with: git add emacs.d/elpa/ && git commit -m 'Update ELPA packages'"
+echo "Then commit with: git add emacs.d/ && git commit -m 'Update vendored packages'"
