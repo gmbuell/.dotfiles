@@ -402,6 +402,11 @@ Git gutter:
 ;; Magit makes git inside emacs awesome.
 ;; Start with "C-c g"
 ;; http://daemianmack.com/magit-cheatsheet.html
+(declare-function magit-section-ident "magit-section")
+(declare-function magit-current-section "magit-section")
+(declare-function magit-section-show "magit-section")
+(declare-function magit-section-forward "magit-section")
+(declare-function magit-status-goto-initial-section-1 "magit-status")
 (use-package magit
   :bind ("C-c g" . unpackaged/magit-status)
   :custom
@@ -663,6 +668,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (progn (sp-kill-hybrid-sexp arg)
            (indent-for-tab-command))))
 
+(defvar go-mode-map)
 (use-package smartparens-config
   :ensure smartparens
   :bind (:map prog-mode-map
@@ -1097,6 +1103,7 @@ Falls back to cloning from URL if local sources are not available."
            (make-composed-keymap keymap (current-local-map))))
       (apply fn args))))
 
+(declare-function embark--default-action "embark")
 (use-package embark
   :after (vertico)
   :bind
@@ -1189,6 +1196,14 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
 (setq grep-command "rg -nS --no-heading "
       grep-use-null-device nil)
 
+(declare-function consult--project-root "consult")
+(declare-function consult--buffer-state "consult")
+(declare-function consult--buffer-query "consult")
+(declare-function consult--buffer-pair "consult")
+(declare-function consult--useful-buffer-p "consult")
+(declare-function consult--find-most-recent-non-current-buffer "consult")
+(declare-function consult--get-location "consult")
+(declare-function consult--multi "consult")
 (use-package consult
   :bind (;; ("M-i" . consult-imenu)
          ("C-x b" . consult-buffer)
@@ -1444,11 +1459,13 @@ Used to preselect nearest headings and imenu items.")
 (require 'cl-seq)
 
 (keymap-substitute project-prefix-map #'project-find-regexp #'consult-ripgrep)
-(cl-nsubstitute-if
- '(consult-ripgrep "Find regexp")
- (pcase-lambda (`(,cmd _)) (eq cmd #'project-find-regexp))
- project-switch-commands)
+(setq project-switch-commands
+      (cl-nsubstitute-if
+       '(consult-ripgrep "Find regexp")
+       (pcase-lambda (`(,cmd _)) (eq cmd #'project-find-regexp))
+       project-switch-commands))
 
+(defvar eshell-prompt-regexp)
 (add-hook 'eshell-mode-hook (lambda () (setq outline-regexp eshell-prompt-regexp)))
 
 (use-package hrm
@@ -1461,6 +1478,10 @@ Used to preselect nearest headings and imenu items.")
          ("C-x C-d" . consult-dir)
          ("C-x C-j" . consult-dir-jump-file))
   :init
+  (defvar eshell-last-dir-ring)
+  (declare-function eshell/cd "em-dirs")
+  (declare-function eshell-find-previous-directory "em-dirs")
+  (declare-function consult-dir--pick "consult-dir")
   (defun eshell/z (&optional regexp)
     "Navigate to a previously visited directory in eshell, or to
 any directory proferred by `consult-dir'."
@@ -1523,6 +1544,7 @@ any directory proferred by `consult-dir'."
   :bind (("C-x o" . ace-window))
   :init
   (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+  (declare-function aw-select "ace-window")
   (defun ace-window-prefix ()
     "Use `ace-window' to display the buffer of the next command.
 The next buffer is the buffer displayed by the next command invoked
@@ -1635,6 +1657,7 @@ In that case, insert the number."
   (savehist-mode 1)
   (add-to-list 'savehist-additional-variables 'corfu-history))
 
+(declare-function global-flymake-popon-mode "flymake-popon")
 (use-package flymake-popon
 	:load-path "lisp/emacs-flymake-popon"
 	:after (posframe)
@@ -1782,6 +1805,7 @@ In that case, insert the number."
   :config
   (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
   :init
+  (declare-function flymake-eldoc-function "flymake")
   (add-hook 'eglot-managed-mode-hook
             (lambda ()
               ;; Show flymake diagnostics first.
@@ -1829,6 +1853,11 @@ In that case, insert the number."
     (highlight-regexp "=== RUN .*" 'ffap)))
 (advice-add 'compile :after 'meain/prettify-compilation)
 
+(defvar c++-ts-mode-map)
+(declare-function bazel--workspace-root "bazel")
+(declare-function bazel--package-directory "bazel")
+(declare-function bazel--package-name "bazel")
+(declare-function bazel--locate-build-file "bazel")
 (use-package compile-multi
   :bind (:map prog-mode-map
               ("C-c C-c" . compile-multi))
@@ -2195,7 +2224,7 @@ _k_: previous error    _l_: last error
 	("j" next-error     nil :bind nil)
 	("k" previous-error nil :bind nil)
 	("h" first-error    nil :bind nil)
-	("l" (condition-case err
+	("l" (condition-case _err
 					 (while t
 						 (next-error))
 				 (user-error nil))
@@ -2364,6 +2393,7 @@ delimiters instead of word delimiters."
 ;; go install golang.org/x/tools/gopls@latest
 ;; Also need to do more setup to get this to work with bazel.
 ;; https://github.com/bazelbuild/rules_go/wiki/Editor-setup
+(declare-function eglot-format-buffer "eglot")
 (defun eglot-format-buffer-before-save ()
 	(add-hook 'before-save-hook #'eglot-format-buffer -10 t))
 ;; (defun eglot-organize-imports-before-save ()
@@ -2495,6 +2525,9 @@ delimiters instead of word delimiters."
 ;;           (popper-toggle))))))
 
 ;; From https://stackoverflow.com/questions/13009908/eshell-search-history
+(defvar eshell-matching-input-from-input-string)
+(defvar eshell-history-index)
+(declare-function eshell-previous-matching-input "em-hist")
 (defun my-eshell-previous-matching-input-from-input (arg)
 	"Search backwards through input history for match for current input.
 \(Previous history elements are earlier commands.)
@@ -2528,6 +2561,7 @@ If N is negative, search forwards for the -Nth following match."
                           (lambda () (goto-char (eat-term-end eat-terminal))))))
 
 ;; Automatically load shell history before consult-history runs in eat buffers
+(declare-function eat-line-load-input-history-from-file "eat")
 (defun eat--ensure-history-loaded ()
   "Ensure shell history is loaded in eat buffers.
 In semi-char mode, always reload the shell history file to get the latest
@@ -2564,6 +2598,7 @@ commands. In line-mode, only load if the history ring is empty."
 (use-package inheritenv
   :load-path "lisp/inheritenv")
 ;; install claude-code.el
+(declare-function claude-code-mode "claude-code")
 (use-package claude-code
   :load-path "lisp/claude-code"
   :config
@@ -2627,6 +2662,7 @@ Try the repeated popping up to 10 times."
 	(interactive)
 	(insert (format-time-string "%-m-%-d-%y")))
 
+(declare-function palaver-mode "palaver")
 (use-package palaver
 	:custom
 	(palaver-main-window-min-width 80)
@@ -2646,6 +2682,7 @@ Try the repeated popping up to 10 times."
 (use-package vundo
   :commands vundo)
 
+(declare-function dogears--format-record "dogears")
 (use-package dogears
 	:load-path "lisp/dogears.el"
 	:bind (:map global-map
