@@ -1101,17 +1101,17 @@ Falls back to cloning from URL if local sources are not available."
       (apply fn args))))
 
 (use-package embark
-	:demand t
   :after (vertico)
   :bind
-  (("M-." . embark-act)          ;; Could also be embark-dwim for more of a
-   ;; direct xref substitute
-   ("C-h B" . embark-bindings))  ;; alternative for `describe-bindings'
+  (("M-." . embark-act)
+   ("C-h B" . embark-bindings))
 
   :init
-  ;; Optionally replace the key help with a completing-read interface
   (setq prefix-help-command #'embark-prefix-help-command)
-  ;; Make embark behave like helm
+  (define-key vertico-map (kbd "TAB") 'embark-act-with-completing-read)
+  (define-key vertico-map (kbd "M-.") 'embark-export)
+
+  :config
   (defvar embark-completing-read-prompter-map
     (let ((map (make-sparse-keymap)))
       (define-key map (kbd "TAB") 'abort-recursive-edit)
@@ -1119,8 +1119,6 @@ Falls back to cloning from URL if local sources are not available."
 
   (advice-add 'embark-completing-read-prompter :around
               (with-minibuffer-keymap embark-completing-read-prompter-map))
-  (define-key vertico-map (kbd "TAB") 'embark-act-with-completing-read)
-  (define-key vertico-map (kbd "M-.") 'embark-export)
 
   (defun embark-act-with-completing-read (&optional arg)
     (interactive "P")
@@ -1195,7 +1193,6 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
       grep-use-null-device nil)
 
 (use-package consult
-	:demand t
   :bind (;; ("M-i" . consult-imenu)
          ("C-x b" . consult-buffer)
          ("M-y" . consult-yank-pop)
@@ -1504,7 +1501,6 @@ any directory proferred by `consult-dir'."
 ;; Consult users will also want the embark-consult package.
 (use-package embark-consult
   :after (embark consult)
-  :demand t ; only necessary if you have the hook below
   ;; if you want to have consult previews as you move around an
   ;; auto-updating embark collect buffer
   :hook
@@ -1651,7 +1647,6 @@ In that case, insert the number."
 (use-package flymake-popon
 	:load-path "lisp/emacs-flymake-popon"
 	:after (posframe)
-	:demand t
   :diminish flymake-popon-mode
   :custom
   (flymake-popon-method 'posframe)
@@ -1844,7 +1839,6 @@ In that case, insert the number."
 (advice-add 'compile :after 'meain/prettify-compilation)
 
 (use-package compile-multi
-  :demand t
   :bind (:map prog-mode-map
               ("C-c C-c" . compile-multi))
   :init
@@ -1982,13 +1976,10 @@ In that case, insert the number."
 
 (use-package consult-compile-multi
   :after compile-multi
-  :demand t
   :config (consult-compile-multi-mode))
 
 (use-package compile-multi-embark
-  :after embark
-  :after compile-multi
-  :demand t
+  :after (embark compile-multi)
   :config (compile-multi-embark-mode +1))
 
 (use-package projection
@@ -2021,9 +2012,7 @@ In that case, insert the number."
           ("RET" . projection-multi-compile)))
 
 (use-package projection-multi-embark
-  :after embark
-  :after projection-multi
-  :demand t
+  :after (embark projection-multi)
   ;; Add the projection set-command bindings to `compile-multi-embark-command-map'.
   :config (projection-multi-embark-setup-command-map))
 
@@ -2129,8 +2118,6 @@ in the workspace."
 ;; It may be possible to use avy to set marks for multiple cursors.
 ;; I.e. avy-push-mark
 (use-package multiple-cursors
-  :demand t
-  ;; Alternative bindings because hterm sucks at passing through keys
   :bind* (("M-m e" . mc/edit-lines)
           ("M-m n" . mc/mark-next-like-this)
           ("M-m p" . mc/mark-previous-like-this)
@@ -2149,7 +2136,6 @@ in the workspace."
           ))
 
 (use-package multifiles
-  :demand t
   :bind (:map region-bindings-mode-map
               ("M" . mf/mirror-region-in-multifile)))
 
@@ -2160,7 +2146,6 @@ in the workspace."
 	(setq treesit-fold-line-count-show t))
 
 (use-package fold-this
-	:demand t
 	:bind (:map region-bindings-mode-map
 							("F" . fold-active-region-all)))
 
@@ -2174,11 +2159,10 @@ in the workspace."
 ;; to move while in a search. Fortunately, multiple cursors mode seems to use it
 ;; automatically even if not set as default.
 (use-package phi-search
-	:demand t)
+	:defer t)
 (use-package phi-replace
-	;; Doesn't have its own package.
 	:requires (phi-search)
-	:demand t)
+	:defer t)
 
 ;; Consider also placeholder
 ;; https://github.com/oantolin/placeholder
@@ -2653,7 +2637,6 @@ Try the repeated popping up to 10 times."
 	(insert (format-time-string "%-m-%-d-%y")))
 
 (use-package palaver
-	:demand t
 	:custom
 	(palaver-main-window-min-width 80)
 	:config
@@ -2674,8 +2657,6 @@ Try the repeated popping up to 10 times."
 
 (use-package dogears
 	:load-path "lisp/dogears.el"
-	:demand t
-	:after (consult)
 	:bind (:map global-map
 							("M-g d" . dogears-go)
 							("M-g M-b" . dogears-back)
