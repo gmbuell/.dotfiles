@@ -1612,22 +1612,13 @@ In that case, insert the number."
   (savehist-mode 1)
   (add-to-list 'savehist-additional-variables 'corfu-history))
 
-(use-package popon
-	:load-path "lisp/emacs-popon"
-	:demand t)
-(use-package corfu-terminal
-	:load-path "lisp/emacs-corfu-terminal"
-	:if (not (display-graphic-p))
-	:demand t
-	:after (corfu popon)
-  :config
-	(corfu-terminal-mode +1))
-
 (use-package flymake-popon
 	:load-path "lisp/emacs-flymake-popon"
-	:after (popon posframe)
+	:after (posframe)
 	:demand t
   :diminish flymake-popon-mode
+  :custom
+  (flymake-popon-method 'posframe)
   :config
   (global-flymake-popon-mode))
 
