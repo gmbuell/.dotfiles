@@ -55,9 +55,7 @@
                 rainbow-delimiters region-bindings-mode smartparens
                 symbol-overlay-mc ultra-scroll vertico-prescient vundo walkman
                 wgrep yasnippet-snippets))
- '(package-vc-selected-packages
-   '((claude-code :url "https://github.com/stevemolitor/claude-code.el")
-     (cpp-func-impl :url "https://github.com/dheerajshenoy/cpp-func-impl")))
+
  '(warning-suppress-log-types '((comp))))
 ;; (custom-set-faces
 ;;  ;; custom-set-faces was added by Custom.
@@ -2611,10 +2609,10 @@ commands. In line-mode, only load if the history ring is empty."
 
 ;; install required inheritenv dependency:
 (use-package inheritenv
-  :vc (:url "https://github.com/purcell/inheritenv" :rev :newest))
+  :load-path "lisp/inheritenv")
 ;; install claude-code.el
-(use-package claude-code :ensure t
-  :vc (:url "https://github.com/stevemolitor/claude-code.el" :rev :newest)
+(use-package claude-code
+  :load-path "lisp/claude-code"
   :config
   ;; optional IDE integration with Monet
   ;; (add-hook 'claude-code-process-environment-functions #'monet-start-server-function)
@@ -2830,8 +2828,7 @@ Try the repeated popping up to 10 times."
     :models '(test)))
 
 (use-package cpp-func-impl
-  :ensure t
-  :vc (cpp-func-impl :url "https://github.com/dheerajshenoy/cpp-func-impl")
+  :load-path "lisp/cpp-func-impl"
   :commands (cpp-func-impl-implement cpp-func-impl-implement-all cpp-func-impl-concrete-class)
   :custom
   (cpp-func-impl-comment-string "// TODO: `%m` `%d` `%t` `%c`"))
