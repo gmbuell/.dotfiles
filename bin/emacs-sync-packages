@@ -41,37 +41,26 @@ for pkg in "${!LISP_REPOS[@]}"; do
 done
 
 # Update vendored tree-sitter grammar sources
+# Grammar list is extracted from init.el via emacs to avoid duplication
 TS_SRC_DIR="$DOTFILES_DIR/emacs.d/tree-sitter-src"
-declare -A TS_GRAMMARS=(
-  [xml]="https://github.com/tree-sitter-grammars/tree-sitter-xml v0.7.0 xml/src"
-  [yaml]="https://github.com/tree-sitter-grammars/tree-sitter-yaml v0.7.0"
-  [pkl]="https://github.com/apple/tree-sitter-pkl v0.20.0"
-  [starlark]="https://github.com/tree-sitter-grammars/tree-sitter-starlark v1.3.0"
-  [make]="https://github.com/tree-sitter-grammars/tree-sitter-make v1.1.1"
-  [thrift]="https://github.com/tree-sitter-grammars/tree-sitter-thrift main"
-  [bash]="https://github.com/tree-sitter/tree-sitter-bash v0.23.3"
-  [c]="https://github.com/tree-sitter/tree-sitter-c v0.23.5"
-  [cpp]="https://github.com/tree-sitter/tree-sitter-cpp master"
-  [css]="https://github.com/tree-sitter/tree-sitter-css v0.20.0"
-  [go]="https://github.com/tree-sitter/tree-sitter-go v0.23.4"
-  [dockerfile]="https://github.com/camdencheek/tree-sitter-dockerfile v0.2.0"
-  [gomod]="https://github.com/camdencheek/tree-sitter-go-mod v1.1.0"
-  [html]="https://github.com/tree-sitter/tree-sitter-html v0.20.1"
-  [javascript]="https://github.com/tree-sitter/tree-sitter-javascript v0.20.1 src"
-  [json]="https://github.com/tree-sitter/tree-sitter-json v0.24.8"
-  [markdown]="https://github.com/ikatyang/tree-sitter-markdown v0.7.1"
-  [python]="https://github.com/tree-sitter/tree-sitter-python v0.23.6"
-  [toml]="https://github.com/tree-sitter/tree-sitter-toml v0.5.1"
-  [typescript]="https://github.com/tree-sitter/tree-sitter-typescript v0.20.3 typescript/src"
-)
 
 echo ""
 echo "=== Updating tree-sitter grammar sources ==="
 mkdir -p "$TS_SRC_DIR"
-for lang in "${!TS_GRAMMARS[@]}"; do
-  read -r url rev srcdir <<< "${TS_GRAMMARS[$lang]}"
-  dir="$TS_SRC_DIR/$lang"
+
+# Extract grammar list from mp-treesit-grammar-sources in init.el
+# Output format: lang\turl\trev\tsrcdir (one per line)
+TS_GRAMMAR_LIST=$(emacs --batch --load "$INIT_EL" --eval "
+(dolist (g mp-treesit-grammar-sources)
+  (princ (format \"%s\t%s\t%s\t%s\n\"
+                 (car g) (nth 1 g) (or (nth 2 g) \"\")
+                 (or (nth 3 g) \"src\"))))
+" 2>/dev/null)
+
+while IFS=$'\t' read -r lang url rev srcdir; do
+  [ -z "$lang" ] && continue
   srcdir="${srcdir:-src}"
+  dir="$TS_SRC_DIR/$lang"
   srcparent=$(dirname "$srcdir")
   if [ -d "$dir/.git" ]; then
     echo "Pulling $lang..."
@@ -87,7 +76,7 @@ for lang in "${!TS_GRAMMARS[@]}"; do
     fi
     git -C "$dir" checkout 2>/dev/null || echo "  WARNING: Failed to clone $lang"
   fi
-done
+done <<< "$TS_GRAMMAR_LIST"
 
 # Update ELPA packages
 echo ""
