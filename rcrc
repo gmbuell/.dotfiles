@@ -1,1 +1,1 @@
-SYMLINK_DIRS="emacs.d/elpa emacs.d/lisp"
+SYMLINK_DIRS="emacs.d/elpa emacs.d/lisp emacs.d/tree-sitter-src"

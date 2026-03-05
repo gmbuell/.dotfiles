@@ -2,6 +2,7 @@ emacs.d/elpa/gnupg/
 emacs.d/elpa/*.signed
 emacs.d/elpa/archives/
 emacs.d/lisp/*/.git
+emacs.d/tree-sitter-src/*/.git
 
 # Exclude non-essential files from vendored packages
 emacs.d/elpa/**/*.gif
