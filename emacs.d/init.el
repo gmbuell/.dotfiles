@@ -2692,6 +2692,7 @@ Try the repeated popping up to 10 times."
 
 (defvar url-request-method)
 (defvar url-request-extra-headers)
+(declare-function url-http-symbol-value-in-buffer "url-http")
 (defun my-minuet-endpoint-reachable-p ()
   "Check if minuet endpoint is reachable and my-minuet-enabled is true."
   (when my-minuet-enabled
