@@ -18,3 +18,12 @@ emacs.d/lisp/**/*.xcf*
 emacs.d/lisp/**/docs/
 emacs.d/lisp/**/screenshot/
 emacs.d/lisp/**/images/
+emacs.d/elpa/**/*.elc
+emacs.d/lisp/**/*.elc
+emacs.d/elpa/**/test/
+emacs.d/elpa/**/tests/
+emacs.d/lisp/**/test/
+emacs.d/lisp/**/tests/
+emacs.d/elpa/**/.github/
+emacs.d/lisp/**/.github/
+emacs.d/lisp/combobulate/build/
