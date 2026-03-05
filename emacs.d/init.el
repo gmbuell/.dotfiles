@@ -131,9 +131,8 @@ Clones URL into ~/.emacs.d/lisp/NAME and opens init.el to add a use-package form
 (put 'my-clangd-args 'safe-local-variable #'listp)
 
 ;; Custom function to create the clangd command
-(defun my-clangd-command (interactive-p)
-  "Return the command to run clangd based on current settings.
-INTERACTIVE-P is non-nil if called interactively."
+(defun my-clangd-command (_interactive-p)
+  "Return the command to run clangd based on current settings."
   (if my-clangd-args
       (cons my-clangd-binary my-clangd-args)
     (list my-clangd-binary)))
@@ -396,10 +395,8 @@ Git gutter:
   ("R" git-gutter:set-start-revision)
   ("q" nil :color blue)
   ("Q" (progn (git-gutter-mode -1)
-              ;; git-gutter-fringe doesn't seem to
-              ;; clear the markup right away
-              (sit-for 0.1)
-              (git-gutter:clear))
+              ;; Give fringe a moment to clear markup
+              (sit-for 0.1))
    :color blue))
 
 ;; Magit makes git inside emacs awesome.
@@ -1267,15 +1264,13 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
                                    :exclude spacemacs-useless-buffers-regexp
                                    :predicate
                                    (lambda (buf)
-                                     (let ((buf-name (buffer-name buf)))
-                                       (and
-                                        ;; Exclude current buffer
-                                        (not (eq buf (current-buffer)))
-                                        ;; Exclude most recent non-current buffer
-                                        (not (eq buf (car (cdr (buffer-list)))))
-                                        ;; Exclude useful buffer patterns to avoid duplication
-                                        (not (consult--useful-buffer-p buf))
-                                        )))))))
+                                     (and
+                                      ;; Exclude current buffer
+                                      (not (eq buf (current-buffer)))
+                                      ;; Exclude most recent non-current buffer
+                                      (not (eq buf (car (cdr (buffer-list)))))
+                                      ;; Exclude useful buffer patterns to avoid duplication
+                                      (not (consult--useful-buffer-p buf))))))))
     "Project buffer candidate source for `consult-buffer'.")
   ;; Helper function to find most recent non-current buffer
   (defun consult--find-most-recent-non-current-buffer ()
@@ -1416,7 +1411,7 @@ minibuffer, or hidden buffer."
   "Location of point before entering minibuffer.
 Used to preselect nearest headings and imenu items.")
 
-(defun consult--set-previous-point (&optional arg1 arg2)
+(defun consult--set-previous-point (&rest _)
   "Save location of point. Used before entering the minibuffer."
   (setq consult--previous-point (point)))
 
@@ -1500,11 +1495,7 @@ any directory proferred by `consult-dir'."
 
 ;; Consult users will also want the embark-consult package.
 (use-package embark-consult
-  :after (embark consult)
-  ;; if you want to have consult previews as you move around an
-  ;; auto-updating embark collect buffer
-  :hook
-  (embark-collect-mode . consult-preview-at-point-mode))
+  :after (embark consult))
 
 ;; wgrep mode to edit grep buffers (produced by embark-export)
 (use-package wgrep
@@ -1541,7 +1532,7 @@ When `switch-to-buffer-obey-display-actions' is non-nil,
 `switch-to-buffer' commands are also supported."
     (interactive)
     (display-buffer-override-next-command
-     (lambda (buffer _)
+     (lambda (_buffer _)
        (let (window type)
          (setq
           window (aw-select (propertize " ACE" 'face 'mode-line-highlight))
@@ -1579,7 +1570,7 @@ When `switch-to-buffer-obey-display-actions' is non-nil,
         (alist-get 'file embark-default-action-overrides) #'find-file
         (alist-get 'bookmark embark-default-action-overrides) #'bookmark-jump
         (alist-get 'library embark-default-action-overrides) #'find-library)
-  (map-keymap (lambda (key cmd)
+  (map-keymap (lambda (key _cmd)
                 (keymap-set embark-general-map (key-description (make-vector 1 key))
                             #'my/embark-set-window))
               my/window-prefix-map))
@@ -2113,7 +2104,7 @@ in the workspace."
 (global-set-key [remap dabbrev-expand] 'hippie-expand)
 
 (require 'nadvice)
-(defun do-nothing (orig-fun &rest args) t)
+(defun do-nothing (&rest _) t)
 
 ;; It may be possible to use avy to set marks for multiple cursors.
 ;; I.e. avy-push-mark
@@ -2514,7 +2505,7 @@ If N is negative, search forwards for the -Nth following match."
 																eshell-next-matching-input-from-input)))
 			;; Starting a new search
 			(setq eshell-matching-input-from-input-string
-						(buffer-substring (save-excursion (eshell-bol) (point))
+						(buffer-substring (save-excursion (beginning-of-line) (point))
 															(point))
 						eshell-history-index nil))
 	(eshell-previous-matching-input
@@ -2597,7 +2588,7 @@ commands. In line-mode, only load if the history ring is empty."
 	"Call ORIG-FUN until the cursor moves.
 Try the repeated popping up to 10 times."
 	(let ((p (point)))
-		(dotimes (i 10)
+		(dotimes (_ 10)
 			(when (= p (point))
 				(apply orig-fun args)))))
 (advice-add 'pop-to-mark-command :around
@@ -2699,18 +2690,20 @@ Try the repeated popping up to 10 times."
 	:init
 	(apheleia-global-mode +1))
 
+(defvar url-request-method)
+(defvar url-request-extra-headers)
 (defun my-minuet-endpoint-reachable-p ()
   "Check if minuet endpoint is reachable and my-minuet-enabled is true."
   (when my-minuet-enabled
     (condition-case nil
         (let* ((url-request-method "HEAD")
-               (url-request-timeout 2)
                (status (url-http-symbol-value-in-buffer
                         'url-http-response-status
                         (url-retrieve-synchronously my-minuet-endpoint nil nil 2))))
           (and status (>= status 200) (< status 400)))
       (error nil))))
 
+(declare-function minuet-set-optional-options "minuet")
 (use-package minuet
 	:if (and my-minuet-enabled (my-minuet-endpoint-reachable-p))
   :bind
