@@ -446,7 +446,8 @@ command was called, go to its unstaged changes section."
   (global-hl-todo-mode))
 
 (use-package magit-todos
-  :init
+  :after magit
+  :config
   (magit-todos-mode))
 
 (defvar unpackaged/flex-fill-paragraph-column nil
@@ -624,11 +625,12 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                  ("Test" "^ *TEST\\(?:_F\\)?([^,]+,\n? *\\(.+\\)) {$" 1))))))
 
 (use-package markdown-mode
- )
+  :mode ("\\.md\\'" "\\.markdown\\'"))
 
 ;; Deft is my preferred note-taking setup. See:
 ;; http://jblevins.org/projects/deft/
 (use-package deft
+  :commands deft
   :config
   (progn
     ;; Set the deft directory to Dropbox/notes if it exists.
@@ -781,12 +783,8 @@ Falls back to cloning from URL if local sources are not available."
   ;;  M-x customize-group RET combobulate RET
   ;;
   (use-package combobulate
-    ;; Make sure to git clone https://github.com/mickeynp/combobulate
     :load-path "lisp/combobulate"
-		:demand t
     :custom
-    ;; You can customize Combobulate's key prefix here.
-    ;; Note that you may have to restart Emacs for this to take effect!
     (combobulate-key-prefix "C-c o")
     :hook ((prog-mode . combobulate-mode))))
 
@@ -875,6 +873,7 @@ Falls back to cloning from URL if local sources are not available."
   (set-frame-font "Inconsolata 12" t t))
 
 (use-package re-builder
+  :commands re-builder
   :config (setq reb-re-syntax 'string))
 
 (use-package yasnippet
@@ -948,19 +947,18 @@ Falls back to cloning from URL if local sources are not available."
               ))
 
 (use-package symbol-overlay
-  :init
-  (global-set-key (kbd "M-i") 'symbol-overlay-put)
-  (global-set-key (kbd "M-n") 'symbol-overlay-switch-forward)
-  (global-set-key (kbd "M-p") 'symbol-overlay-switch-backward)
-  (global-set-key (kbd "<f7>") 'symbol-overlay-mode)
-  (global-set-key (kbd "<f8>") 'symbol-overlay-remove-all))
+  :bind (("M-i" . symbol-overlay-put)
+         ("M-n" . symbol-overlay-switch-forward)
+         ("M-p" . symbol-overlay-switch-backward)
+         ("<f7>" . symbol-overlay-mode)
+         ("<f8>" . symbol-overlay-remove-all)))
 
 (use-package symbol-overlay-mc
   :after (symbol-overlay)
   :bind (("M-a" . symbol-overlay-mc-mark-all)))
 
 (use-package casual
- )
+  :defer t)
 
 (use-package casual-symbol-overlay
   :after (casual)
@@ -1514,7 +1512,7 @@ any directory proferred by `consult-dir'."
 
 ;; wgrep mode to edit grep buffers (produced by embark-export)
 (use-package wgrep
- )
+  :commands wgrep-change-to-wgrep-mode)
 
 (use-package marginalia
   :init
@@ -2052,9 +2050,13 @@ In that case, insert the number."
     (message "ElDoc auto-update disabled. Use M-x global-eldoc-mode to re-enable.")))
 
 (use-package bazel
+  :commands (bazel-build bazel-test bazel-run bazel-coverage)
+  :mode (("\\.bazel\\'" . bazel-mode)
+         ("\\.bzl\\'" . bazel-starlark-mode)
+         ("\\`BUILD\\'" . bazel-mode)
+         ("\\`WORKSPACE\\'" . bazel-workspace-mode))
   :custom
   (bazel-command '("bazel"))
-  ;; :bind (("C-c C-c" . compile))
   :config
   ;; Fix compilation-mode to open real source files instead of Bazel execroot cache files.
   ;; When Bazel runs tests, it operates in a sandboxed execroot directory and prints
@@ -2116,7 +2118,7 @@ in the workspace."
   )
 
 (use-package pcmpl-args
- )
+  :defer t)
 
 ;; https://www.masteringemacs.org/article/text-expansion-hippie-expand
 (global-set-key [remap dabbrev-expand] 'hippie-expand)
@@ -2602,10 +2604,10 @@ commands. In line-mode, only load if the history ring is empty."
   (:repeat-map my-claude-code-map ("M" . claude-code-cycle-mode)))
 
 (use-package git-link
- )
+  :commands (git-link git-link-commit git-link-homepage))
 
 (use-package copy-as-format
- )
+  :commands (copy-as-format copy-as-format-markdown copy-as-format-slack))
 
 (defun modi/multi-pop-to-mark (orig-fun &rest args)
 	"Call ORIG-FUN until the cursor moves.
@@ -2664,9 +2666,11 @@ Try the repeated popping up to 10 times."
 
 ;; prism for highlighting modes without good syntax hilighting
 (use-package prism
-	:load-path "lisp/prism.el")
+	:load-path "lisp/prism.el"
+	:commands (prism-mode prism-whitespace-mode))
 
-(use-package vundo)
+(use-package vundo
+  :commands vundo)
 
 (use-package dogears
 	:load-path "lisp/dogears.el"
