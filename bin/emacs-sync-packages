@@ -28,15 +28,15 @@ echo "=== Updating lisp/ packages ==="
 for pkg in "${!LISP_REPOS[@]}"; do
   dir="$LISP_DIR/$pkg"
   url="${LISP_REPOS[$pkg]}"
-  echo "Updating $pkg..."
-  tmpdir=$(mktemp -d)
-  if git clone --depth 1 "$url" "$tmpdir" 2>&1; then
-    rm -rf "$tmpdir/.git"
-    rm -rf "$dir"
-    mv "$tmpdir" "$dir"
+  if [ -d "$dir/.git" ]; then
+    echo "Pulling $pkg..."
+    git -C "$dir" pull --ff-only 2>&1 || echo "  WARNING: pull failed for $pkg"
   else
-    echo "  WARNING: Failed to clone $pkg, keeping existing version"
-    rm -rf "$tmpdir"
+    echo "Cloning $pkg..."
+    rm -rf "$dir"
+    if ! git clone --depth 1 "$url" "$dir" 2>&1; then
+      echo "  WARNING: Failed to clone $pkg"
+    fi
   fi
 done
 
