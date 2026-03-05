@@ -983,6 +983,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
      ("r" "~/repo/"                "repo")))
   :config
   ;; (dirvish-peek-mode)             ; Preview files in minibuffer
+  (require 'dirvish-side)
   (dirvish-side-follow-mode)      ; similar to `treemacs-follow-mode'
   (setq dirvish-mode-line-format
         '(:left (sort symlink) :right (omit yank index)))
@@ -2756,7 +2757,7 @@ Try the repeated popping up to 10 times."
 (use-package gptel
   :load-path "lisp/gptel"
   :config
-  (require 'gptel-curl)
+  (require 'gptel-request)
   (gptel-make-openai "llama-cpp"
     :stream t
     :protocol "http"
