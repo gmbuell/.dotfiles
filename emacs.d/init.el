@@ -13,7 +13,6 @@
 (setopt package-native-compile t)
 (setq native-comp-jit-compilation t)
 
-(setq gc-cons-threshold 100000000)
 (require 'package)
 (add-to-list 'package-archives (cons "melpa" "https://melpa.org/packages/") t)
 (setq package-archive-priorities
@@ -68,16 +67,6 @@
 ;;  ;; Your init file should contain only one such instance.
 ;;  ;; If there is more than one, they won't work right.
 ;;  '(flymake-error ((t (:underline (:color "#e74c3c" :style wave :position wave))))))
-
-;; Disable graphical garbage
-(when (and (fboundp 'tool-bar-mode) (not (eq tool-bar-mode -1)))
-  (tool-bar-mode -1))
-(when (and (fboundp 'menu-bar-mode) (not (eq menu-bar-mode -1)))
-  (menu-bar-mode -1))
-(when (and (fboundp 'scroll-bar-mode) (not (eq scroll-bar-mode -1)))
-  (scroll-bar-mode -1))
-(when (and (fboundp 'tooltip-mode) (not (eq tooltip-mode -1)))
-  (tooltip-mode -1))
 
 (defgroup my-minuet nil
   "Custom settings for minuet code completion."
@@ -688,35 +677,40 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package treesit
   :preface
   (defun mp-setup-install-grammars ()
-    "Install Tree-sitter grammars if they are absent."
+    "Install Tree-sitter grammars if they are absent.
+Grammar sources are vendored in tree-sitter-src/ for offline compilation.
+Falls back to cloning from URL if local sources are not available."
     (interactive)
-    (dolist (grammar
-             '((xml . ("https://github.com/tree-sitter-grammars/tree-sitter-xml" "v0.7.0" "xml/src"))
-							 (yaml . ("https://github.com/tree-sitter-grammars/tree-sitter-yaml" "v0.7.0"))
-							 (pkl . ("https://github.com/apple/tree-sitter-pkl" "v0.20.0"))
-							 (starlark . ("https://github.com/tree-sitter-grammars/tree-sitter-starlark" "v1.3.0"))
-							 (make . ("https://github.com/tree-sitter-grammars/tree-sitter-make" "v1.1.1"))
-							 (thrift . ("https://github.com/tree-sitter-grammars/tree-sitter-thrift" "main"))
-							 (bash . ("https://github.com/tree-sitter/tree-sitter-bash" "v0.23.3"))
-							 (c . ("https://github.com/tree-sitter/tree-sitter-c" "v0.23.5"))
-							 (cpp . ("https://github.com/tree-sitter/tree-sitter-cpp" "master"))
-							 (css . ("https://github.com/tree-sitter/tree-sitter-css" "v0.20.0"))
-               (go . ("https://github.com/tree-sitter/tree-sitter-go" "v0.23.4"))
-							 (dockerfile . ("https://github.com/camdencheek/tree-sitter-dockerfile" "v0.2.0"))
-               (gomod . ("https://github.com/camdencheek/tree-sitter-go-mod" "v1.1.0"))
-               (html . ("https://github.com/tree-sitter/tree-sitter-html" "v0.20.1"))
-               (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "v0.20.1" "src"))
-               (json . ("https://github.com/tree-sitter/tree-sitter-json" "v0.24.8"))
-               (markdown . ("https://github.com/ikatyang/tree-sitter-markdown" "v0.7.1"))
-               (python . ("https://github.com/tree-sitter/tree-sitter-python" "v0.23.6"))
-               (toml . ("https://github.com/tree-sitter/tree-sitter-toml" "v0.5.1"))
-               (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "typescript/src"))))
-      (add-to-list 'treesit-language-source-alist grammar)
-      ;; Only install `grammar' if we don't already have it
-      ;; installed. However, if you want to *update* a grammar then
-      ;; this obviously prevents that from happening.
-      (unless (treesit-language-available-p (car grammar))
-        (treesit-install-language-grammar (car grammar)))))
+    (let ((ts-src-dir (locate-user-emacs-file "tree-sitter-src")))
+      (dolist (grammar
+               '((xml "https://github.com/tree-sitter-grammars/tree-sitter-xml" "v0.7.0" "xml/src")
+                 (yaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml" "v0.7.0")
+                 (pkl "https://github.com/apple/tree-sitter-pkl" "v0.20.0")
+                 (starlark "https://github.com/tree-sitter-grammars/tree-sitter-starlark" "v1.3.0")
+                 (make "https://github.com/tree-sitter-grammars/tree-sitter-make" "v1.1.1")
+                 (thrift "https://github.com/tree-sitter-grammars/tree-sitter-thrift" "main")
+                 (bash "https://github.com/tree-sitter/tree-sitter-bash" "v0.23.3")
+                 (c "https://github.com/tree-sitter/tree-sitter-c" "v0.23.5")
+                 (cpp "https://github.com/tree-sitter/tree-sitter-cpp" "master")
+                 (css "https://github.com/tree-sitter/tree-sitter-css" "v0.20.0")
+                 (go "https://github.com/tree-sitter/tree-sitter-go" "v0.23.4")
+                 (dockerfile "https://github.com/camdencheek/tree-sitter-dockerfile" "v0.2.0")
+                 (gomod "https://github.com/camdencheek/tree-sitter-go-mod" "v1.1.0")
+                 (html "https://github.com/tree-sitter/tree-sitter-html" "v0.20.1")
+                 (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "v0.20.1" "src")
+                 (json "https://github.com/tree-sitter/tree-sitter-json" "v0.24.8")
+                 (markdown "https://github.com/ikatyang/tree-sitter-markdown" "v0.7.1")
+                 (python "https://github.com/tree-sitter/tree-sitter-python" "v0.23.6")
+                 (toml "https://github.com/tree-sitter/tree-sitter-toml" "v0.5.1")
+                 (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "typescript/src")))
+        (let* ((lang (car grammar))
+               (local-dir (expand-file-name (symbol-name lang) ts-src-dir))
+               (source (if (file-directory-p local-dir)
+                           (cons lang (cons local-dir (cddr grammar)))
+                         grammar)))
+          (add-to-list 'treesit-language-source-alist source)
+          (unless (treesit-language-available-p lang)
+            (treesit-install-language-grammar lang))))))
 
   ;; Optional. Combobulate works in both xxxx-ts-modes and
   ;; non-ts-modes.
