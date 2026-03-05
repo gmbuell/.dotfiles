@@ -1167,10 +1167,10 @@ Falls back to cloning from URL if local sources are not available."
 	(defvar-keymap embark-kmacro-map
 		:doc "Actions on kmacros."
 		:parent embark-general-map
-		"RET" #'embark-kmacro-run
-		"s" #'embark-kmacro-save
-		"n" #'embark-kmacro-name
-		"b" #'embark-kmacro-bind)
+		"RET" 'embark-kmacro-run
+		"s" 'embark-kmacro-save
+		"n" 'embark-kmacro-name
+		"b" 'embark-kmacro-bind)
 
 	(add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map))
 	)
@@ -1565,8 +1565,8 @@ When `switch-to-buffer-obey-display-actions' is non-nil,
   (defvar-keymap my/window-prefix-map
     :doc "Keymap for various window-prefix maps"
     :suppress 'nodigits
-    "o" #'ace-window-prefix
-    "0" #'ace-window-prefix
+    "o" 'ace-window-prefix
+    "0" 'ace-window-prefix
     "1" #'same-window-prefix
     "2" #'split-window-vertically
     "3" #'split-window-horizontally
@@ -1594,7 +1594,7 @@ When `switch-to-buffer-obey-display-actions' is non-nil,
         (alist-get 'library embark-default-action-overrides) #'find-library)
   (map-keymap (lambda (key _cmd)
                 (keymap-set embark-general-map (key-description (make-vector 1 key))
-                            #'my/embark-set-window))
+                            'my/embark-set-window))
               my/window-prefix-map))
 
 (use-package f
@@ -1948,7 +1948,7 @@ In that case, insert the number."
       default-directory))
 
   ;; Set compile-multi default directory to use project.el
-  (setq compile-multi-default-directory #'my/project-root-or-default)
+  (setq compile-multi-default-directory 'my/project-root-or-default)
 
   (defun my/bazel-project-p ()
     "Check if current buffer is in a Bazel workspace."
@@ -1966,7 +1966,7 @@ In that case, insert the number."
                `(,(lambda ()
                     (and buffer-file-name
                          (bazel--workspace-root buffer-file-name)))
-                 ,#'my/compile-multi-bazel-available-targets))
+                 ,'my/compile-multi-bazel-available-targets))
 
   ;; Setup compile-multi configuration for Go projects
   (add-to-list 'compile-multi-config
@@ -2102,7 +2102,7 @@ in the workspace."
         (apply orig-fun marker filename directory formats))))
 
   (with-eval-after-load 'compile
-    (advice-add 'compilation-find-file :around #'my/bazel-fix-compilation-find-file)))
+    (advice-add 'compilation-find-file :around 'my/bazel-fix-compilation-find-file)))
 
 (use-package eshell
   :hook ((eshell-mode . (lambda () (setq-local corfu-auto nil
