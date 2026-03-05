@@ -1,6 +1,6 @@
 ;;; treesit-fold.el --- Code folding using treesit  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2025  emacs-tree-sitter maintainers
+;; Copyright (C) 2021-2026  emacs-tree-sitter maintainers
 
 ;; Created date 2021-08-11 14:12:37
 
@@ -83,6 +83,8 @@
     (cmake-ts-mode          . ,(treesit-fold-parsers-cmake))
     (clojure-mode           . ,(treesit-fold-parsers-clojure))
     (clojure-ts-mode        . ,(treesit-fold-parsers-clojure))
+    (crystal-mode           . ,(treesit-fold-parsers-crystal))
+    (crystal-ts-mode        . ,(treesit-fold-parsers-crystal))
     (csharp-mode            . ,(treesit-fold-parsers-csharp))
     (csharp-ts-mode         . ,(treesit-fold-parsers-csharp))
     (css-mode               . ,(treesit-fold-parsers-css))
@@ -95,14 +97,22 @@
     (erlang-mode            . ,(treesit-fold-parsers-erlang))
     (erlang-ts-mode         . ,(treesit-fold-parsers-erlang))
     (ess-r-mode             . ,(treesit-fold-parsers-r))
+    (fennel-mode            . ,(treesit-fold-parsers-fennel))
+    (fennel-ts-mode         . ,(treesit-fold-parsers-fennel))
     (fish-mode              . ,(treesit-fold-parsers-fish))
+    (fsharp-mode            . ,(treesit-fold-parsers-fsharp))
+    (fsharp-ts-mode         . ,(treesit-fold-parsers-fsharp))
     (gdscript-mode          . ,(treesit-fold-parsers-gdscript))
     (gdscript-ts-mode       . ,(treesit-fold-parsers-gdscript))
+    (gdshader-mode          . ,(treesit-fold-parsers-gdshader))
+    (gdshader-ts-mode       . ,(treesit-fold-parsers-gdshader))
+    (gitconfig-mode         . ,(treesit-fold-parsers-git-config))
     (gleam-ts-mode          . ,(treesit-fold-parsers-gleam))
     (glsl-mode              . ,(treesit-fold-parsers-glsl))
     (go-mode                . ,(treesit-fold-parsers-go))
     (go-ts-mode             . ,(treesit-fold-parsers-go))
     (go-mod-ts-mode         . ,(treesit-fold-parsers-go))
+    (graphql-mode           . ,(treesit-fold-parsers-graphql))
     (groovy-mode            . ,(treesit-fold-parsers-groovy))
     (jenkinsfile-mode       . ,(treesit-fold-parsers-groovy))
     (haskell-mode           . ,(treesit-fold-parsers-haskell))
@@ -157,6 +167,8 @@
     (ninja-mode             . ,(treesit-fold-parsers-ninja))
     (noir-mode              . ,(treesit-fold-parsers-noir))
     (noir-ts-mode           . ,(treesit-fold-parsers-noir))
+    (nim-mode               . ,(treesit-fold-parsers-nim))
+    (nim-ts-mode            . ,(treesit-fold-parsers-nim))
     (nix-mode               . ,(treesit-fold-parsers-nix))
     (nix-ts-mode            . ,(treesit-fold-parsers-nix))
     (ocaml-mode             . ,(treesit-fold-parsers-ocaml))
@@ -170,6 +182,7 @@
     (python-ts-mode         . ,(treesit-fold-parsers-python))
     (qss-mode               . ,(treesit-fold-parsers-qss))
     (rjsx-mode              . ,(treesit-fold-parsers-javascript))
+    (ron-mode               . ,(treesit-fold-parsers-ron))
     (rst-mode               . ,(treesit-fold-parsers-rst))
     (ruby-mode              . ,(treesit-fold-parsers-ruby))
     (ruby-ts-mode           . ,(treesit-fold-parsers-ruby))
@@ -190,12 +203,17 @@
     (tuareg-mode            . ,(treesit-fold-parsers-ocaml))
     (typescript-mode        . ,(treesit-fold-parsers-typescript))
     (typescript-ts-mode     . ,(treesit-fold-parsers-typescript))
-    (tsx-ts-mode            . ,(treesit-fold-parsers-typescript))
+    (tsx-ts-mode            . ,(treesit-fold-parsers-tsx))
     (verilog-mode           . ,(treesit-fold-parsers-verilog))
     (verilog-ts-mode        . ,(treesit-fold-parsers-verilog))
     (vhdl-mode              . ,(treesit-fold-parsers-vhdl))
     (vhdl-ts-mode           . ,(treesit-fold-parsers-vhdl))
-    (vimscript-ts-mode      . ,(treesit-fold-parsers-vimscript))
+    (vimrc-mode             . ,(treesit-fold-parsers-vim))
+    (vimscript-ts-mode      . ,(treesit-fold-parsers-vim))
+    (wat-mode               . ,(treesit-fold-parsers-wat))
+    (wat-ts-mode            . ,(treesit-fold-parsers-wat))
+    (wgsl-mode              . ,(treesit-fold-parsers-wgsl))
+    (wgsl-ts-mode           . ,(treesit-fold-parsers-wgsl))
     (nxml-mode              . ,(treesit-fold-parsers-xml))
     (xml-ts-mode            . ,(treesit-fold-parsers-xml))
     (yaml-mode              . ,(treesit-fold-parsers-yaml))
@@ -826,6 +844,19 @@ more information."
       (setq end (treesit-fold--last-eol end)))
     (treesit-fold--cons-add (cons beg end) offset)))
 
+(defun treesit-fold-range-crystal-block (node offset)
+  "Return the fold range for `block' NODE in Crystal.
+
+For arguments NODE and OFFSET, see function `treesit-fold-range-seq' for
+more information."
+  (when-let* ((expr (car (treesit-fold-find-children node "expressions")))
+              (prev (treesit-node-prev-sibling expr))
+              (beg (treesit-node-end prev))
+              (end (treesit-node-end expr)))
+    (when treesit-fold-on-next-line  ; display nicely
+      (setq end (treesit-fold--last-eol end)))
+    (treesit-fold--cons-add (cons beg end) offset)))
+
 (defun treesit-fold-range-editorconfig-end-section (node)
   "Return the section NODE's end point."
   (let ((pt (treesit-node-end node))
@@ -935,6 +966,38 @@ more information."
               (beg (treesit-fold--eol beg))
               (end (treesit-node-end node))
               (end (1- end)))
+    (treesit-fold--cons-add (cons beg end) offset)))
+
+(defun treesit-fold-range-fsharp-module-defn (node offset)
+  "Define fold range for `module_defn' in FSharp.
+
+For arguments NODE and OFFSET, see function `treesit-fold-range-seq' for
+more information."
+  (when-let* ((beg (car (treesit-fold-find-children node "=")))
+              (beg (treesit-node-end beg))
+              (end (treesit-node-end node)))
+    (treesit-fold--cons-add (cons beg end) offset)))
+
+(defun treesit-fold-range-fsharp-record-type-defn (node offset)
+  "Define fold range for `record_type_defn' in FSharp.
+
+For arguments NODE and OFFSET, see function `treesit-fold-range-seq' for
+more information."
+  (when-let* ((beg (car (treesit-fold-find-children node "{")))
+              (beg (treesit-node-end beg))
+              (end (1- (treesit-node-end node))))
+    (treesit-fold--cons-add (cons beg end) offset)))
+
+(defun treesit-fold-range-git-config-section (node offset)
+  "Return the fold range for `section' in YAML.
+
+For arguments NODE and OFFSET, see function `treesit-fold-range-seq' for
+more information."
+  (when-let* ((first (car (treesit-fold-find-children node "section_header")))
+              (beg (treesit-node-end first))
+              (end (treesit-node-end node)))
+    (when treesit-fold-on-next-line
+      (setq end (treesit-fold--last-eol end)))
     (treesit-fold--cons-add (cons beg end) offset)))
 
 (defun treesit-fold-range-gleam (node offset)
@@ -1454,6 +1517,16 @@ more information."
               (end (treesit-node-end node)))
     (treesit-fold--cons-add (cons (+ beg 3) (- end 3)) offset)))
 
+(defun treesit-fold-range-ron-struct (node offset)
+  "Define fold range for `struct' in RON.
+
+For arguments NODE and OFFSET, see function `treesit-fold-range-seq' for
+more information."
+  (when-let* ((node-bracket (car (treesit-fold-find-children node "(")))
+              (beg (treesit-node-end node-bracket))
+              (end (1- (treesit-node-end node))))
+    (treesit-fold--cons-add (cons beg end) offset)))
+
 (defun treesit-fold-range-rst-body (node offset)
   "Define fold range for `body' in reStructuredText.
 
@@ -1595,17 +1668,37 @@ more information."
       (setq end (treesit-fold--last-eol end)))
     (treesit-fold--cons-add (cons beg end) offset)))
 
-(defun treesit-fold-range-vimscript-function (node offset)
-  "Return the fold range for `function!' and `func' NODE
-in Vimscript.
+(defun treesit-fold-range-vim-for-loop (node offset)
+  "Return the fold range for `for_loop' in Vim.
+For arguments NODE and OFFSET, see function `treesit-fold-range-seq' for
+more information."
+  (when-let* ((body (car (treesit-fold-find-children node "body")))
+              (prev (treesit-node-prev-sibling body))
+              (beg (treesit-node-end prev))
+              (end (treesit-node-end node)))
+    (when treesit-fold-on-next-line
+      (setq end (treesit-fold--last-eol end)))
+    (treesit-fold--cons-add (cons beg end) offset)))
+
+(defun treesit-fold-range-wat-module (node offset)
+  "Return the fold range for `module' in Wasm Text.
 
 For arguments NODE and OFFSET, see function `treesit-fold-range-seq' for
 more information."
   (when-let* ((param-node (treesit-node-child node 1))
-              (beg (treesit-node-start param-node))
-              (end (treesit-node-end node)))
-    (unless treesit-fold-on-next-line  ; display nicely
-      (setq beg (treesit-fold--last-eol beg)))
+              (beg (treesit-node-end param-node))
+              (end (1- (treesit-node-end node))))
+    (treesit-fold--cons-add (cons beg end) offset)))
+
+(defun treesit-fold-range-wat-func (node offset)
+  "Return the fold range for `module_field_func' in Wasm Text.
+
+For arguments NODE and OFFSET, see function `treesit-fold-range-seq' for
+more information."
+  (when-let* ((body (car (treesit-fold-find-children node "result")))
+              (next (treesit-node-next-sibling body))
+              (beg (treesit-node-start next))
+              (end (1- (treesit-node-end node))))
     (treesit-fold--cons-add (cons beg end) offset)))
 
 (provide 'treesit-fold)

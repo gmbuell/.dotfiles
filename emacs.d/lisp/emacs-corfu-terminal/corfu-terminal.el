@@ -73,9 +73,6 @@ https://codeberg.org/akib/emacs-corfu-terminal/issues."
   :type '(choice (const :tag "Yes" t)
                  (const :tag "No" nil)))
 
-(defvar corfu-terminal-mode nil
-	"Enable corfu-terminal-mode")
-
 (defvar corfu-terminal--popon nil
   "Popon object.")
 

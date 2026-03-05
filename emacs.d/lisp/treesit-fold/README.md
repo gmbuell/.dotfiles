@@ -27,34 +27,37 @@ the tree-sitter syntax tree.
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
-- [💾 Installation](#-installation)
-  - [🔍 Method 1. with `straight.el` and `use-package`:](#-method-1-with-straightel-and-use-package)
-  - [🔍 Method 2. Manual](#-method-2-manual)
-- [🖥 Usage](#-usage)
-  - [📇 Commands](#-commands)
-  - [🔨 Supported languages](#-supported-languages)
-    - [🚀 Add support for non-ts modes](#-add-support-for-non-ts-modes)
-- [📝 Customization](#-customization)
-  - [⚪ Folding on new nodes](#-folding-on-new-nodes)
-    - [❔ Example](#-example)
-    - [↔ Offset](#-offset)
-  - [🔍 Writing new fold functions](#-writing-new-fold-functions)
-  - [🔢 Line Count Display](#-line-count-display)
-- [🔌 Plugins](#-plugins)
-  - [⚖ Indicators Mode](#-indicators-mode)
-    - [💾 Installation](#-installation-1)
-    - [🖥 Usage](#-usage-1)
-  - [📝 Summary](#-summary)
-    - [🖥 Usage](#-usage-2)
-    - [📝 Customization](#-customization-1)
-  - [🌫 Line-Comment folding](#-line-comment-folding)
-    - [🖥 Usage](#-usage-3)
-- [🔰 Contribute](#-contribute)
-  - [🔬 Development](#-development)
-  - [❓ How to add a folding parser?](#-how-to-add-a-folding-parser)
-    - [🔍 Where can I look for tree-sitter node?](#-where-can-i-look-for-tree-sitter-node)
-  - [❓ How to create a summary parser?](#-how-to-create-a-summary-parser)
-- [⚜️ License](#-license)
+- [treesit-fold](#treesit-fold)
+  - [💾 Installation](#-installation)
+    - [🔍 Method 1. with `straight.el` and `use-package`:](#-method-1-with-straightel-and-use-package)
+    - [🔍 Method 2. Manual](#-method-2-manual)
+  - [🖥 Usage](#-usage)
+    - [📇 Commands](#-commands)
+    - [🔨 Supported languages](#-supported-languages)
+  - [📝 Customization](#-customization)
+    - [⚪ Folding on new nodes](#-folding-on-new-nodes)
+      - [❔ Example](#-example)
+      - [↔ Offset](#-offset)
+    - [🔍 Writing new fold functions](#-writing-new-fold-functions)
+    - [🔢 Line Count Display](#-line-count-display)
+  - [🔌 Plugins](#-plugins)
+    - [⚖ Indicators Mode](#-indicators-mode)
+      - [💾 Installation](#-installation-1)
+      - [🖥 Usage](#-usage-1)
+    - [📝 Summary](#-summary)
+      - [🖥 Usage](#-usage-2)
+      - [📝 Customization](#-customization-1)
+    - [🌫 Line-Comment folding](#-line-comment-folding)
+      - [🖥 Usage](#-usage-3)
+  - [❓ FAQ](#-faq)
+    - [💫 Adding support for derived modes](#-adding-support-for-derived-modes)
+    - [💫 Add support for non-ts modes](#-add-support-for-non-ts-modes)
+  - [🔰 Contribute](#-contribute)
+    - [🔬 Development](#-development)
+    - [❓ How to add a folding parser?](#-how-to-add-a-folding-parser)
+      - [🔍 Where can I look for tree-sitter node?](#-where-can-i-look-for-tree-sitter-node)
+    - [❓ How to create a summary parser?](#-how-to-create-a-summary-parser)
+  - [⚜️ License](#-license)
 
 <!-- markdown-toc end -->
 
@@ -124,31 +127,31 @@ These languages are fairly complete:
 
 - ActionScript / Arduino / Assembly
 - Bash / Beancount
-- C / C++ / C# / Clojure / CMake / CSS
+- C / C++ / C# / Clojure / CMake / Crystal / CSS
 - Dart
 - Elisp / Elixir / Erlang
-- Fish
-- GDScript / Gleam / GLSL / Go / Groovy (Jenkinsfile)
+- F# / Fish / Fennel
+- GDScript / GDShader / Gleam / GLSL / Go / GraphQL / Groovy (Jenkinsfile)
 - Haskell / Haxe / HEEx / HLSL / HTML
 - Jai / Janet / Java / JavaScript / JSX / JSON / Jsonnet / Julia
 - Kotlin
 - LaTex / Lisp / Lua
 - Make / MATLAB / Markdown / Mermaid
-- Ninja / Nix / Noir
+- Ninja / Nim / Nix / Noir
 - OCaml / Org
 - Perl / PHP / Python
-- R / Ruby / Rust / reStructuredText
+- R / RON/ Ruby / Rust / reStructuredText
 - Scala / Scheme / SQL / Svelte / Swift
 - TOML / TypeScript / TSX
 - Verilog / VHDL / Vimscript
+- WGSL
 - XML
 - YAML
 - Zig
 
 These languages are in development:
 
-- Ada
-- Agda
+- Ada / Agda
 - Elm
 - Fortran
 - Magik
@@ -157,23 +160,6 @@ These languages are in development:
 
 *P.S. We don't list trivial languages here. e.g., LLVM IR (`.ll`) files, etc.
 Please see the variable `treesit-fold-range-alist` for the fully supported list!*
-
-#### 🚀 Add support for non-ts modes
-You can add folding support for non-ts modes (such as c-mode or emacs-lisp-mode),
-this requires you have the parser library for the mode.
-After, you can enable folding adding these code snippets to your configuration:
-
-``` elisp
-;; For `treesit-parser-create' you need to ensure the language fits with
-;; the parser library (e.g `libtree-sitter-cpp.dll' is 'cpp).
-
-(add-hook 'emacs-lisp-mode-hook (lambda () (treesit-parser-create 'elisp)))
-
-;; For use-package users
-(use-package treesit-fold
-  :hook (c-mode . (lambda () (treesit-parser-create 'c)))
-  ...)
-```
 
 ## 📝 Customization
 
@@ -625,10 +611,39 @@ This plugin makes line comment into foldable range.
   M-x treesit-fold-line-comment-mode
   ```
 
+## ❓ FAQ
+
+### 💫 Adding support for derived modes
+
+You can add support for derived modes where the parent mode has existing support.
+For example, a new mode which derives from YAML would be added to the support list like this:
+
+```elisp
+(push `(<your-major>-mode . ,(treesit-fold-parsers-yaml)) treesit-fold-range-alist)
+```
+
+### 💫 Add support for non-ts modes
+
+You can add folding support for non-ts modes (such as c-mode or emacs-lisp-mode),
+this requires you have the parser library for the mode.
+After, you can enable folding adding these code snippets to your configuration:
+
+``` elisp
+;; For `treesit-parser-create' you need to ensure the language fits with
+;; the parser library (e.g `libtree-sitter-cpp.dll' is 'cpp).
+
+(add-hook 'emacs-lisp-mode-hook (lambda () (treesit-parser-create 'elisp)))
+
+;; For use-package users
+(use-package treesit-fold
+  :hook (c-mode . (lambda () (treesit-parser-create 'c)))
+  ...)
+```
+
 ## 🔰 Contribute
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-[![Elisp styleguide](https://img.shields.io/badge/elisp-style%20guide-purple)](https://github.com/bbatsov/emacs-lisp-style-guide)
+[![Elisp styleguide](https://img.shields.io/badge/elisp-style%20guide-purple?logo=gnuemacs&logoColor=white)](https://github.com/bbatsov/emacs-lisp-style-guide)
 [![Donate on paypal](https://img.shields.io/badge/paypal-donate-1?logo=paypal&color=blue)](https://www.paypal.me/jcs090218)
 [![Become a patron](https://img.shields.io/badge/patreon-become%20a%20patron-orange.svg?logo=patreon)](https://www.patreon.com/jcs090218)
 

@@ -116,7 +116,7 @@ overlay."
   "List of active rewrite overlays in the buffer.")
 
 (defvar-local gptel--rewrite-message nil
-  "Request-specific instructions for a gptel-rewrite action.")
+  "Request-specific instructions for a `gptel-rewrite' action.")
 
 ;; Add the rewrite directive to `gptel-directives'
 (unless (alist-get 'rewrite gptel-directives)
@@ -161,6 +161,7 @@ which see."
                             "- Generate ONLY %s code as output, without "
                             "any explanation or markdown code fences.\n"
                             "- Generate code in full, do not abbreviate or omit code.\n"
+                            "- Do not produce intermediate text or report on your progress.\n"
                             "- Do not ask for further clarification, and make "
                             "any assumptions you need to follow instructions.")
                     article lang lang lang)
@@ -169,8 +170,14 @@ which see."
                "You are an editor."
              (format "You are %s %s editor." article lang))
            "  Follow my instructions and improve or rewrite the text I provide."
+           "  Do not produce intermediate text or report on your progress."
            "  Generate ONLY the replacement text,"
            " without any explanation or markdown code fences.")))))
+
+(defvar gptel--rewrite-handlers
+  `((WAIT ,#'gptel--handle-wait)
+    (TOOL ,#'gptel--update-tool-call ,#'gptel--handle-tool-use))
+  "Alist specifying FSM handlers for `gptel-rewrite' state transitions.")
 
 ;; * Helper functions
 
@@ -217,8 +224,8 @@ If no suitable overlay is found, raise an error."
   (pcase-let ((`(,response . ,ov)
                (get-char-property-and-overlay (or pt (point)) 'gptel-rewrite))
               (diff-entire-buffers nil))
-    (unless ov (user-error "Could not find region being rewritten."))
-    (unless response (user-error "No LLM output available for this rewrite."))
+    (unless ov (user-error "Could not find region being rewritten"))
+    (unless response (user-error "No LLM output available for this rewrite"))
     ov))
 
 (defun gptel--rewrite-prepare-buffer (ovs &optional buf)
@@ -227,7 +234,7 @@ If no suitable overlay is found, raise an error."
 This is used for (e)diff purposes.
 
 RESPONSE is the LLM response.  OVS are the overlays specifying
-the changed regions. BUF is the (current) buffer."
+the changed regions.  BUF is the (current) buffer."
   (setq buf (or buf (overlay-buffer (or (car-safe ovs) ovs))))
   (with-current-buffer buf
     (let ((pmin (point-min))
@@ -251,6 +258,67 @@ the changed regions. BUF is the (current) buffer."
         (save-excursion
           (gptel--rewrite-accept ovs newbuf)))
       newbuf)))
+
+(defun gptel--rewrite-read-message (prompt &optional _ history)
+  "Read a rewrite message from the minibuffer.
+
+Provide custom keybindings for cycling, editing, and submitting the
+`gptel-rewrite' action directly from this prompt.
+
+PROMPT is the prompt string to display.  HISTORY, if provided, is the
+input history list."
+  (let* ((rewrite-directive
+          (car-safe (gptel--parse-directive gptel--rewrite-directive 'raw)))
+         (cb (current-buffer))
+         (cycle-prefix (lambda () (interactive)
+                         (gptel--read-with-prefix rewrite-directive)
+                         (push-mark) (goto-char (point-max))
+                         (activate-mark)))
+         (set-rewrite-message
+          (lambda ()
+            (let ((message (buffer-substring-no-properties
+                            (minibuffer-prompt-end) (point-max))))
+              (with-current-buffer cb (setq gptel--rewrite-message message))
+              (setf (alist-get 'gptel--infix-rewrite-extra transient-history)
+                    (delete-dups (cons message transient--history))))))
+         (start-rewrite-maybe
+          (lambda () (interactive)
+            (when (minibufferp) (funcall set-rewrite-message))
+            (if transient--prefix    ;Called from transient? Don't start rewrite
+                (run-at-time 0 nil #'transient-setup 'gptel-rewrite)
+              (with-current-buffer cb
+                (gptel--suffix-rewrite gptel--rewrite-message)))
+            (when (minibufferp) (exit-minibuffer))))
+         (start-transient
+          (lambda () (interactive)
+            (run-at-time 0 nil #'transient-setup 'gptel-rewrite)
+            (when (minibufferp)
+              (funcall set-rewrite-message)
+              (exit-minibuffer))))
+         (edit-in-buffer
+          (lambda () (interactive)
+            (let ((offset (- (point) (minibuffer-prompt-end))))
+              (gptel--edit-directive 'gptel--rewrite-message
+                :prompt rewrite-directive :initial (minibuffer-contents)
+                :buffer cb :setup (lambda () (ignore-errors (forward-char offset)))
+                :callback
+                (lambda (msg)
+                  (when msg
+                    (push (buffer-local-value 'gptel--rewrite-message cb)
+                          (alist-get 'gptel--infix-rewrite-extra transient-history))
+                    (with-current-buffer cb (gptel--suffix-rewrite)))
+                  (when (minibufferp) (exit-minibuffer)))))))
+         (minibuffer-local-map
+          (make-composed-keymap (define-keymap
+                                  "TAB" cycle-prefix "<tab>" cycle-prefix
+                                  "C-c C-e" edit-in-buffer
+                                  "<remap> <exit-minibuffer>" start-rewrite-maybe
+                                  "M-RET" start-transient)
+                                minibuffer-local-map)))
+    (minibuffer-with-setup-hook cycle-prefix
+      (read-string
+       prompt (or gptel--rewrite-message "Rewrite: ")
+       history))))
 
 ;; * Rewrite action functions
 
@@ -289,7 +357,9 @@ BUF is the buffer to modify, defaults to the overlay buffer."
   "Iterate on pending LLM response at point.")
 
 (defun gptel--rewrite-diff (&optional ovs switches)
-  "Diff pending LLM responses in OVS or at point."
+  "Diff pending LLM responses in OVS or at point.
+
+SWITCHES are diff arguments."
   (interactive (list (gptel--rewrite-overlay-at)))
   (when-let* ((ov-buf (overlay-buffer (or (car-safe ovs) ovs)))
               ((buffer-live-p ov-buf)))
@@ -422,8 +492,8 @@ INFO is the async communication channel for the rewrite request."
               (proc-buf (cdr ov-and-buf))
               (buf (overlay-buffer ov)))
     (cond
-     ((stringp response)                ;partial or fully successful result
-      (with-current-buffer proc-buf     ;auxiliary buffer, insert text here and copy to overlay
+     ((stringp response)            ;partial or fully successful result
+      (with-current-buffer proc-buf ;auxiliary buffer, insert text here and copy to overlay
         (let ((inhibit-modification-hooks nil)
               (inhibit-read-only t))
           (when (= (buffer-size) 0)
@@ -440,21 +510,34 @@ INFO is the async communication channel for the rewrite request."
           (font-lock-ensure)
           (overlay-put ov 'display (buffer-string))))
       (unless (plist-get info :stream) (gptel--rewrite-callback t info)))
+
      ((eq response 'abort)              ;request aborted
       (when-let* ((proc-buf (cdr-safe (plist-get info :context))))
         (kill-buffer proc-buf))
       (delete-overlay ov))
+
+     ((eq (car-safe response) 'tool-call) ;tool call confirmation
+      (gptel--display-tool-calls          ;use minibuffer if buffer is read-only
+       (cdr response) info (buffer-local-value 'buffer-read-only buf)))
+
      ((null response)                   ;finished with error
       (message (concat "LLM response error: %s. Rewrite in buffer %s canceled.")
                (plist-get info :status) (plist-get info :buffer))
       (gptel--rewrite-callback 'abort info))
-     ((consp response)) ;reasoning or tool calls -- don't care and not implemented, respectively
-     (t (let ((proc-buf (cdr-safe (plist-get info :context))) ;finished successfully
-              (mkb (propertize "<mouse-1>" 'face 'help-key-binding)))
+
+     ((consp response))             ;reasoning or tool call result -- don't care
+
+     (t
+      (if (plist-get info :tool-use)    ;stopped to use tools
+          ;; Clear text inserted so far
+          (with-current-buffer proc-buf (delete-region (point-min) (point)))
+        (let ((mkb (propertize "<mouse-1>" 'face 'help-key-binding))) ;or finished successfully
           (with-current-buffer proc-buf
             (let ((inhibit-read-only t))
               (delete-region (point) (point-max))
               ;; Run post-rewrite-functions on rewritten text in its buffer
+              (setq-local gptel-post-rewrite-functions
+                          (buffer-local-value 'gptel-post-rewrite-functions buf))
               (with-demoted-errors "gptel-post-rewrite-functions: %S"
                 (run-hook-with-args 'gptel-post-rewrite-functions (point-min) (point-max)))
               (when (and (plist-get info :newline)
@@ -488,7 +571,7 @@ INFO is the async communication channel for the rewrite request."
                         (unless (eq (current-buffer) buf)
                           (format " in buffer %s " (buffer-name buf)))
                         (concat " ready: " mkb ", " (propertize "RET" 'face 'help-key-binding)
-                                " or " (substitute-command-keys "\\[gptel-rewrite] to continue.")))))))))))
+                                " or " (substitute-command-keys "\\[gptel-rewrite] to continue."))))))))))))
 
 ;; * Transient Prefixes for rewriting
 
@@ -508,8 +591,6 @@ By default, gptel uses the directive associated with the `rewrite'
             (gptel--setup-directive-menu
              'gptel--rewrite-directive "Rewrite directive")))
     :pad-keys t])
-
-(define-obsolete-function-alias 'gptel-rewrite-menu 'gptel-rewrite "0.9.6")
 
 ;;;###autoload (autoload 'gptel-rewrite "gptel-rewrite" nil t)
 (transient-define-prefix gptel-rewrite ()
@@ -576,11 +657,20 @@ By default, gptel uses the directive associated with the `rewrite'
         'json)))]]
   (interactive)
   (gptel--rewrite-sanitize-overlays)
-  (unless (or gptel--rewrite-overlays (use-region-p))
-    (user-error "`gptel-rewrite' requires an active region or rewrite in progress."))
-  (unless gptel--rewrite-message
-    (setq gptel--rewrite-message "Rewrite: "))
-  (transient-setup 'gptel-rewrite))
+  (cond
+   ((use-region-p)                      ;Start a/another rewrite
+    (let ((transient--history ;No transient reader, so We manage history ourselves
+           (alist-get 'gptel--infix-rewrite-extra transient-history)))
+      (gptel--rewrite-read-message
+       (concat "Instructions (" gptel--read-with-prefix-help
+               (format " %s%s) "
+                       (propertize "M-RET" 'face 'help-key-binding)
+                       (propertize ": More options" 'face 'default)))
+       nil (cons 'transient--history 1))))
+   (gptel--rewrite-overlays             ;Rewrite actions pending, show options
+    (transient-setup 'gptel-rewrite))
+   (t (user-error
+       "`gptel-rewrite' requires an active region or rewrite in progress"))))
 
 ;; * Transient infixes for rewriting
 
@@ -593,36 +683,8 @@ By default, gptel uses the directive associated with the `rewrite'
   :display-nil "(None)"
   :key "d"
   :format " %k %d %v"
-  :prompt (concat "Instructions " gptel--read-with-prefix-help)
-  :reader (lambda (prompt _ history)
-            (let* ((rewrite-directive
-                    (car-safe (gptel--parse-directive gptel--rewrite-directive
-                                                      'raw)))
-                   (cb (current-buffer))
-                   (cycle-prefix
-                    (lambda () (interactive)
-                      (gptel--read-with-prefix rewrite-directive)))
-                   (edit-in-buffer
-                    (lambda () (interactive)
-                      (let ((offset (- (point) (minibuffer-prompt-end))))
-                        (gptel--edit-directive 'gptel--rewrite-message
-                          :prompt rewrite-directive :initial (minibuffer-contents)
-                          :buffer cb :setup (lambda () (ignore-errors (forward-char offset)))
-                          :callback
-                          (lambda ()
-                            (run-at-time 0 nil #'transient-setup 'gptel-rewrite)
-                            (push (buffer-local-value 'gptel--rewrite-message cb)
-                                  (alist-get 'gptel--infix-rewrite-extra transient-history))
-                            (when (minibufferp) (minibuffer-quit-recursive-edit)))))))
-                   (minibuffer-local-map
-                    (make-composed-keymap (define-keymap
-                                            "TAB" cycle-prefix "<tab>" cycle-prefix
-                                            "C-c C-e" edit-in-buffer)
-                                          minibuffer-local-map)))
-              (minibuffer-with-setup-hook cycle-prefix
-                (read-string
-                 prompt (or gptel--rewrite-message "Rewrite: ")
-                 history)))))
+  :prompt (concat "Instructions (" gptel--read-with-prefix-help ") ")
+  :reader #'gptel--rewrite-read-message)
 
 (transient-define-argument gptel--infix-rewrite-diff:-U ()
   :description "Context lines"
@@ -648,7 +710,8 @@ generated from functions."
   (if cancel (progn (message "Edit canceled")
                     (call-interactively #'gptel-rewrite))
     (gptel--edit-directive 'gptel--rewrite-directive
-      :callback #'gptel-rewrite :setup #'activate-mark)))
+      :callback (lambda (_) (call-interactively #'gptel-rewrite))
+      :setup #'activate-mark)))
 
 (transient-define-suffix gptel--suffix-rewrite (&optional rewrite-message dry-run)
   "Rewrite or refactor region contents."
@@ -661,7 +724,7 @@ generated from functions."
           (and gptel-use-context (if nosystem 'user 'system)))
          (prompt (list (or (get-char-property (point) 'gptel-rewrite)
                            (buffer-substring-no-properties (region-beginning) (region-end)))
-                       "What is the required change?"
+                       "What is the required change?  I will generate only the final replacement."
                        (or rewrite-message gptel--rewrite-message))))
     (when nosystem
       (setcar prompt (concat (car-safe (gptel--parse-directive
@@ -679,11 +742,12 @@ generated from functions."
                ;; NOTE: Switch to `generate-new-buffer' after we drop Emacs 27.1 (#724)
                (cons ov (gptel--temp-buffer " *gptel-rewrite*")))
              :transforms gptel-prompt-transform-functions
+             :fsm (gptel-make-fsm :handlers gptel--rewrite-handlers)
              :callback #'gptel--rewrite-callback)
       ;; Move back so that the cursor is on the overlay when done.
       (unless (get-char-property (point) 'gptel-rewrite)
-        (when (= (point) (region-end)) (backward-char 1)))
-      (deactivate-mark))))
+        (when (= (point) (region-end)) (run-at-time 0 nil #'backward-char 1)))
+      (setq deactivate-mark t))))
 
 ;; Allow this to be called non-interactively for dry runs
 (put 'gptel--suffix-rewrite 'interactive-only nil)
@@ -705,7 +769,7 @@ generated from functions."
   (gptel--rewrite-ediff gptel--rewrite-overlays))
 
 (transient-define-suffix gptel--suffix-rewrite-merge ()
-  "Insert LLM output as merge conflicts"
+  "Insert LLM output as merge conflicts."
   :if (lambda () gptel--rewrite-overlays)
   :key "M"
   :description "Merge with conflicts"

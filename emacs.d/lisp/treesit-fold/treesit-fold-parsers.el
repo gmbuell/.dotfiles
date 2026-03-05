@@ -1,6 +1,6 @@
 ;;; treesit-fold-parsers.el --- Adapter layer to Tree-Sitter  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2025  emacs-tree-sitter maintainers
+;; Copyright (C) 2021-2026  emacs-tree-sitter maintainers
 
 ;; Created date 2021-10-04 17:45:48
 
@@ -54,6 +54,9 @@
 (declare-function treesit-fold-range-fish-function "treesit-fold.el")
 (declare-function treesit-fold-range-fish-if "treesit-fold.el")
 (declare-function treesit-fold-range-fish-case "treesit-fold.el")
+(declare-function treesit-fold-range-fsharp-module-defn "treesit-fold.el")
+(declare-function treesit-fold-range-git-config-section "treesit-fold.el")
+(declare-function treesit-fold-range-fsharp-record-type-defn "treesit-fold.el")
 (declare-function treesit-fold-range-haskell-function "treesit-fold.el")
 (declare-function treesit-fold-range-html "treesit-fold.el")
 (declare-function treesit-fold-range-julia-function "treesit-fold.el")
@@ -88,11 +91,13 @@
 (declare-function treesit-fold-range-org-body "treesit-fold.el")
 (declare-function treesit-fold-range-clojure-function "treesit-fold.el")
 (declare-function treesit-fold-range-cmake-body "treesit-fold.el")
+(declare-function treesit-fold-range-crystal-block "treesit-fold.el")
 (declare-function treesit-fold-range-editorconfig-section "treesit-fold.el")
 (declare-function treesit-fold-range-pascal-comment "treesit-fold.el")
 (declare-function treesit-fold-range-python-block "treesit-fold.el")
 (declare-function treesit-fold-range-python-def "treesit-fold.el")
 (declare-function treesit-fold-range-python-expression-statement "treesit-fold.el")
+(declare-function treesit-fold-range-ron-struct "treesit-fold.el")
 (declare-function treesit-fold-range-rst-body "treesit-fold.el")
 (declare-function treesit-fold-range-ruby-class-def "treesit-fold.el")
 (declare-function treesit-fold-range-ruby-if "treesit-fold.el")
@@ -103,6 +108,9 @@
 (declare-function treesit-fold-range-verilog-initial-construct "treesit-fold.el")
 (declare-function treesit-fold-range-verilog-module "treesit-fold.el")
 (declare-function treesit-fold-range-vhdl-package "treesit-fold.el")
+(declare-function treesit-fold-range-vim-for-loop "treesit-fold.el")
+(declare-function treesit-fold-range-wat-module "treesit-fold.el")
+(declare-function treesit-fold-range-wat-func "treesit-fold.el")
 (declare-function treesit-fold-range-vhdl-type "treesit-fold.el")
 
 ;;
@@ -194,6 +202,17 @@
      . (lambda (node offset)
          (treesit-fold-range-line-comment node offset "#")))))
 
+(defun treesit-fold-parsers-crystal ()
+  "Rule set for Crystal."
+  '((block      . treesit-fold-range-crystal-block)
+    (method_def . treesit-fold-range-crystal-block)
+    (while      . treesit-fold-range-crystal-block)
+    (call       . treesit-fold-range-crystal-block)
+    (until      . treesit-fold-range-crystal-block)
+    (comment
+     . (lambda (node offset)
+         (treesit-fold-range-line-comment node offset "#")))))
+
 (defun treesit-fold-parsers-csharp ()
   "Rule set for C#."
   '((block                                . treesit-fold-range-seq)
@@ -262,6 +281,14 @@
      . (lambda (node offset)
          (treesit-fold-range-line-comment node offset "%")))))
 
+(defun treesit-fold-parsers-fennel ()
+  "Rules set for Fennel."
+  '((macro_form . treesit-fold-range-elisp-function)
+    (fn_form    . treesit-fold-range-elisp-function)
+    (comment
+     . (lambda (node offset)
+         (treesit-fold-range-line-comment node offset ";;")))))
+
 (defun treesit-fold-parsers-fish ()
   "Rules set for Fish."
   '((function_definition . treesit-fold-range-fish-function)
@@ -274,9 +301,30 @@
      . (lambda (node offset)
          (treesit-fold-range-line-comment node offset "#")))))
 
+(defun treesit-fold-parsers-fsharp ()
+  "Rules set for F#."
+  '((module_defn      . treesit-fold-range-fsharp-module-defn)
+    (list_expression  . treesit-fold-range-seq)
+    (record_type_defn . treesit-fold-range-fsharp-record-type-defn)
+    (line_comment     . treesit-fold-range-c-like-comment)
+    (block_comment    . (treesit-fold-range-seq 1 -1))))
+
 (defun treesit-fold-parsers-gdscript ()
-  "Rule set for GGScript."
+  "Rule set for GDScript."
   '((body . (treesit-fold-range-seq -1 1))
+    (comment
+     . (lambda (node offset)
+         (treesit-fold-range-line-comment node offset "#")))))
+
+(defun treesit-fold-parsers-gdshader ()
+  "Rule set for GDShader."
+  '((compound_statement . treesit-fold-range-seq)
+    (struct_fields      . treesit-fold-range-seq)
+    (comment            . treesit-fold-range-c-like-comment)))
+
+(defun treesit-fold-parsers-git-config ()
+  "Rule set for Git config."
+  '((section . treesit-fold-range-git-config-section)
     (comment
      . (lambda (node offset)
          (treesit-fold-range-line-comment node offset "#")))))
@@ -312,6 +360,11 @@
     (interface_type         . (lambda (node offset)
                                 (treesit-fold-range-markers node offset "{" "}")))))
 
+(defun treesit-fold-parsers-graphql ()
+  "Rule set for GraphQL."
+  '((fields_definition . treesit-fold-range-seq)
+    (list_type         . treesit-fold-range-seq)))
+
 (defun treesit-fold-parsers-groovy ()
   "Rule set for Groovy."
   '((block         . treesit-fold-range-groovy-block)
@@ -321,6 +374,7 @@
 (defun treesit-fold-parsers-haskell ()
   "Rule set for Haskell."
   '((function . treesit-fold-range-haskell-function)
+    (bind     . treesit-fold-range-haskell-function)
     (comment  . treesit-fold-range-lua-comment)))
 
 (defun treesit-fold-parsers-haxe ()
@@ -539,6 +593,14 @@
   '((body    . treesit-fold-range-seq)
     (comment . treesit-fold-range-c-like-comment)))
 
+(defun treesit-fold-parsers-nim ()
+  "Rule set for Nim."
+  '((array_construction . treesit-fold-range-seq)
+    (for                . treesit-fold-range-seq)
+    (comment
+     . (lambda (node offset)
+         (treesit-fold-range-line-comment node offset "#")))))
+
 (defun treesit-fold-parsers-nix ()
   "Rule set for Nix."
   '((attrset_expression . treesit-fold-range-seq)
@@ -620,6 +682,18 @@
 (defun treesit-fold-parsers-r ()
   "Rule set for R."
   '((brace_list . treesit-fold-range-seq)))
+
+(defun treesit-fold-parsers-ron ()
+  "Rule set for RON."
+  '((array  . treesit-fold-range-seq)
+    (map    . treesit-fold-range-seq)
+    (struct . treesit-fold-range-ron-struct)
+    (line_comment
+     . (lambda (node offset)
+         (treesit-fold-range-line-comment node
+                                          (treesit-fold--cons-add offset '(0 . -1))
+                                          "///")))
+    (block_comment . treesit-fold-range-block-comment)))
 
 (defun treesit-fold-parsers-rst ()
   "Rule set for reStructuredText."
@@ -706,8 +780,9 @@
 
 (defun treesit-fold-parsers-toml ()
   "Rule set for TOML."
-  '((table . treesit-fold-range-toml-table)
-    (array . treesit-fold-range-seq)
+  '((table        . treesit-fold-range-toml-table)
+    (array        . treesit-fold-range-seq)
+    (inline_table . treesit-fold-range-seq)
     (comment
      . (lambda (node offset)
          (treesit-fold-range-line-comment node offset "#")))))
@@ -716,10 +791,17 @@
   "Rule set for TypeScript."
   (append
    (treesit-fold-parsers-javascript)
-   '((class_body    . treesit-fold-range-seq)
-     (enum_body     . treesit-fold-range-seq)
-     (named_imports . treesit-fold-range-seq)
-     (object_type   . treesit-fold-range-seq))))
+   '((class_body     . treesit-fold-range-seq)
+     (enum_body      . treesit-fold-range-seq)
+     (named_imports  . treesit-fold-range-seq)
+     (object_type    . treesit-fold-range-seq)
+     (interface_body . treesit-fold-range-seq))))
+
+(defun treesit-fold-parsers-tsx ()
+  "Rule set for TSX files (TypeScript with JSX)."
+  (append
+   (treesit-fold-parsers-typescript)
+   '((jsx_element   . treesit-fold-range-html))))
 
 (defun treesit-fold-parsers-verilog ()
   "Rule set for Verilog."
@@ -735,10 +817,33 @@
     (enumeration_type_definition . treesit-fold-range-seq)
     (comment                     . treesit-fold-range-lua-comment)))
 
-(defun treesit-fold-parsers-vimscript ()
-  "Rule set for Vimscript."
-  '((function_definition . treesit-fold-range-vimscript-function)
-    (if_statement        . (treesit-fold-range-seq 1 -4))))
+(defun treesit-fold-parsers-vim ()
+  "Rule set for Vim."
+  '((function_definition . treesit-fold-range-vim-for-loop)
+    (for_loop            . treesit-fold-range-vim-for-loop)
+    (while_loop          . treesit-fold-range-vim-for-loop)
+    (if_statement        . treesit-fold-range-vim-for-loop)
+    (elseif_statement    . treesit-fold-range-vim-for-loop)
+    (else_statement      . treesit-fold-range-vim-for-loop)
+    (list                . treesit-fold-range-seq)
+    (comment
+     . (lambda (node offset)
+         (treesit-fold-range-line-comment node offset "\"")))))
+
+(defun treesit-fold-parsers-wat ()
+  "Rule set for Wasm text format."
+  '((module            . treesit-fold-range-wat-module)
+    (module_field_func . treesit-fold-range-wat-func)
+    (line_comment
+     . (lambda (node offset)
+         (treesit-fold-range-line-comment node offset ";;")))))
+
+(defun treesit-fold-parsers-wgsl ()
+  "Rule set for WGSL."
+  '((compound_statement . treesit-fold-range-seq)
+    (struct_declaration . treesit-fold-range-groovy-block)
+    (line_comment       . treesit-fold-range-c-like-comment)
+    (block_comment      . treesit-fold-range-c-like-comment)))
 
 (defun treesit-fold-parsers-xml ()
   "Rule set for XML."
@@ -750,6 +855,22 @@
   '((comment
      . (lambda (node offset)
          (treesit-fold-range-line-comment node offset "#")))
+    (block_sequence_item
+     . (lambda (node offset)
+         (let* ((key (treesit-search-subtree
+                      node
+                      (lambda (node)
+                        (string= "key" (treesit-node-field-name node)))))
+                (value (treesit-search-subtree
+                        node
+                        (lambda (node)
+                          (string= "value" (treesit-node-field-name node)))))
+                (beg (treesit-node-end
+                      (if (string= "block_node" (treesit-node-type value))
+                          key
+                        value)))
+                (end (treesit-node-end node)))
+           (treesit-fold--cons-add (cons beg end) offset))))
     (block_mapping_pair
      . ((lambda (node offset)
           (treesit-fold-range-markers node offset ":"))

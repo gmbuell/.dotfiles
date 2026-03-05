@@ -235,28 +235,29 @@ These structures don't have a `breadcrumb-region' property on."
 
 (defun bc--ipath-alist ()
   "Return `imenu--index-alist', maybe arrange for its update."
-  (let ((nochangep (= (buffer-chars-modified-tick) bc--last-update-tick))
-        (buf (current-buffer)))
-    (unless nochangep
-      (setq bc--last-update-tick (buffer-chars-modified-tick))
-      (when bc--idle-timer (cancel-timer bc--idle-timer))
-      (setq bc--idle-timer
-            (run-with-idle-timer
-             bc-idle-time nil
-             (lambda ()
-               (when (buffer-live-p buf)
-                 (with-current-buffer buf
-                   (setq bc--last-update-tick (buffer-chars-modified-tick))
-                   (let ((non-essential t)
-                         (imenu-auto-rescan t))
-                     (ignore-errors
-                       (imenu--make-index-alist t))
-                     (setq bc--ipath-plain-cache nil)
-                     ;; no point is taxing the mode-line machinery now
-                     ;; if the buffer isn't showing anywhere.
-                     (when (get-buffer-window buf t)
-                       (force-mode-line-update t)))))))))
-    imenu--index-alist))
+  ;; Be mindful of indirect buffers (github#31)
+  (let ((buf (or (buffer-base-buffer) (current-buffer))))
+    (with-current-buffer buf
+      (unless (= (buffer-chars-modified-tick) bc--last-update-tick)
+        (setq bc--last-update-tick (buffer-chars-modified-tick))
+        (when bc--idle-timer (cancel-timer bc--idle-timer))
+        (setq bc--idle-timer
+              (run-with-idle-timer
+               bc-idle-time nil
+               (lambda ()
+                 (when (buffer-live-p buf)
+                   (with-current-buffer buf
+                     (setq bc--last-update-tick (buffer-chars-modified-tick))
+                     (let ((non-essential t)
+                           (imenu-auto-rescan t))
+                       (ignore-errors
+                         (imenu--make-index-alist t))
+                       (setq bc--ipath-plain-cache nil)
+                       ;; no point is taxing the mode-line machinery now
+                       ;; if the buffer isn't showing anywhere.
+                       (when (get-buffer-window buf t)
+                         (force-mode-line-update t)))))))))
+      imenu--index-alist)))
 
 
 ;;;; Higher-level functions
@@ -344,13 +345,26 @@ to ROOT."
                   (define-key m bc--mode-line-key l)
                   m))))
 
+(defvar-local bc--cached-project-root nil
+  ;; This is a fairly "dumb" cache, but hopefully good enough for most
+  ;; cases.  A better smarter cache that could realize when certain
+  ;; project things happened would live in project.el which has much
+  ;; more project-smarts, but that's apparently very hard, so do it
+  ;; here (github#18)
+  "Cache the expensive `project-root' call.")
+
 (defun bc--project-crumbs-1 (bfn)
   "Helper for `breadcrumb-project-crumbs'.
-Given BFN, the `buffer-file-name', produce a a list of
+Given BFN, the `buffer-file-name', produce a list of
 propertized crumbs."
   (cl-loop
    with project = (project-current)
-   with root = (if project (project-root project) default-directory)
+   with root = (if project (or bc--cached-project-root
+                               (setq bc--cached-project-root
+                                     (project-root project)))
+                 default-directory)
+   with pname = (if project (project-name project)
+                  (file-name-nondirectory (directory-file-name root)))
    with relname = (file-relative-name (or bfn default-directory)
                                       root)
    for (s . more) on (split-string relname "/")
@@ -360,7 +374,7 @@ propertized crumbs."
    finally
    (cl-return
     (if root
-        (cons (propertize (file-name-nondirectory (directory-file-name root))
+        (cons (propertize pname
                           'bc-dont-shorten t
                           'face 'bc-project-base-face)
               retval)
