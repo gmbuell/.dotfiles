@@ -2662,8 +2662,7 @@ Try the repeated popping up to 10 times."
 							("M-g M-b" . dogears-back)
 							("M-g M-f" . dogears-forward)
 							("M-g M-d" . dogears-list))
-	:init
-	(add-hook 'prog-mode-hook #'dogears-mode)
+	:hook (prog-mode . dogears-mode)
 	:config
 	(defvar consult--source-dogears
 		(list :name     "Dogears"
