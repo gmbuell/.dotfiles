@@ -674,7 +674,24 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-ts-mode))
 
-(defvar mp-treesit-grammar-sources
+(defvar gb-lisp-package-repos
+  '((breadcrumb . "https://github.com/joaotavora/breadcrumb.git")
+    (claude-code . "https://github.com/stevemolitor/claude-code.el.git")
+    (combobulate . "https://github.com/mickeynp/combobulate.git")
+    (cpp-func-impl . "https://github.com/dheerajshenoy/cpp-func-impl.git")
+    (dogears.el . "https://github.com/alphapapa/dogears.el.git")
+    (emacs-corfu-terminal . "https://codeberg.org/akib/emacs-corfu-terminal.git")
+    (emacs-flymake-popon . "https://codeberg.org/akib/emacs-flymake-popon.git")
+    (emacs-popon . "https://codeberg.org/akib/emacs-popon.git")
+    (gptel . "https://github.com/karthink/gptel.git")
+    (hydra-posframe . "https://github.com/Ladicle/hydra-posframe.git")
+    (inheritenv . "https://github.com/purcell/inheritenv.git")
+    (prism.el . "https://github.com/alphapapa/prism.el.git")
+    (treesit-fold . "https://github.com/emacs-tree-sitter/treesit-fold.git"))
+  "Vendored lisp/ packages and their upstream git repos.
+Used by `emacs-sync-packages' to update vendored packages.")
+
+(defvar gb-treesit-grammar-sources
   '((xml "https://github.com/tree-sitter-grammars/tree-sitter-xml" "v0.7.0" "xml/src")
     (yaml "https://github.com/tree-sitter-grammars/tree-sitter-yaml" "v0.7.0")
     (pkl "https://github.com/apple/tree-sitter-pkl" "v0.20.0")
@@ -706,7 +723,7 @@ Grammar sources are vendored in tree-sitter-src/ for offline compilation.
 Falls back to cloning from URL if local sources are not available."
     (interactive)
     (let ((ts-src-dir (locate-user-emacs-file "tree-sitter-src")))
-      (dolist (grammar mp-treesit-grammar-sources)
+      (dolist (grammar gb-treesit-grammar-sources)
         (let* ((lang (car grammar))
                (local-dir (expand-file-name (symbol-name lang) ts-src-dir))
                (source (if (file-directory-p local-dir)

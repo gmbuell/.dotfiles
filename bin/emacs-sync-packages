@@ -6,28 +6,18 @@ ELPA_DIR="$DOTFILES_DIR/emacs.d/elpa"
 LISP_DIR="$DOTFILES_DIR/emacs.d/lisp"
 INIT_EL="$DOTFILES_DIR/emacs.d/init.el"
 
-# Vendored lisp/ packages and their upstream repos
-declare -A LISP_REPOS=(
-  [breadcrumb]="https://github.com/joaotavora/breadcrumb.git"
-  [claude-code]="https://github.com/stevemolitor/claude-code.el.git"
-  [combobulate]="https://github.com/mickeynp/combobulate.git"
-  [cpp-func-impl]="https://github.com/dheerajshenoy/cpp-func-impl.git"
-  [dogears.el]="https://github.com/alphapapa/dogears.el.git"
-  [emacs-corfu-terminal]="https://codeberg.org/akib/emacs-corfu-terminal.git"
-  [emacs-flymake-popon]="https://codeberg.org/akib/emacs-flymake-popon.git"
-  [emacs-popon]="https://codeberg.org/akib/emacs-popon.git"
-  [gptel]="https://github.com/karthink/gptel.git"
-  [hydra-posframe]="https://github.com/Ladicle/hydra-posframe.git"
-  [inheritenv]="https://github.com/purcell/inheritenv.git"
-  [prism.el]="https://github.com/alphapapa/prism.el.git"
-  [treesit-fold]="https://github.com/emacs-tree-sitter/treesit-fold.git"
-)
-
 # Update vendored lisp/ packages
+# Package list is extracted from gb-lisp-package-repos in init.el
 echo "=== Updating lisp/ packages ==="
-for pkg in "${!LISP_REPOS[@]}"; do
+
+LISP_REPOS=$(emacs --batch --load "$INIT_EL" --eval "
+(dolist (p gb-lisp-package-repos)
+  (princ (format \"%s\t%s\n\" (car p) (cdr p))))
+" 2>/dev/null)
+
+while IFS=$'\t' read -r pkg url; do
+  [ -z "$pkg" ] && continue
   dir="$LISP_DIR/$pkg"
-  url="${LISP_REPOS[$pkg]}"
   if [ -d "$dir/.git" ]; then
     echo "Pulling $pkg..."
     git -C "$dir" pull --ff-only 2>&1 || echo "  WARNING: pull failed for $pkg"
@@ -38,7 +28,7 @@ for pkg in "${!LISP_REPOS[@]}"; do
       echo "  WARNING: Failed to clone $pkg"
     fi
   fi
-done
+done <<< "$LISP_REPOS"
 
 # Update vendored tree-sitter grammar sources
 # Grammar list is extracted from init.el via emacs to avoid duplication
@@ -48,10 +38,10 @@ echo ""
 echo "=== Updating tree-sitter grammar sources ==="
 mkdir -p "$TS_SRC_DIR"
 
-# Extract grammar list from mp-treesit-grammar-sources in init.el
+# Extract grammar list from gb-treesit-grammar-sources in init.el
 # Output format: lang\turl\trev\tsrcdir (one per line)
 TS_GRAMMAR_LIST=$(emacs --batch --load "$INIT_EL" --eval "
-(dolist (g mp-treesit-grammar-sources)
+(dolist (g gb-treesit-grammar-sources)
   (princ (format \"%s\t%s\t%s\t%s\n\"
                  (car g) (nth 1 g) (or (nth 2 g) \"\")
                  (or (nth 3 g) \"src\"))))
