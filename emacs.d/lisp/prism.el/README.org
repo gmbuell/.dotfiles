@@ -1,0 +1,335 @@
+#+TITLE: prism.el
+
+#+PROPERTY: LOGGING nil
+
+# Note: This readme works with the org-make-toc <https://github.com/alphapapa/org-make-toc> package, which automatically updates the table of contents.
+
+#+HTML: <img src="images/scarlet-macaw.png" align="right">
+
+# [[https://melpa.org/#/package-name][file:https://melpa.org/packages/prism-badge.svg]] [[https://stable.melpa.org/#/package-name][file:https://stable.melpa.org/packages/prism-badge.svg]]
+
+=prism= disperses lisp forms (and other languages) into a spectrum of color by depth.  It's similar to =rainbow-blocks=, but it respects existing non-color face properties, and allows flexible configuration of faces and colors.  It also optionally colorizes strings and/or comments by code depth in a similar, customizable way.
+
+* Contents                                                         :noexport:
+:PROPERTIES:
+:TOC:      this
+:END:
+-  [[#screenshots][Screenshots]]
+  -  [[#lisp-and-c-like-languages][Lisp and C-like languages]]
+  -  [[#whitespace-sensitive-languages][Whitespace-sensitive languages]]
+  -  [[#customizable-colors][Customizable colors]]
+  -  [[#buffer-local-themes][Buffer-local themes]]
+-  [[#comparisons][Comparisons]]
+-  [[#installation][Installation]]
+-  [[#usage][Usage]]
+-  [[#changelog][Changelog]]
+-  [[#credits][Credits]]
+
+* Screenshots
+
+** Lisp and C-like languages
+:PROPERTIES:
+:TOC:      :include descendants :depth 1
+:END:
+:CONTENTS:
+- [[#colorize-parens-distinctly][Colorize parens distinctly]]
+- [[#highlighting-mistakes][Highlighting mistakes]]
+:END:
+
+One of the benefits of =prism= is making it easy to see which list elements are in.  For example, in this excerpt from =org-get-entries-from-diary= from =org-agenda.el=, the =funcall='s first argument is an unusually indented =if= form, and the indentation nearly aligns the =funcall='s second argument, =date=, at the column where the =if='s /else/ clause would usually be.  But with depth-based colorization, it's easy to see that =date= and =1= are arguments to =funcall=, not part of the =if= form.
+
+It's also easy to distinguish the =diary-list-entries-hook= variable's value form from other variables, and the =entries= variable's different color clearly shows that it has no value form.
+
+[[images/one-armed-if.png]]
+
+It is also useful for non-Lisp languages.  For example, here's an example of JSON in =prism-mode=:
+
+[[images/json.png]]
+
+Here's an Emacs C function:
+
+[[images/c.png]]
+
+It might even help save you from deeply nested, callback-style JavaScript, turning this:
+
+[[images/js-before.png]]
+
+Into this (using theme =doom-outrun-electric=).  Note how the =bind= is the same color as the =function= keyword and braces that it corresponds to:
+
+[[images/js-after.png]]
+
+*** Colorize parens distinctly
+
+Inspired by [[https://github.com/tarsius/paren-face][paren-face]], when the option =prism-parens= is enabled, parens (any character classified as parenthesis-like syntax by the buffer's mode) may be colored distinctly from other text, e.g. to make them fade away or stand out.  For example, this shows parens being blended into the background with 50% opacity:
+
+[[images/parens-0.5.png]]
+
+And here, at 25%:
+
+[[images/parens-0.25.png]]
+
+*** Highlighting mistakes
+
+In this screenshot, the second and third top-level forms are colorized differently than the first, which points to a programmer error: the first ~defun~'s closing parens are on a line after a comment.
+
+[[images/prism-shows-mistakes.png]]
+
+** Whitespace-sensitive languages
+
+For whitespace-sensitive languages, =prism-whitespace-mode= determines depth by a combination of indentation and list nesting.  For example, Python (showing theme =doom-vibrant= with these faces set in variable =prism-colors=: =font-lock-type-face=, =font-lock-function-name-face=, =font-lock-constant-face=, and =font-lock-keyword-face=):
+
+[[images/python.png]]
+
+This example shows Python with =prism-comments= enabled (showing theme =doom-challenger-deep=):
+
+[[images/python-doom-challenger-deep.png]]
+
+Here, even though these ~if~ statements' conditions are parenthesized and split across lines, they are colorized at the same logical depth--and the parts of them in brackets, at a deeper logical depth, are also colorized at the proper depth:
+
+[[images/python-3.png]]
+
+Thanks to Emacs's mode-specific syntax tables, even complex shell scripts are properly interpreted.  In this example, even though the subsequent lines of this shell function are indented more deeply than the first, they are at the same logical depth because of their being continued lines, so they are colorized at the same initial depth, with their parenthesized and bracketed portions colorized at deeper depths (showing theme =doom-solarized-dark= with a reversed-rainbow palette):
+
+[[images/shell-1.png]]
+
+And in this function, even though Emacs indents each part of the the doubly continued line more deeply, they're colorized with the same color, because they're at the same logical depth:
+
+[[images/shell-2.png]]
+
+It even works in Haskell (showing theme =doom-molokai=):
+
+[[images/haskell-doom-molokai.png]]
+
+** Customizable colors
+
+It's easy to adjust the colors with ~prism-set-colors~.  Here are some examples.
+
+You can use just a few faces in combination with the =desaturations= and =lightens= to create a palette of colors:
+
+[[images/2-faces.png]]
+[[images/4-faces.png]]
+
+Or even a single color, going in one direction:
+
+[[images/1-color.png]]
+
+...or the other:
+
+[[images/1-color-reversed.png]]
+
+The default configuration looks decent in the default Emacs theme:
+
+[[images/default-emacs.png]]
+
+If you use [[https://github.com/hlissner/emacs-doom-themes][Doom themes]], you can use =doom-color= to get colors from the theme:
+
+[[images/doom-spacegrey.png]]
+
+But some of them look nice without any customization, like =doom-gruvbox=:
+
+[[images/doom-gruvbox.png]]
+
+If you use [[https://github.com/bbatsov/solarized-emacs][solarized-theme]], you can use ~solarized-with-color-variables~ to get colors from the theme:
+
+[[images/1.png]]
+
+And you can adjust the palette extensively by changing the applied desaturation and lightening:
+
+[[images/2.png]]
+[[images/5.png]]
+
+You can shuffle the order of the colors until you find a pattern you like:
+
+[[images/shuffled.png]]
+
+** Buffer-local themes
+
+You can even set themes buffer-locally (the theme-choosing command shown here is not included, but you can easily define your own "chooser" command using [[https://github.com/alphapapa/unpackaged.el#define-a-chooser-command][unpackaged/define-chooser]]):
+
+[[images/prism-themes.gif]]
+
+* Comparisons
+
+=prism= is much like [[https://github.com/istib/rainbow-blocks][rainbow-blocks]], but it differs in a few ways:
+
++  =prism= optionally colorizes comments and strings according to the depth of their surrounding code.
++  =prism= highlights parens with the color of the outer list's symbols, which helps parens stand out from symbols and shows which depth surrounds a list.
++  =prism= adds to the ~face~ text property, which respects existing fontification, while =rainbow-blocks= sets the ~font-lock-face~ text property, which overrides existing fontification.  This means that =prism= is compatible with packages like [[https://github.com/alphapapa/highlight-function-calls][highlight-function-calls]] and [[https://github.com/Fanael/highlight-quoted][highlight-quoted]].
++  =prism= uses ~font-lock-add-keywords~, while =rainbow-blocks= uses ~jit-lock-register~.  Which is better?  Good question.  Hopefully, the former...
+
+* Installation
+:PROPERTIES:
+:TOC:      0
+:END:
+
+The easiest way is to use [[https://framagit.org/steckerhalter/quelpa-use-package][quelpa-use-package]] like this:
+
+#+BEGIN_SRC elisp
+  (use-package prism
+    :quelpa (prism :fetcher github :repo "alphapapa/prism.el"))
+#+END_SRC
+
+* Usage
+:PROPERTIES:
+:TOC:      0
+:END:
+
+1.  Run the appropriate command for the current buffer:
+      -  For Lisp and C-like languages, use =prism-mode=.
+      -  For significant-whitespace languages like Python, or ones whose depth is not always indicated by parenthetical characters, like shell, use =prism-whitespace-mode= instead.
+2.  Enjoy.
+
++  If the colors aren't satisfactory, use command =prism-randomize-colors= to randomize the =prism= colors according to the current Emacs theme.  When you find a set you like, you may save the colors with command =prism-save-colors=.
++  When a theme is loaded or disabled, and =prism-colors= is a list of faces (rather than a list of colors), =prism-colors= is automatically updated.  If =prism-colors= is a list of colors, call =prism-set-colors= or =prism-randomize-colors= manually to update for a new theme.
++  To customize, see the =prism= customization group, e.g. by using @@html:<kbd>@@M-x customize-group RET prism RET@@html:</kbd>@@.  For example, by default, comments and strings are colorized according to depth, similarly to code, but this can be disabled.
+
+** Advanced
+
+More advanced customization of faces is done by calling =prism-set-colors=, which can override the default settings and perform additional color manipulations.  The primary argument is =COLORS=, which should be a list of colors, each of which may be a name, a hex RGB string, or a face name (of which the foreground color is used).  Note that the list of colors need not be as long as the number of faces that's actually set (e.g. the default is 16 faces), because the colors are automatically repeated and adjusted as necessary.
+
+Faces may be remapped buffer-locally by setting the =LOCAL= argument to =t= (interactively, with one universal prefix); if set to =reset= (interactively, with two prefixes), local remappings are cleared.
+
+If =prism-set-colors= is called with the =SAVE= argument, the results are saved to customization options so that =prism-mode= will use those colors by default.
+
+Here's an example that the author finds pleasant (seen in the first screenshot):
+
+#+BEGIN_SRC elisp :exports code :results silent 
+  (prism-set-colors :num 16
+    :desaturations (cl-loop for i from 0 below 16
+                            collect (* i 2.5))
+    :lightens (cl-loop for i from 0 below 16
+                       collect (* i 2.5))
+    :colors (list "dodgerblue" "medium sea green" "sandy brown")
+
+    :comments-fn
+    (lambda (color)
+      (prism-blend color
+                   (face-attribute 'font-lock-comment-face :foreground) 0.25))
+
+    :strings-fn
+    (lambda (color)
+      (prism-blend color "white" 0.5)))
+#+END_SRC
+
+* Changelog
+:PROPERTIES:
+:TOC:      0
+:END:
+
+** 0.4-pre
+
+*Additions*
++ Option ~prism-whitespace-mode-indents~ includes a default for ~yaml-mode~ buffers.
+
+*Changes*
++ Command ~prism-randomize-colors~ more consistently produces the desired number of colors.  (However, it is still limited by the element of chance and the available faces; it may take several iterations to find a pleasing set of colors in a given circumstance.)
+
+*Fixes*
++ "Invalid search bound (wrong side of point)" error.  ([[https://github.com/alphapapa/prism.el/issues/27][#27]].  Thanks to [[https://github.com/disconsis][Ketan Kanishka]] for reporting.)
++ Face applied within sequences at top-level indentation in ~prism-whitespace-mode~ (e.g. in Python, the arguments in a top-level function definition).
+
+** 0.3.5
+
+*Fixes*
++ Further fix to customization setter.
+
+** 0.3.4
+
+*Fixes*
++ Customization setter could fail at load time.
+
+** 0.3.3
+
+*Compatibility*
++ Depend on Emacs 27.1 or later.  (This was actually needed since v0.3.2, but was overlooked then.)
+
+*Fixes*
++ Infinite loop in ~prism-match~ when a double-prefixed comment appears next to a non-comment, non-whitespace character.  ([[https://github.com/alphapapa/prism.el/issues/26][#26]].  Thanks to [[https://github.com/danielneal][Daniel Neal]] for reporting.)
++ Call ~face-attribute~ with its ~inherit~ argument specified as ~default~.  (Fixes [[https://github.com/alphapapa/prism.el/issues/22][#22]].  Thanks to [[https://github.com/bram85][Bram Schoenmakers]] for reporting.)
+
+** 0.3.2
+
+*Fixed*
++ When ~prism-comments~ is enabled in major modes whose syntax tables do not allow searching for comment delimiters.  (Related to [[https://github.com/alphapapa/prism.el/issues/18][#18]].)  (Thanks to [[https://github.com/JasZhe][Jason Zhen]] for reporting.)
+
+** 0.3.1
+
+*Added*
++ Failsafe to prevent bugs from causing infinte loops in Emacs.
+
+*Fixed*
++ Infinite loop with certain buffer contents.  (Further fixes [[https://github.com/alphapapa/prism.el/issues/18][#18]].)  (Thanks to [[https://github.com/JasZhe][Jason Zhen]] and [[https://github.com/fkr-0][fkr-0]] for reporting.)
+
+** 0.3
+
+*Added*
++  Option =prism-parens=, which allows parenthesis characters (by syntax type, not only =( )=) to be colorized differently (e.g. to make them fade away or stand out).  The function =prism-set-colors='s new argument, =parens-fn=, defaults to one which fades parens into the background (which only applies when the option is enabled).
+
+*Changed*
++  Both =prism-mode= and =prism-whitespace-mode= deactivate the other mode when activated, allowing them to be switched between without having to disable one first.
+
+*Fixed*
++  Code comments in strings (or what appeared to be, e.g. ~"Foo; bar"~ in Lisp) were fontified as comments rather than strings.
++  End-of-buffer errors signaled in ~font-lock-fontify-keywords-region~.  (Fixes [[https://github.com/alphapapa/prism.el/issues/6][#6]].  With thanks to [[https://github.com/vuori][@vuori]] and [[https://github.com/piknik][@piknik]].)
++  Call ~font-lock-flush~ when disabling modes.  (Thanks to [[https://github.com/josephmturner][Joseph Turner]] for reporting.)
++  Infinite loop with certain buffer contents (involving strings directly adjacent to other tokens).  (Fixes [[https://github.com/alphapapa/prism.el/issues/18][#18]].  Thanks to [[https://github.com/nathanvy][@nathanvy]] for reporting.)
+
+** 0.2.3
+
+*Fixed*
++  Depth of logically continued lines (e.g. in Python, an expression split across lines) and physically continued lines (e.g. in Shell, a statement split across backslash-continued lines) in =prism-whitespace-mode=.
+
+** 0.2.2
+
+*Fixed*
++  The fix in previous version.  Oops.
+
+** 0.2.1
+
+*Fixed*
++  Ignore faces with =unspecified-= colors (e.g. when used in a terminal).
+
+** 0.2
+
+*Added*
++  Command =prism-randomize-colors=, which sets =faces= based on a random, shuffled selection of =font-lock= faces in the current Emacs theme.
+
+*Fixed*
++  Performance issues with large Lisp forms.
+
+** 0.1
+
+First tagged version.  Possibly a few sneaky bugs lurking, but seems to work well.
+
+* Credits
+
+Inspired by [[https://github.com/istib/rainbow-blocks][rainbow-blocks]], [[https://github.com/Fanael/rainbow-identifiers][rainbow-identifiers]], and [[https://github.com/Fanael/rainbow-delimiters][rainbow-delimiters]].
+
+* Development
+:PROPERTIES:
+:TOC:      ignore
+:END:
+
+Bug reports, feature requests, suggestions — /oh my/!
+
+In the event that a bug in the font-locking functions cause Emacs to enter an infinite loop, you can stop it without killing Emacs by following these steps:
+
+1.  From a shell, run ~pkill -SIGUSR2 emacs~.  Usually once is enough, but not always.
+2.  After Emacs displays a backtrace, switch to the buffer where ~prism-mode~ was enabled and call ~prism-mode~ again to disable it.
+3.  Please report the backtrace to the issue tracker so it can be fixed.  Include contents of the buffer when possible.
+
+* License
+:PROPERTIES:
+:TOC:      ignore
+:END:
+
+GPLv3
+
+# Local Variables:
+# eval: (require 'org-make-toc)
+# before-save-hook: org-make-toc
+# org-export-with-properties: ()
+# org-export-with-title: t
+# End:
+
+

@@ -1,0 +1,314 @@
+#+TITLE: =prism= notes
+
+* Tasks
+
+** TODO [#A] redisplay signals "end of buffer" when ~prism-comments~ is nil :bug:
+
+Everything still works, but this shouldn't happen.
+
+** TODO Add color shuffle command
+
+This is very useful when changing themes, because the default set of faces may not present good contrast between levels, and sometimes shuffling a few times produces a great set of colors.
+
+#+BEGIN_SRC elisp
+  ("Shuffle random number of theme faces"
+   (prism-set-colors :num 24
+     :colors (let* ((faces (list 'font-lock-regexp-grouping-backslash 'font-lock-regexp-grouping-construct
+                                 'font-lock-negation-char-face 'font-lock-preprocessor-face
+                                 'font-lock-function-name-face 'font-lock-keyword-face
+                                 'font-lock-variable-name-face 'font-lock-warning-face
+                                 'font-lock-builtin-face 'font-lock-constant-face
+                                 'font-lock-string-face 'font-lock-type-face))
+                    (colors (->> faces
+                                 (--map (face-attribute it :foreground))
+                                 (--remove (eq 'unspecified it))
+                                 -uniq))
+                    (num (max 3 (random (1+ (length colors))))))
+               (prism-shuffle (seq-take colors num)))))
+#+END_SRC
+
+** TODO Look into using jit-lock-register
+
+Michael Heerdegen pointed out this in a reply on emacs-devel:
+
+#+BEGIN_QUOTE
+If you use `font-lock-extend-region-functions', all of font-lock uses the extended region, right?  I guess basing your functionality on jit-lock-register could be better.
+#+END_QUOTE
+
+** TODO Study =rainbow-blocks=
+
+It uses other methods, including modified syntax tables, and it sets both the =font-lock-face= and =face= properties.  It seems much faster.
+
+* Ideas
+
+** Use tree-sitter and/or SMIE
+
+Mentioned at https://www.reddit.com/r/emacs/comments/cxd60i/pareditsmartparens_for_all_languages_using/
+
+** More code examples
+
+*** =anagrams-for=
+
+Based on the [[https://exercism.io/tracks/python/exercises/anagram][exercise on Exercism]], this shows how easy Prism makes it to see which arguments go with which functions: the ~nil~ is an argument to ~append~, and the ~#'<~ is an argument to ~sort~.
+
+#+BEGIN_SRC elisp
+  (defun anagrams-for (word anagrams)
+    (setf word (sort (append (vconcat (downcase word)) nil) #'<))
+    (cl-loop for anagram in anagrams
+             when (equal word (sort (append (vconcat (downcase anagram)) nil) #'<))
+             collect anagram))
+#+END_SRC
+
+* Samples
+
+#+BEGIN_SRC elisp
+  (defun highlight-function-calls--matcher (end)
+    "The matcher function to be used by font lock mode."
+    (setq end (save-excursion (forward-symbol 1) (point)))
+    (catch 'highlight-function-calls--matcher
+      (when (not (nth 5 (syntax-ppss)))
+        (while (re-search-forward (rx symbol-start (*? any) symbol-end) end t)
+          (let ((match (intern-soft (match-string 0))))
+            (when (and (or (functionp match)
+                           (when highlight-function-calls-macro-calls
+                             (macrop match))
+                           (when highlight-function-calls-special-forms
+                             (special-form-p match)))
+                       (not (member match highlight-function-calls-exclude-symbols)))
+              (goto-char (match-end 0))
+              (setq highlight-function-calls--face-name
+                    (pcase match
+                      ((and (or 'not 'null) (guard highlight-function-calls-not)) 'highlight-function-calls--not-face)
+                      (_ 'highlight-function-calls-face)))
+              (throw 'highlight-function-calls--matcher t)))))
+      nil))
+
+  ;; red1 is applied to only the first opening paren.
+  (orange1 (yellow1 (green1 (blue1 (cyan1 (violet1 (magenta1 (red2
+  (orange2 (yellow2 (green2 (blue2 (cyan2 (violet2 (magenta2 (red3 
+  (orange3 (yellow3 (green3 (blue3 (cyan3 (violet3 (magenta3)))))))))))))))))))))))
+#+END_SRC
+
+* Code
+
+** Theme-setting
+
+#+BEGIN_SRC elisp
+  (prism-set-colors :colors '(font-lock-keyword-face font-lock-builtin-face
+                             font-lock-constant-face font-lock-type-face))
+
+  (prism-set-colors :colors '("red" "orange" "yellow" "green" "blue" "cyan" "violet"))
+
+  (prism-set-colors :colors (list "dodgerblue" "medium sea green" "sandy brown"))
+
+  (prism-set-colors :colors (solarized-with-color-variables 'dark
+                             (list red orange yellow green blue cyan violet magenta))
+    :num 24)
+  (prism-set-colors :num 24
+    :lightens (list 10 20 30) :desaturations (list 10 20 30)
+    :colors (list "red" "orange" "yellow" "green" "blue" "cyan" "violet" "magenta")
+    )
+  (prism-set-colors :num 24
+    :lightens (list 10 20 30) :desaturations (list 10 20 30)
+    :colors (list "red" "orange" "yellow" "green" "blue" "cyan" "violet" )
+    )
+  (prism-set-colors :num 24
+    :lightens (list 20 30 40) :desaturations (list 10 20 30)
+    :colors (list "red" "orange" "yellow" "green" "blue" "cyan" "violet" "magenta")
+    )
+
+  (prism-set-colors :num 24
+    :desaturations '(0 5 10) :lightens '(30 40 50)
+    :colors (solarized-with-color-variables 'dark
+              (list red orange yellow green blue cyan violet magenta)))
+  (prism-set-colors :num 24
+    :lightens '(5 15 25)
+    :colors (solarized-with-color-variables 'dark
+              (list red orange yellow green blue cyan violet magenta)))
+
+
+  (prism-set-colors :colors (solarized-with-color-variables 'dark
+                             (list red orange yellow green blue cyan violet magenta))
+    :num 24 :shuffle t)
+
+  (prism-set-colors :colors (solarized-with-color-variables 'dark
+                             (list red orange yellow green blue cyan violet magenta))
+    :num 24 :lightens (list -10 -20 -30))
+
+
+
+  (prism-set-colors :colors (weird-sort (-sort (-on #'< (lambda (color)
+                                                         (->> color color-name-to-rgb (apply #'color-rgb-to-hsl) car)))
+                                              (solarized-with-color-variables 'dark
+                                                (list red orange yellow green blue cyan violet magenta))))
+    :num 24)
+
+  (prism-set-colors :num 16
+    :desaturations (cl-loop for i from 0 below 16
+                            collect (* i 3))
+    :lightens (cl-loop for i from 0 below 16
+                       collect (* 3 i))
+    :colors (list "red" "white" "dodgerblue" "white"))
+
+  (prism-set-colors :num 16
+    :desaturations (cl-loop for i from 0 below 16
+                            collect (* i 3))
+    :lightens (cl-loop for i from 0 below 16
+                       collect (* 3 i))
+    :colors (list "red" "white" "dodgerblue" ))
+
+  ;; This is very pleasant:
+  (prism-set-colors :num 16
+    :desaturations (cl-loop for i from 0 below 16
+                            collect (* i 3))
+    :lightens (cl-loop for i from 0 below 16
+                       collect (* 3 i))
+    :colors (list "dodgerblue" "medium sea green" "sandy brown"))
+
+  (prism-set-colors :num 24
+                    :desaturations (cl-loop for i from 0 below 24
+                                            collect (* i 2.5))
+                    :lightens (cl-loop for i from 0 below 24
+                                       collect (* i 2.5))
+                    :colors (list "sandy brown" "dodgerblue" "medium sea green"))
+
+  (prism-set-colors :num 24
+                    :desaturations (cl-loop for i from 0 below 24
+                                            collect (* i 2))
+                    :lightens (cl-loop for i from 0 below 24
+                                       collect (* i 2))
+                    :colors (list "sandy brown" "dodgerblue" "medium sea green"))
+
+  (prism-set-colors :num 24
+                    :desaturations (prism-extrapolate 0 24 3 (* c 3.5))
+                    :lightens (prism-extrapolate 0 24 3 (* c 3.5))
+                    :colors (list "sandy brown" "dodgerblue" "medium sea green"))
+
+  (prism-set-colors :num 16 :suffix 'strings
+    :desaturations (cl-loop for i from 0 below 16
+                            collect (* i 2.5))
+    :lightens (cl-loop for i from 0 below 16
+                       collect (* i 2.5))
+    :colors (--map (solarized-color-blend it (face-attribute 'default :background) 0.7)
+                   (list "dodgerblue" "medium sea green" "sandy brown")))
+
+  (defun weird-sort (list)
+    (-let* (((a b) (-split-at (/ (length list) 2) list))
+            (b (nreverse b)))
+      (-interleave a b)))
+
+  (weird-sort '( 1 2 3 4 5 6 7 8)) ;;=> (1 8 2 7 3 6 4 5)
+
+  ;;;; Background
+
+  (prism-set-colors :num 16 :attribute :background
+    :desaturations (cl-loop for i from 0 below 16
+                            collect (* i 30))
+    :lightens (cl-loop for i from 0 below 16
+                       collect (* -1 i 10))
+    :colors (list "dodgerblue" "medium sea green" "sandy brown"))
+
+  (prism-set-colors :colors (solarized-with-color-variables 'dark
+                             (--map (solarized-color-blend it (face-attribute 'default :background) 50)
+                                    (list red orange yellow green blue cyan violet magenta)))
+    :num 24 :attribute :background)
+
+  (prism-set-colors :colors (solarized-with-color-variables 'dark
+                             (--map (solarized-color-blend it (face-attribute 'default :background) .15)
+                                    (list red orange yellow green blue cyan violet magenta)))
+    :desaturations (list 5 10 15) :lightens (list 5 10 15)
+    :num 24 :attribute :background)
+
+  (prism-set-colors :lightens '(5 10 15) :desaturations '(-2.5 0 2.5)
+    :colors (-map #'doom-color
+                  '(red orange yellow green blue violet)))
+
+  ;;;; Strings, comments
+
+  (prism-set-colors :num 24
+                    :lightens '(5 15 25)
+                    :colors (solarized-with-color-variables 'dark
+                              (list red orange yellow green blue cyan violet magenta))
+                    :comments-fn (lambda (color)
+                                   (--> color
+                                        (color-desaturate-name it 50)
+                                        ;; (color-lighten-name it -5)
+                                        )))
+
+  (prism-set-colors
+   ;; Inverted rainbow, maybe helpful for making too-deeply-nested forms
+   ;; stand out.
+   :num 24
+   :lightens '(5 15 25)
+   :colors (solarized-with-color-variables 'dark
+             (nreverse (list red orange yellow green blue cyan violet magenta)))
+   :comments-fn (lambda (color)
+                  (--> color
+                       (color-desaturate-name it 50)
+                       ;; (color-lighten-name it -5)
+                       )))
+  (prism-set-colors :num 16
+    :desaturations (cl-loop for i from 0 below 16
+                            collect (* i 2.5))
+    :lightens (cl-loop for i from 0 below 16
+                       collect (* i 2.5))
+    :colors (list "sandy brown" "dodgerblue" "medium sea green"))
+
+
+  (prism-set-colors :num 16
+    :desaturations (cl-loop for i from 0 below 16
+                            collect (* i 2.5))
+    :lightens (cl-loop for i from 0 below 16
+                       collect (* i 2.5))
+    :colors (list "sandy brown" "dodgerblue" "medium sea green")
+    :comments-fn (lambda (color)
+                   (prism-blend color (face-attribute 'font-lock-comment-face :foreground) 0.25)))
+
+  (prism-set-colors :num 16
+    :desaturations (cl-loop for i from 0 below 16
+                            collect (* i 2.5))
+    :lightens (cl-loop for i from 0 below 16
+                       collect (* i 2.5))
+    :colors (list "sandy brown" "dodgerblue" "medium sea green")
+    :comments-fn (lambda (color)
+                   (prism-blend color (face-attribute 'font-lock-comment-face :foreground) 0.25))
+    :strings-fn (lambda (color)
+                  (prism-blend color "white" 0.5)))
+  (prism-set-colors :num 16
+    :colors (list "sandy brown" "dodgerblue" "medium sea green")
+    :comments-fn (lambda (color)
+                   (prism-blend color (face-attribute 'font-lock-comment-face :foreground) 0.25))
+    :strings-fn (lambda (color)
+                  (prism-blend color "white" 0.5)))
+
+#+END_SRC
+
+* Profiling
+
+** concat, intern vs. lookup
+
+#+BEGIN_SRC elisp
+  (let* ((prism-faces-alist (cl-loop for i from 0 below 24
+                                     for face = (intern (concat "prism-level-" (number-to-string i)))
+                                     collect (cons i face)))
+         (prism-faces-ht (cl-loop with ht = (ht)
+                                  for i from 0 below 24
+                                  for face = (intern (concat "prism-level-" (number-to-string i)))
+                                  do (ht-set ht i face)
+                                  finally return ht)))
+    (bench-multi-lexical :times 100 :ensure-equal t
+      :forms (("concat, intern" (cl-loop for i from 0 below 24
+                                         for face = (intern (concat "prism-level-" (number-to-string i)))
+                                         collect face))
+              ("alist lookup" (cl-loop for i from 0 below 24
+                                       collect (alist-get i prism-faces-alist)))
+              ("ht lookup" (cl-loop for i from 0 below 24
+                                    collect (ht-get prism-faces-ht i))))))
+#+END_SRC
+
+#+RESULTS:
+| Form           | x faster than next | Total runtime | # of GCs | Total GC runtime |
+|----------------+--------------------+---------------+----------+------------------|
+| alist lookup   |               1.26 |      0.000570 |        0 |                0 |
+| ht lookup      |               1.77 |      0.000717 |        0 |                0 |
+| concat, intern |            slowest |      0.001268 |        0 |                0 |

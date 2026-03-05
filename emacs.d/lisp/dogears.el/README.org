@@ -1,0 +1,178 @@
+#+TITLE: dogears.el
+
+#+PROPERTY: LOGGING nil
+
+# Note: This readme works with the org-make-toc <https://github.com/alphapapa/org-make-toc> package, which automatically updates the table of contents.
+
+#+HTML: <img src="images/mascot.png" align="right">
+
+# [[https://melpa.org/#/package-name][file:https://melpa.org/packages/dogears-badge.svg]] [[https://stable.melpa.org/#/package-name][file:https://stable.melpa.org/packages/dogears-badge.svg]]
+
+/Never lose your place in Emacs again!/
+
+This library automatically and smartly remembers where you've been, in and across buffers, and helps you quickly return to any of those places.  It works similarly to a Web browser's history list and back/forward commands, but with more contextual information and customization.  As well, for most modes, it can return to a place even if its buffer no longer exists.
+
+It's configurable to suit each user, with regard to how often places are remembered, which ones, and for how long.  It uses standard Emacs completion, so it works with Helm, Ivy, Selectrum, Vertico, etc.  For Helm users, a ~helm-dogears-source~ is also provided in =helm-dogears.el= that can be used with any Helm command.
+
+* Screenshots
+
+This shows the ~dogears-list~ buffer, in which you can browse entries, sort them, etc.
+
+[[images/screenshot.png]]
+
+This screenshot shows it while using the theme =doom-solarized-dark=, and the =Line= column shows some source code snippets with highlighting by [[https://github.com/alphapapa/prism.el][prism.el]].
+
+[[images/screenshot2.png]]
+
+* Contents                                                         :noexport:
+:PROPERTIES:
+:TOC:      :include siblings
+:ID:       8cdd22ed-5ab9-4ec6-962a-c05945a43ecf
+:END:
+:CONTENTS:
+- [[#installation][Installation]]
+- [[#usage][Usage]]
+- [[#changelog][Changelog]]
+- [[#development][Development]]
+  - [[#implementation][Implementation]]
+- [[#alternatives][Alternatives]]
+:END:
+
+* Installation
+:PROPERTIES:
+:TOC:      :depth 0
+:ID:       c3d59323-561a-4839-9e54-e2a8dfa72213
+:END:
+
+** MELPA
+
+If you installed from MELPA, you're done.  Just run one of the commands below.
+
+** Quelpa
+
+The recommended way to install is with [[https://github.com/quelpa/quelpa-use-package][quelpa-use-package]], like this:
+
+#+BEGIN_SRC elisp
+  ;; Install and load `quelpa-use-package'.
+  (package-install 'quelpa-use-package)
+  (require 'quelpa-use-package)
+
+  (use-package dogears
+    :quelpa (dogears :fetcher github :repo "alphapapa/dogears.el"
+                     :files (:defaults (:exclude "helm-dogears.el")))
+
+    ;; These bindings are optional, of course:
+    :bind (:map global-map
+                ("M-g d" . dogears-go)
+                ("M-g M-b" . dogears-back)
+                ("M-g M-f" . dogears-forward)
+                ("M-g M-d" . dogears-list)
+                ("M-g M-D" . dogears-sidebar)))
+#+END_SRC
+
+** Manual
+
+If you want to install it manually, it's simple enough, but you should know what you're doing, and you're on your own.
+
+* Usage
+:PROPERTIES:
+:TOC:      :depth 0
+:ID:       986e8593-3ed1-4716-8423-788e8a178aa3
+:END:
+
+It works by automatically remembering ("dogearing") the place at point when any of three things happens:
+
++  The ~dogears~ idle timer runs (after 5 seconds idle, by default).
++  One of the ~dogears-hooks~ is run (only including ~imenu-after-jump-hook~ by default).
++  One of the functions listed in ~dogears-functions~ is called (none, by default).
+
+Then the user can run a command to view or go to places in the list.
+
+| Command          | Action                                                     |
+|------------------+------------------------------------------------------------|
+| =dogears-mode=     | Automatically remember places, according to configuration. |
+| =dogears-remember= | Manually remember the place at point.                      |
+| =dogears-go=       | Go to a dogeared place, selected with completion.          |
+| =dogears-back=     | Go to previous dogeared place.                             |
+| =dogears-forward=  | Go to next dogeared place.                                 |
+| =dogears-list=     | Show dogeared places in a tabulated list buffer.           |
+| =dogears-sidebar=  | Show Dogears list in a side window.                        |
+
+** Tips
+:PROPERTIES:
+:ID:       6a5b2fdf-1031-4801-a471-b4dd47b953c7
+:END:
+
++ You can customize settings in the =dogears= group.
+
+* Changelog
+:PROPERTIES:
+:TOC:      :depth 0
+:END:
+
+** 0.2-pre
+
+*Additions*
+
++ Commands ~dogears-forward~ and ~dogears-back~ accept a universal prefix argument to move to manually remembered places.
++ Highlight index of last-selected place in ~dogears-list~ buffer.
+
+*Changes*
+
++ Command ~dogears-go~ offers only "relevant" places by default; with universal prefix, it offers all places.
++ Commands ~dogears-forward~ and ~dogears-backward~ corrected: "backward" means to go to older places in history, and "forward" to go to more recent ones.
+
+*Fixes*
+
++ Various logic regarding moving between remembered places.
++ Mark for manually remembered places in ~dogears-list~ completion.
++ Truncate path segments with ellipsis.
++ Swap mode and buffer name in formatted records.  ([[https://github.com/alphapapa/dogears.el/pull/23][#23]].  Thanks to [[https://github.com/pacastega][Pablo Castellanos]].)
++ Alignment of fields in formatted records.
+
+** 0.1
+
+First tagged release.
+
+# * Credits
+
+* Development
+:PROPERTIES:
+:ID:       b2791280-8809-44dc-8a20-fb1517499ce1
+:END:
+
+Bug reports, feature requests, suggestions — /oh my/!
+
+** Implementation
+:PROPERTIES:
+:ID:       3d92e106-2964-4097-a8d4-e4607dc240ab
+:END:
+
+Internally, Dogears uses the built-in Emacs ~bookmark~ library to make bookmark-like records, however they are stored in ~dogears-list~ rather than ~bookmark-alist~, so they are not accessible with ~bookmark~ commands.  Nor is the ~dogears-list~ persisted to a file; it is empty when Emacs starts.  If the ~bookmark-make-record-function~ does not return a record for a place, Dogears uses a simple fallback that saves a record referring to the buffer by name, which allows it to remember places in, e.g. the =*scratch*= buffer.  When returning to a place, Dogears uses ~bookmark-jump~, which for many, if not most, modes returns not only to the buffer or file but to the specific location in it.  And by using ~bookmark~ internally, Dogears benefits from packages that extend it, like [[https://github.com/alphapapa/org-bookmark-heading][org-bookmark-heading]].
+
+Dogears also uses other built-in Emacs libraries, such as ~which-function~ and ~imenu~, to provide information about the context surrounding a place, such as a function or variable definition, an outline heading, etc.
+
+* Alternatives
+:PROPERTIES:
+:ID:       96cb74a4-8c0d-48e7-bf5a-ff5f1f7af91a
+:END:
+
+Some other, similar packages:
+
++  [[https://github.com/Overdr0ne/gumshoe][gumshoe]] :: /Gumshoe is a collection of global minor modes that quietly keep tabs on your Point movements so you can retrace your steps if you ever need a reminder of where you’ve been.  Each mode keeps a log local to some scope.  Gumshoe does not keep track of every move you make, rather, only at increments of some minimum Euclidean distance from the last tracked position, like a leash.  It will also automatically log a position if you’ve idled there for a configurable amount of time.  This package is very similar to Vim’s jump list, just generalized for Emacs./
++  [[https://www.emacswiki.org/emacs/BookmarkPlus#AutomaticIdle-PeriodBookmarking][Bookmark+ Automatic Idle-Period Bookmarking]] :: /Automatic idle-period bookmarking uses autonamed bookmarks.  It lets you navigate among them to visit spots where you spent some time (idly)./
+
+* License
+:PROPERTIES:
+:TOC:      :ignore (this)
+:END:
+
+GPLv3
+
+# Local Variables:
+# eval: (require 'org-make-toc)
+# before-save-hook: org-make-toc
+# org-export-with-properties: ()
+# org-export-with-title: t
+# End:
+
