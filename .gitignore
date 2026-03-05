@@ -1,3 +1,20 @@
 emacs.d/elpa/gnupg/
 emacs.d/elpa/*.signed
+emacs.d/elpa/archives/
 emacs.d/lisp/*/.git
+
+# Exclude non-essential files from vendored packages
+emacs.d/elpa/**/*.gif
+emacs.d/elpa/**/*.png
+emacs.d/elpa/**/*.jpg
+emacs.d/elpa/**/*.svg
+emacs.d/elpa/**/*.xcf*
+emacs.d/elpa/**/docs/
+emacs.d/lisp/**/*.gif
+emacs.d/lisp/**/*.png
+emacs.d/lisp/**/*.jpg
+emacs.d/lisp/**/*.svg
+emacs.d/lisp/**/*.xcf*
+emacs.d/lisp/**/docs/
+emacs.d/lisp/**/screenshot/
+emacs.d/lisp/**/images/
