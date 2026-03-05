@@ -11,8 +11,6 @@
 (setq gc-cons-threshold 100000000)
 (require 'package)
 (add-to-list 'package-archives (cons "melpa" "https://melpa.org/packages/") t)
-(add-to-list 'package-archives
-             '("org" . "http://orgmode.org/elpa/") t)
 (setq package-archive-priorities
       '(("gnu"    . 10)
         ("nongnu" . 5)
@@ -179,7 +177,7 @@ For simple hostnames, returns the full hostname."
   :after (dired)
   :commands dired-jump
   :hook
-  (dired-mode-hook . dired-omit-mode)
+  (dired-mode . dired-omit-mode)
   :config
   (setq dired-omit-files (concat dired-omit-files "\\|^\\..*$")))
 
@@ -250,7 +248,6 @@ that uses 'font-lock-warning-face'."
 (font-lock-add-keywords 'ess-mode (font-lock-width-keyword 80))
 
 (use-package cc-mode
-  :ensure t
   :hook (c-mode-common . subword-mode))
 
 ;; Headers are c++, not c
@@ -289,13 +286,13 @@ that uses 'font-lock-warning-face'."
 ;; no blink
 (blink-cursor-mode 0)
 ;; When emacs asks for "yes" or "no", let "y" or "n" suffice
-(fset 'yes-or-no-p 'y-or-n-p)
+(setopt use-short-answers t)
 ;; draw underline lower
 (setq x-underline-at-descent-line t)
 ;; don't let the cursor go into minibuffer prompt
-;; Tip taken from Xah Lee: http://ergoemacs.org/emacs/emacs_stop_cursor_enter_prompt.html
 (setq minibuffer-prompt-properties
-      '(read-only t point-entered minibuffer-avoid-prompt face minibuffer-prompt))
+      '(read-only t cursor-intangible t face minibuffer-prompt))
+(minibuffer-depth-indicate-mode 1)
 
 (setq ns-use-native-fullscreen t)
 
@@ -607,14 +604,14 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (set-default 'imenu-auto-rescan t)
 ;; Teach imenu to recognize TEST_F
-(add-hook 'c++-mode
+(add-hook 'c++-mode-hook
           (lambda ()
             (when (s-ends-with? "_test.cc" buffer-file-name)
               (setq-local
                imenu-generic-expression
                '(("Class" "^\\(template[        ]*<[^>]+>[      ]*\\)?\\(class\\|struct\\)[     ]+\\([[:alnum:]_]+\\(<[^>]+>\\)?\\)\\([         \n]\\|\\\\\n\\)*[:{]" 3)
                  ("Test" "^ *TEST\\(?:_F\\)?([^,]+,\n? *\\(.+\\)) {$" 1))))))
-(add-hook 'c++-ts-mode
+(add-hook 'c++-ts-mode-hook
           (lambda ()
             (when (s-ends-with? "_test.cc" buffer-file-name)
               (setq-local
@@ -706,6 +703,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (dolist (grammar
              '((xml . ("https://github.com/tree-sitter-grammars/tree-sitter-xml" "v0.7.0" "xml/src"))
 							 (yaml . ("https://github.com/tree-sitter-grammars/tree-sitter-yaml" "v0.7.0"))
+							 (pkl . ("https://github.com/apple/tree-sitter-pkl" "v0.20.0"))
 							 (starlark . ("https://github.com/tree-sitter-grammars/tree-sitter-starlark" "v1.3.0"))
 							 (make . ("https://github.com/tree-sitter-grammars/tree-sitter-make" "v1.1.1"))
 							 (thrift . ("https://github.com/tree-sitter-grammars/tree-sitter-thrift" "main"))
@@ -763,6 +761,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ;; Note that you may have to restart Emacs for this to take effect!
     (combobulate-key-prefix "C-c o")
     :hook ((prog-mode . combobulate-mode))))
+
+(use-package pkl-ts-mode
+  :load-path "lisp/"
+  :mode ("\\.pkl\\'" "\\.pcf\\'" "/PklProject\\'"))
 
 ;; Look at https://github.com/Fuco1/smartparens/issues/209 for ideas for other ways to use smartparns for movement.
 ;; Also consider using goal column?
@@ -834,7 +836,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;;   :init
 ;;   (solaire-global-mode +1))
 
-(defadvice custom-theme-load-confirm (around no-query-safe-theme activate) t)
+(advice-add 'custom-theme-load-confirm :around (lambda (_orig &rest _args) t))
 
 ;; (use-package base16-theme
 ;;   ;; :if window-system
@@ -1811,11 +1813,14 @@ In that case, insert the number."
 (use-package eglot
   :after (yasnippet)
   :ensure t
-  :hook ((c-mode c-ts-mode c++-mode c++-ts-mode go-mode go-ts-mode python-mode python-ts-mode protobuf-mode) . eglot-ensure)
+  :hook ((c-mode c-ts-mode c++-mode c++-ts-mode go-mode go-ts-mode python-mode python-ts-mode protobuf-mode pkl-ts-mode) . eglot-ensure)
   :custom
   (eglot-stay-out-of '(flymake))
   :config
 	(add-to-list 'eglot-server-programs '((c++-mode c++-ts-mode c-mode c-ts-mode) . my-clangd-command))
+  (add-to-list 'eglot-server-programs
+               `(pkl-ts-mode ,(expand-file-name "~/.local/share/jdk/jdk-25.0.2+10/bin/java")
+                             "-jar" ,(expand-file-name "~/.local/share/pkl-lsp/pkl-lsp-0.6.0.jar")))
   (when (file-exists-p "/google/bin/releases/")
     (add-to-list
      'eglot-server-programs
@@ -1835,8 +1840,6 @@ In that case, insert the number."
 (eval-when-compile
   (require 'compile))
 
-(use-package cc-mode)
-
 (setq compilation-always-kill t)
 (defun meain/prettify-compilation (&rest _)
   "Few thing to prettify compilation buffer."
@@ -1850,11 +1853,11 @@ In that case, insert the number."
   :ensure t
   :demand t
   :bind (:map prog-mode-map
-              ("C-c C-c" . compile-multi)
-              :map c++-mode-map
               ("C-c C-c" . compile-multi))
   :init
-  (add-hook 'c++-ts-mode (progn (require 'c-ts-mode) (bind-key "C-c C-c" 'compile-multi c++-ts-mode-map)))
+  (with-eval-after-load 'cc-mode
+    (bind-key "C-c C-c" 'compile-multi c++-mode-map))
+  (add-hook 'c++-ts-mode-hook (lambda () (require 'c-ts-mode) (bind-key "C-c C-c" 'compile-multi c++-ts-mode-map)))
   :config
   (defun my/compile-multi-bazel-available-targets ()
     "Generate Bazel targets for compile-multi based on available targets and rules."
@@ -2115,9 +2118,6 @@ in the workspace."
   (eshell-glob-case-insensitive t)
   (eshell-error-if-no-glob t)
   (eshell-term-name "xterm-256color"))
-
-(use-package pcmpl-args
-  :after pcomplete)
 
 (use-package cape
   :ensure t
