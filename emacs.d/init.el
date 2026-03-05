@@ -29,6 +29,29 @@
 (setq use-package-always-ensure nil)
 (setq use-package-verbose t)
 
+(defun gb-add-lisp-package (name url)
+  "Vendor a git repo into lisp/ and register it in `gb-lisp-package-repos'.
+Clones URL into ~/.emacs.d/lisp/NAME and opens init.el to add a use-package form."
+  (interactive "sPackage name: \nsGit URL: ")
+  (let* ((dir (expand-file-name name (locate-user-emacs-file "lisp"))))
+    (if (file-directory-p dir)
+        (message "%s already exists at %s" name dir)
+      (message "Cloning %s..." name)
+      (unless (zerop (call-process "git" nil "*gb-add-package*" nil
+                                   "clone" "--depth" "1" url dir))
+        (error "Failed to clone %s" url))
+      (message "Cloned %s into %s" name dir))
+    (add-to-list 'gb-lisp-package-repos (cons (intern name) url) t)
+    (find-file user-init-file)
+    (goto-char (point-min))
+    (search-forward "gb-lisp-package-repos")
+    (message "Add (%s . \"%s\") to the defvar, then add a use-package form with :load-path \"lisp/%s\""
+             name url name)))
+
+(define-advice package-install (:after (&rest _) gb-remind-to-commit)
+  "Remind to commit newly installed ELPA packages to the dotfiles repo."
+  (message "Remember: git add emacs.d/elpa/ && git commit in your dotfiles repo"))
+
 ;; Always load newest byte code
 (setq load-prefer-newer t)
 
