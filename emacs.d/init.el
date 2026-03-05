@@ -13,6 +13,10 @@
 (add-to-list 'package-archives (cons "melpa" "https://melpa.org/packages/") t)
 (add-to-list 'package-archives
              '("org" . "http://orgmode.org/elpa/") t)
+(setq package-archive-priorities
+      '(("gnu"    . 10)
+        ("nongnu" . 5)
+        ("melpa"  . 0)))
 (package-initialize)
 
 (add-to-list 'load-path "~/.emacs.d/lisp/")
