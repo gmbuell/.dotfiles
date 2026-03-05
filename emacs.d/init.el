@@ -5,6 +5,11 @@
 ;; Also need to start emacs with --no-site-file because that happens before this
 ;; init.
 
+;; Packages are vendored into the dotfiles repo.
+;; ELPA packages: committed in emacs.d/elpa/, activated by package-initialize.
+;; Other packages: committed in emacs.d/lisp/, loaded via :load-path.
+;; To refresh ELPA packages, run: emacs-sync-packages
+
 (setopt package-native-compile t)
 (setq native-comp-jit-compilation t)
 
@@ -29,9 +34,9 @@
 (setq load-prefer-newer t)
 
 (use-package bind-key
-  :ensure t)
+ )
 
-(use-package diminish :ensure t)
+(use-package diminish)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -44,11 +49,11 @@
  '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
  '(package-selected-packages
    '(ace-window anzu apheleia auto-yasnippet bazel beginend cape
-                casual-symbol-overlay claude-code clipetty consult-compile-multi
+                casual-symbol-overlay clipetty consult-compile-multi
                 consult-dir consult-eglot-embark copy-as-format corfu-prescient
-                cpp-func-impl deft diminish diredfl dirvish discover-my-major
+                deft diminish diredfl dirvish discover-my-major
                 disproject docker doom-themes eat expand-region fold-this
-                git-gutter git-link go-mode gptel iflipb link-hint magit-todos
+                git-gutter git-link go-mode iflipb link-hint magit-todos
                 marginalia markdown-mode mini-echo minuet modern-cpp-font-lock
                 mosey multifiles nov ob-async pcmpl-args phi-search pretty-hydra
                 projection-multi projection-multi-embark protobuf-mode
@@ -181,7 +186,6 @@ For simple hostnames, returns the full hostname."
 
 ;; Additional syntax highlighting for dired
 (use-package diredfl
-  :ensure t
   :after (dirvish)
   :hook
   ((dired-mode . diredfl-mode)
@@ -256,7 +260,6 @@ that uses 'font-lock-warning-face'."
 
 ;; Get syntax hilighting for modern c++
 (use-package modern-cpp-font-lock
-  :ensure t
 	:disabled t
   :config
   (modern-c++-font-lock-global-mode t))
@@ -268,7 +271,6 @@ that uses 'font-lock-warning-face'."
 ;; Better cut/paste handling for ssh and tmux
 (use-package clipetty
   :diminish clipetty-mode
-  :ensure t
   :hook (after-init . global-clipetty-mode))
 
 ;; Single space between sentences
@@ -321,13 +323,11 @@ that uses 'font-lock-warning-face'."
 
 ;; Load hydra early since I've got defhydras scattered throughout.
 (use-package hydra
-  :ensure t
   :demand t
   :bind (("C-c r" . hydra-pause-resume)))
 
 ;; Also region-bindings-mode early so I can use region-bindings-mode-map
 (use-package region-bindings-mode
-  :ensure t
   :demand t
   :init
   (require 'region-bindings-mode)
@@ -356,7 +356,6 @@ that uses 'font-lock-warning-face'."
 ;; -------------------------------------------------------------------
 ;; Shows git (and hg!) diff information in the gutter.
 (use-package git-gutter
-  :ensure t
   :diminish git-gutter-mode
   :custom
   (git-gutter:handled-backends '(git hg bzr svn))
@@ -395,7 +394,6 @@ Git gutter:
 ;; Start with "C-c g"
 ;; http://daemianmack.com/magit-cheatsheet.html
 (use-package magit
-  :ensure t
   :bind ("C-c g" . unpackaged/magit-status)
   :custom
   (auto-revert-check-vc-info t)
@@ -432,12 +430,10 @@ command was called, go to its unstaged changes section."
 (advice-add 'magit-inside-worktree-p :around #'my/google3-early-exit)
 
 (use-package hl-todo
-  :ensure t
   :init
   (global-hl-todo-mode))
 
 (use-package magit-todos
-  :ensure t
   :init
   (magit-todos-mode))
 
@@ -570,7 +566,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package anzu
   :diminish anzu-mode
-  :ensure t
   :init
   (global-anzu-mode +1))
 
@@ -580,7 +575,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (defalias 'auto-tail-revert-mode 'tail-mode)
 
 (use-package saveplace
-  :ensure t
   :custom
   (select-enable-clipboard t)
   (select-enable-primary t)
@@ -618,12 +612,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                  ("Test" "^ *TEST\\(?:_F\\)?([^,]+,\n? *\\(.+\\)) {$" 1))))))
 
 (use-package markdown-mode
-  :ensure t)
+ )
 
 ;; Deft is my preferred note-taking setup. See:
 ;; http://jblevins.org/projects/deft/
 (use-package deft
-  :ensure t
   :config
   (progn
     ;; Set the deft directory to Dropbox/notes if it exists.
@@ -645,7 +638,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package which-key
   :diminish which-key-mode
-  :ensure t
   :init
   (which-key-mode))
 
@@ -767,7 +759,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; Look at https://github.com/Fuco1/smartparens/issues/209 for ideas for other ways to use smartparns for movement.
 ;; Also consider using goal column?
 (use-package mosey
-  :ensure t
   :init
   (defmosey '(beginning-of-line
               back-to-indentation
@@ -788,37 +779,36 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; ttf-dejavu
 ;; Only load the theme if we are in a graphical display.
 ;; (use-package gotham-theme
-;;   :ensure t
+;;  
 ;;   :init
 ;;   (load-theme 'gotham t))
 ;; (use-package color-theme
 ;;   :if window-system
-;;   :ensure t)
+;;  )
 ;; monokai
 ;; spacemacs
 ;; railscasts
 ;; chalk
 ;; (use-package ujelly-theme
-;;   :ensure t
+;;  
 ;;   :init
 ;;   (load-theme 'ujelly t))
 
 ;; (use-package monokai-theme
-;;   :ensure t
+;;  
 ;;   :init
 ;;   (load-theme 'monokai t))
 
 ;; (use-package all-the-icons
-;;   :ensure t)
+;;  )
 ;; (use-package neotree
-;;   :ensure t)
+;;  )
 ;; (use-package powerline
-;;   :ensure t)
+;;  )
 ;; (use-package airline-themes
-;;   :ensure t)
+;;  )
 
 (use-package doom-themes
-  :ensure t
   :config
   ;; Global settings (defaults)
   (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
@@ -830,7 +820,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (doom-themes-org-config))
 
 ;; (use-package solaire-mode
-;;   :ensure t
+;;  
 ;;   :init
 ;;   (solaire-global-mode +1))
 
@@ -838,7 +828,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 ;; (use-package base16-theme
 ;;   ;; :if window-system
-;;   :ensure t
+;;  
 ;;   :init
 ;;   (setq base16-theme-256-color-source 'colors)
 ;;   (load-theme 'base16-monokai t))
@@ -847,11 +837,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (set-frame-font "Inconsolata 12" t t))
 
 (use-package re-builder
-  :ensure t
   :config (setq reb-re-syntax 'string))
 
 (use-package yasnippet
-  :ensure t
   :diminish yas-minor-mode
   :config
   (yas-global-mode 1))
@@ -886,7 +874,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (add-hook 'prog-mode-hook 'subword-mode)
 
 (use-package org
-  :ensure t
   :init
   (setq org-confirm-babel-evaluate nil
         org-src-fontify-natively t
@@ -915,7 +902,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (require 'org-tempo))
 
 (use-package walkman
-  :ensure t
   :config
   (setq walkman-keep-headers t)
   :bind (:map org-mode-map
@@ -924,7 +910,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
               ))
 
 (use-package symbol-overlay
-  :ensure t
   :init
   (global-set-key (kbd "M-i") 'symbol-overlay-put)
   (global-set-key (kbd "M-n") 'symbol-overlay-switch-forward)
@@ -933,15 +918,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (global-set-key (kbd "<f8>") 'symbol-overlay-remove-all))
 
 (use-package symbol-overlay-mc
-  :ensure t
   :after (symbol-overlay)
   :bind (("M-a" . symbol-overlay-mc-mark-all)))
 
 (use-package casual
-  :ensure t)
+ )
 
 (use-package casual-symbol-overlay
-  :ensure t
   :after (casual)
   :init
   (keymap-set symbol-overlay-map "C-o" #'casual-symbol-overlay-tmenu)
@@ -952,7 +935,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :init (setq uniquify-buffer-name-style 'forward))
 
 (use-package vertico
-  :ensure t
 	:demand t
   :init
   (vertico-mode)
@@ -970,7 +952,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package dirvish
   :demand t
-  :ensure t
   :bind ; Bind `dirvish-fd|dirvish-side|dirvish-dwim' as you see fit
   (("C-c f" . dirvish-side)
    :map dirvish-mode-map          ; Dirvish inherits `dired-mode-map'
@@ -1022,25 +1003,22 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       completion-ignore-case t)
 
 (use-package prescient
-  :ensure t
   :custom
   (completion-preview-sort-function #'prescient-completion-sort)
   (completion-styles '(prescient))
   :config
   (prescient-persist-mode 1))
 (use-package vertico-prescient
-  :ensure t
   :after (prescient vertico)
   :config
   (vertico-prescient-mode 1))
 (use-package corfu-prescient
-  :ensure t
   :after (prescient corfu)
   :config
   (corfu-prescient-mode 1))
 
 ;; (use-package orderless
-;;   :ensure t
+;;  
 ;;   :custom
 ;;   (completion-styles '(substring flex basic))
 ;;   (orderless-smart-case t))
@@ -1083,7 +1061,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
       (apply fn args))))
 
 (use-package embark
-  :ensure t
 	:demand t
   :after (vertico)
   :bind
@@ -1178,7 +1155,6 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
       grep-use-null-device nil)
 
 (use-package consult
-  :ensure t
 	:demand t
   :bind (;; ("M-i" . consult-imenu)
          ("C-x b" . consult-buffer)
@@ -1447,7 +1423,6 @@ Used to preselect nearest headings and imenu items.")
 	:bind (("C-c C-h" . hrm-notes)))
 
 (use-package consult-dir
-  :ensure t
   :after (consult)
   :bind (("C-x C-d" . consult-dir)
          :map minibuffer-local-completion-map
@@ -1475,23 +1450,19 @@ any directory proferred by `consult-dir'."
                        (completing-read "cd: " eshell-dirs))))))))
 
 (use-package consult-eglot
-  :ensure t
   :after (consult))
 (use-package consult-eglot-embark
-  :ensure t
   :after (consult-eglot)
   :init
   (consult-eglot-embark-mode))
 
 (use-package disproject
-  :ensure t
   ;; Replace `project-prefix-map' with `disproject-dispatch'.
   :bind ( :map ctl-x-map
           ("p" . disproject-dispatch)))
 
 ;; Consult users will also want the embark-consult package.
 (use-package embark-consult
-  :ensure t
   :after (embark consult)
   :demand t ; only necessary if you have the hook below
   ;; if you want to have consult previews as you move around an
@@ -1501,15 +1472,13 @@ any directory proferred by `consult-dir'."
 
 ;; wgrep mode to edit grep buffers (produced by embark-export)
 (use-package wgrep
-  :ensure t)
+ )
 
 (use-package marginalia
-  :ensure t
   :init
   (marginalia-mode))
 
 (use-package avy
-  :ensure t
   :bind (("C-c SPC" . avy-goto-word-1)
          ;;("C-c C-j" . avy-resume)
          ("M-j" . avy-goto-char-timer)
@@ -1524,7 +1493,6 @@ any directory proferred by `consult-dir'."
 
 (use-package ace-window
   :after (embark)
-  :ensure t
   :bind (("C-x o" . ace-window))
   :init
   (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
@@ -1581,7 +1549,7 @@ When `switch-to-buffer-obey-display-actions' is non-nil,
               my/window-prefix-map))
 
 (use-package f
-  :ensure t)
+ )
 
 ;; Version of ora-company-number for corfu
 (defun ora-corfu-number ()
@@ -1599,7 +1567,6 @@ In that case, insert the number."
       (corfu-insert))))
 
 (use-package corfu
-  :ensure t
   ;; Optional customizations
   :custom
   ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
@@ -1792,7 +1759,6 @@ In that case, insert the number."
 (bind-key "TAB" 'gmbuell-indent-or-complete-common prog-mode-map)
 
 (use-package flymake
-  :ensure t
   :custom
   (flymake-fringe-indicator-position 'right-fringe)
   :hook (find-file . flymake-find-file-hook)
@@ -1810,7 +1776,6 @@ In that case, insert the number."
 
 (use-package eglot
   :after (yasnippet)
-  :ensure t
   :hook ((c-mode c-ts-mode c++-mode c++-ts-mode go-mode go-ts-mode python-mode python-ts-mode protobuf-mode pkl-ts-mode) . eglot-ensure)
   :custom
   (eglot-stay-out-of '(flymake))
@@ -1848,7 +1813,6 @@ In that case, insert the number."
 (advice-add 'compile :after 'meain/prettify-compilation)
 
 (use-package compile-multi
-  :ensure t
   :demand t
   :bind (:map prog-mode-map
               ("C-c C-c" . compile-multi))
@@ -1986,20 +1950,17 @@ In that case, insert the number."
                  ("go:bench-mem" . (:command "go test -bench=. -benchmem ." :annotation "Run benchmarks with memory stats")))))
 
 (use-package consult-compile-multi
-  :ensure t
   :after compile-multi
   :demand t
   :config (consult-compile-multi-mode))
 
 (use-package compile-multi-embark
-  :ensure t
   :after embark
   :after compile-multi
   :demand t
   :config (compile-multi-embark-mode +1))
 
 (use-package projection
-  :ensure t
   ;; Enable the `projection-hook' feature.
   :hook (after-init . global-projection-hook-mode)
 
@@ -2023,14 +1984,12 @@ In that case, insert the number."
   ("C-x P" . projection-map))
 
 (use-package projection-multi
-  :ensure t
   ;; Allow interactively selecting available compilation targets from the current
   ;; project type.
   :bind ( :map project-prefix-map
           ("RET" . projection-multi-compile)))
 
 (use-package projection-multi-embark
-  :ensure t
   :after embark
   :after projection-multi
   :demand t
@@ -2060,7 +2019,6 @@ In that case, insert the number."
     (message "ElDoc auto-update disabled. Use M-x global-eldoc-mode to re-enable.")))
 
 (use-package bazel
-  :ensure t
   :custom
   (bazel-command '("bazel"))
   ;; :bind (("C-c C-c" . compile))
@@ -2118,7 +2076,6 @@ in the workspace."
   (eshell-term-name "xterm-256color"))
 
 (use-package cape
-  :ensure t
   :init
   ;; (add-hook 'eshell-mode-hook
   ;;           (lambda ()
@@ -2126,7 +2083,7 @@ in the workspace."
   )
 
 (use-package pcmpl-args
-  :ensure t)
+ )
 
 ;; https://www.masteringemacs.org/article/text-expansion-hippie-expand
 (global-set-key [remap dabbrev-expand] 'hippie-expand)
@@ -2137,7 +2094,6 @@ in the workspace."
 ;; It may be possible to use avy to set marks for multiple cursors.
 ;; I.e. avy-push-mark
 (use-package multiple-cursors
-  :ensure t
   :demand t
   ;; Alternative bindings because hterm sucks at passing through keys
   :bind* (("M-m e" . mc/edit-lines)
@@ -2158,7 +2114,6 @@ in the workspace."
           ))
 
 (use-package multifiles
-  :ensure t
   :demand t
   :bind (:map region-bindings-mode-map
               ("M" . mf/mirror-region-in-multifile)))
@@ -2170,13 +2125,11 @@ in the workspace."
 	(setq treesit-fold-line-count-show t))
 
 (use-package fold-this
-	:ensure t
 	:demand t
 	:bind (:map region-bindings-mode-map
 							("F" . fold-active-region-all)))
 
 (use-package expand-region
-	:ensure t
 	:bind (("C-c e" . er/expand-region)
 				 :map region-bindings-mode-map
 				 ("u" . er/contract-region)
@@ -2186,7 +2139,6 @@ in the workspace."
 ;; to move while in a search. Fortunately, multiple cursors mode seems to use it
 ;; automatically even if not set as default.
 (use-package phi-search
-	:ensure t
 	:demand t)
 (use-package phi-replace
 	;; Doesn't have its own package.
@@ -2197,23 +2149,20 @@ in the workspace."
 ;; https://github.com/oantolin/placeholder
 (use-package auto-yasnippet
 	:after (yasnippet)
-	:ensure t
 	:bind (("M-w" . aya-create)
 				 ("M-W" . aya-expand))
 	;; Doesn't currently do anything because I've remapped M-w which is usually
 	;; kill-ring-save.
-	;; (use-package easy-kill :ensure t :config (global-set-key
+	;; (use-package easy-kill :config (global-set-key
 	;; [remap kill-ring-save] 'easy-kill))
 	:custom
 	(aya-case-fold t))
 
 (use-package rainbow-delimiters
-	:ensure t
 	:hook (prog-mode . rainbow-delimiters-mode))
 
 ;; Protocol buffer support
 (use-package protobuf-mode
-	:ensure t
 	:bind* (:map protobuf-mode-map
 							 ("TAB" . indent-for-tab-command)))
 
@@ -2221,8 +2170,7 @@ in the workspace."
 		(progn
 			(use-package google-borg-helpers :load-path "/usr/share/emacs/site-lisp/emacs-google-config/third_party/elisp/google_borg_helpers/")
 			;; Needed by borg-mode
-			(use-package aio
-				:ensure t)
+			(use-package aio)
 			(use-package borg-mode :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/")))
 
 
@@ -2415,7 +2363,6 @@ delimiters instead of word delimiters."
 ;;             nil t))
 
 (use-package go-mode
-	:ensure t
 	:init
 	(add-to-list 'auto-mode-alist '("\\.go\\'" . go-ts-mode))
 	(add-to-list 'auto-mode-alist '("\\.rl\\'" . go-mode))
@@ -2444,7 +2391,7 @@ delimiters instead of word delimiters."
 ;; curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.50.1
 ;; Disable golangci because I'm using bazel.
 ;; (use-package flymake-golangci
-;;   :ensure t
+;;  
 ;;   :init
 ;;   (add-hook 'go-mode-hook 'flymake-golangci-load))
 
@@ -2453,7 +2400,7 @@ delimiters instead of word delimiters."
 ;;(require 'go-flymake)
 
 ;; (use-package flymake-go-staticcheck
-;;   :ensure t
+;;  
 ;;   :init
 ;;   (add-hook 'go-mode-hook #'flymake-go-staticcheck-enable))
 
@@ -2463,7 +2410,6 @@ delimiters instead of word delimiters."
 (setq comint-scroll-to-bottom-on-input t)
 
 (use-package link-hint
-	:ensure t
 	:bind (:map eshell-mode-map
 							("C-c w" . link-hint-copy-link)))
 
@@ -2477,8 +2423,7 @@ delimiters instead of word delimiters."
 
 ;; Neato doc strings for hydras
 (use-package pretty-hydra
-	:after hydra
-	:ensure t)
+	:after hydra)
 
 ;; A replacement for which-func-mode.
 (use-package breadcrumb
@@ -2492,14 +2437,13 @@ delimiters instead of word delimiters."
 	(switch-to-buffer (other-buffer)))
 ;;(bind-key "M-o" 'switch-previous-buffer)
 (use-package iflipb
-	:ensure t
 	:bind* (
 					;;("M-o" . iflipb-next-buffer)
 					;;("M-O" . iflipb-previous-buffer)
 					("C-x k" . iflipb-kill-buffer)))
 
 ;; (use-package popper
-;;   :ensure t
+;;  
 ;;   :bind (("C-t"   . my/popper-toggle-or-eshell)
 ;;          :map help-mode-map
 ;;          ("q" . my/popper-quit)
@@ -2562,7 +2506,6 @@ If N is negative, search forwards for the -Nth following match."
 (advice-add 'eshell-previous-matching-input-from-input :override #'my-eshell-previous-matching-input-from-input)
 
 (use-package eat
-	:ensure t
 	:hook (eshell-load . eat-eshell-visual-command-mode))
 
 ;; This configuration enables consult-history to work with eat shell.
@@ -2626,10 +2569,10 @@ commands. In line-mode, only load if the history ring is empty."
   (:repeat-map my-claude-code-map ("M" . claude-code-cycle-mode)))
 
 (use-package git-link
-  :ensure t)
+ )
 
 (use-package copy-as-format
-  :ensure t)
+ )
 
 (defun modi/multi-pop-to-mark (orig-fun &rest args)
 	"Call ORIG-FUN until the cursor moves.
@@ -2643,7 +2586,6 @@ Try the repeated popping up to 10 times."
 (setq set-mark-command-repeat-pop t)
 
 (use-package beginend
-	:ensure t
 	:config
 	(dolist (mode (cons 'beginend-global-mode (mapcar #'cdr beginend-modes)))
 		(diminish mode))
@@ -2656,7 +2598,6 @@ Try the repeated popping up to 10 times."
 	:bind ("C-h M-k" . describe-keymap)) ; For autoloading.
 
 (use-package discover-my-major
-	:ensure t
 	:bind ("C-h C-m" . discover-my-major))
 
 (prefer-coding-system 'utf-8)
@@ -2666,7 +2607,6 @@ Try the repeated popping up to 10 times."
 (setq-default buffer-file-coding-system 'utf-8)
 
 (use-package nov
-	:ensure t
 	:mode ("\\.epub\\'" . nov-mode))
 
 ;; Calendars should start with Monday as the first day of the week.
@@ -2693,8 +2633,7 @@ Try the repeated popping up to 10 times."
 (use-package prism
 	:load-path "lisp/prism.el")
 
-(use-package vundo
-	:ensure t)
+(use-package vundo)
 
 (use-package dogears
 	:load-path "lisp/dogears.el"
@@ -2726,7 +2665,6 @@ Try the repeated popping up to 10 times."
 		(consult--multi '(consult--source-dogears))))
 
 (use-package mini-echo
-	:ensure t
 	:demand t
 	:custom
 	(mini-echo-right-padding 1)
@@ -2740,7 +2678,6 @@ Try the repeated popping up to 10 times."
 											:background "#222323"))
 
 (use-package apheleia
-	:ensure t
 	:demand t
 	:init
 	(apheleia-global-mode +1))
@@ -2758,7 +2695,6 @@ Try the repeated popping up to 10 times."
       (error nil))))
 
 (use-package minuet
-  :ensure t
 	:if (and my-minuet-enabled (my-minuet-endpoint-reachable-p))
   :bind
   (("M-/" . #'minuet-show-suggestion)

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+ELPA_DIR="$DOTFILES_DIR/emacs.d/elpa"
+INIT_EL="$DOTFILES_DIR/emacs.d/init.el"
+
+echo "Refreshing ELPA packages into $ELPA_DIR..."
+
+emacs --batch \
+  --eval "(setq package-user-dir \"$ELPA_DIR\")" \
+  --eval "(setq package-native-compile t)" \
+  --eval "(require 'package)" \
+  --eval "(add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\") t)" \
+  --eval "(setq package-archive-priorities
+            '((\"gnu\" . 10) (\"nongnu\" . 5) (\"melpa\" . 0)))" \
+  --eval "(package-initialize)" \
+  --eval "(package-refresh-contents)" \
+  --eval "(load \"$INIT_EL\" nil t)" \
+  --eval "(package-install-selected-packages t)"
+
+echo "Done. Review changes with: cd $DOTFILES_DIR && git status"
+echo "Then commit with: git add emacs.d/elpa/ && git commit -m 'Update ELPA packages'"
