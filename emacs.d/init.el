@@ -29,9 +29,14 @@
 (setq use-package-always-ensure nil)
 (setq use-package-verbose t)
 
+(defvar gb-lisp-package-repos)
+(defvar embark-prompter)
+(defvar embark-indicators)
+(defvar consult-dir-sources)
+
 (defun gb-add-lisp-package (name url)
   "Vendor a git repo into lisp/ and register it in `gb-lisp-package-repos'.
-Clones URL into ~/.emacs.d/lisp/NAME and opens init.el to add a use-package form."
+Clones URL into ~/.emacs.d/lisp/NAME, then opens init.el for setup."
   (interactive "sPackage name: \nsGit URL: ")
   (let* ((dir (expand-file-name name (locate-user-emacs-file "lisp"))))
     (if (file-directory-p dir)
@@ -252,7 +257,7 @@ For simple hostnames, returns the full hostname."
 ;; Turn on red highlighting for characters outside of the 80/100 char limit
 (defun font-lock-width-keyword (width)
   "Return a font-lock style keyword for a string beyond width WIDTH
-that uses 'font-lock-warning-face'."
+that uses `font-lock-warning-face'."
   `((,(format "^%s\\(.+\\)" (make-string width ?.))
      (1 font-lock-warning-face t))))
 (font-lock-add-keywords 'c++-mode (font-lock-width-keyword 80))
@@ -415,7 +420,7 @@ Git gutter:
   (magit-display-buffer-function #'display-buffer)
   :init
   (defun unpackaged/magit-status ()
-    "Open a `magit-status' buffer and close the other window so only Magit is visible.
+    "Open a `magit-status' buffer and close the other window.
 If a file was visited in the buffer that was active when this
 command was called, go to its unstaged changes section."
     (interactive)
@@ -514,6 +519,8 @@ buffer, otherwise just change the current paragraph."
                          (= original-num-lines (line-number-at-pos (point-max)))
                        (string= hash (buffer-hash)))
                finally return fill-column))))
+
+(declare-function smerge-auto-leave "smerge-mode")
 
 ;; smerge-mode instead of ediff
 (defun my/save-and-bury ()
@@ -1479,6 +1486,7 @@ Used to preselect nearest headings and imenu items.")
          ("C-x C-j" . consult-dir-jump-file))
   :init
   (defvar eshell-last-dir-ring)
+  (declare-function ring-elements "ring")
   (declare-function eshell/cd "em-dirs")
   (declare-function eshell-find-previous-directory "em-dirs")
   (declare-function consult-dir--pick "consult-dir")
@@ -2465,6 +2473,8 @@ delimiters instead of word delimiters."
 (use-package pretty-hydra
 	:after hydra)
 
+(declare-function breadcrumb-mode "breadcrumb")
+
 ;; A replacement for which-func-mode.
 (use-package breadcrumb
 	:load-path "lisp/breadcrumb"
@@ -2559,6 +2569,9 @@ If N is negative, search forwards for the -Nth following match."
   (add-to-list 'consult-mode-histories
                '(eat-mode eat--line-input-ring eat--line-input-ring-index
                           (lambda () (goto-char (eat-term-end eat-terminal))))))
+
+(declare-function ring-empty-p "ring")
+(declare-function ring-length "ring")
 
 ;; Automatically load shell history before consult-history runs in eat buffers
 (declare-function eat-line-load-input-history-from-file "eat")
