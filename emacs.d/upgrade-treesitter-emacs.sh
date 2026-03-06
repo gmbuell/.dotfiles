@@ -121,7 +121,7 @@ emacs --batch -l "$SCRIPT_DIR/init.el" --eval '(mp-setup-install-grammars)' 2>&1
 echo ""
 echo "=== Step 4: Native-compile packages ==="
 emacs --batch -f batch-native-compile \
-  $(find ~/.emacs.d/elpa -name "*.el" -not -name ".[^.]*") 2>&1
+  $(find ~/.emacs.d/elpa -name "*.el" -not -path "*/.*") 2>&1
 
 echo ""
 echo "=== Done ==="
