@@ -28,5 +28,3 @@ emacs.d/lisp/**/tests/
 emacs.d/elpa/**/.github/
 emacs.d/lisp/**/.github/
 emacs.d/lisp/combobulate/build/
-emacs.d/package-quickstart.el
-emacs.d/package-quickstart.elc
