@@ -779,13 +779,28 @@ Falls back to cloning from URL if local sources are not available."
     (let ((ts-src-dir (locate-user-emacs-file "tree-sitter-src")))
       (dolist (grammar gb-treesit-grammar-sources)
         (let* ((lang (car grammar))
-               (local-dir (expand-file-name (symbol-name lang) ts-src-dir))
-               (source (if (file-directory-p local-dir)
-                           (cons lang (cons local-dir (cddr grammar)))
-                         grammar)))
-          (add-to-list 'treesit-language-source-alist source)
-          (unless (treesit-language-available-p lang)
-            (treesit-install-language-grammar lang))))))
+               (url (nth 1 grammar))
+               (rev (nth 2 grammar))
+               (local-dir (expand-file-name (symbol-name lang) ts-src-dir)))
+          ;; If no vendored source, clone with --branch to avoid shallow
+          ;; clone + tag checkout failures (common on macOS git).
+          (when (and (not (file-directory-p local-dir))
+                     (not (treesit-language-available-p lang))
+                     url rev)
+            (message "Cloning %s (%s)..." lang rev)
+            (make-directory ts-src-dir t)
+            (let ((exit-code
+                   (call-process "git" nil nil nil
+                                 "clone" "--depth" "1" "--branch" rev
+                                 url local-dir)))
+              (unless (zerop exit-code)
+                (message "Warning: failed to clone %s, will try default treesit method" lang))))
+          (let ((source (if (file-directory-p local-dir)
+                            (cons lang (cons local-dir (cddr grammar)))
+                          grammar)))
+            (add-to-list 'treesit-language-source-alist source)
+            (unless (treesit-language-available-p lang)
+              (treesit-install-language-grammar lang)))))))
 
   ;; Optional. Combobulate works in both xxxx-ts-modes and
   ;; non-ts-modes.
