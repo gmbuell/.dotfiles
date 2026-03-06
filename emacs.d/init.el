@@ -1,5 +1,7 @@
 ;;; -*- lexical-binding: t -*-
 
+(setq use-package-compute-statistics t)
+
 ;; Don't load site default
 (setq inhibit-default-init t)
 ;; Also need to start emacs with --no-site-file because that happens before this
@@ -283,7 +285,8 @@ that uses `font-lock-warning-face'."
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-ts-mode))
 
 ;; Stop indenting in namespaces
-(c-set-offset 'innamespace 0)
+(with-eval-after-load 'cc-mode
+  (c-set-offset 'innamespace 0))
 
 ;; Get syntax hilighting for modern c++
 (use-package modern-cpp-font-lock
@@ -536,8 +539,15 @@ buffer, otherwise just change the current paragraph."
   (interactive)
   (save-buffer)
   (bury-buffer))
-(use-package smerge-mode
-  :config
+;; Auto-activate smerge-mode in files with conflict markers
+(add-hook 'find-file-hook
+          (lambda ()
+            (save-excursion
+              (goto-char (point-min))
+              (when (re-search-forward "^<<<<<<< " nil t)
+                (smerge-mode 1)))))
+
+(with-eval-after-load 'smerge-mode
   (defhydra unpackaged/smerge-hydra
     (:color orange :hint nil :post (smerge-auto-leave))
     "
@@ -568,12 +578,14 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ("ZZ" my/save-and-bury
      "Save and bury buffer" :color blue)
     ("q" nil "cancel" :color blue))
-  :hook ((magit-diff-visit-file . (lambda ()
-                                    (when smerge-mode
-                                      (unpackaged/smerge-hydra/body))))
-         (smerge-mode . (lambda ()
-                          (when smerge-mode
-                            (unpackaged/smerge-hydra/body))))))
+  (add-hook 'magit-diff-visit-file-hook
+            (lambda ()
+              (when smerge-mode
+                (unpackaged/smerge-hydra/body))))
+  (add-hook 'smerge-mode-hook
+            (lambda ()
+              (when smerge-mode
+                (unpackaged/smerge-hydra/body)))))
 
 ;; Hg/Fig setup
 ;; Use chg instead of hg since it's faster.
@@ -668,7 +680,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; Consider adding in unpackaged/eww-imenu-index
 ;; https://github.com/alphapapa/unpackaged.el?tab=readme-ov-file#eww-imenu-support
 
-(require 'subr-x)
 
 (use-package which-key
   :diminish which-key-mode
@@ -701,8 +712,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :custom
   (sp-override-key-bindings '(("C-<right>" . sp-slurp-hybrid-sexp)
                               ("C-<left>" . sp-dedent-adjust-sexp)))
-  :init
-  (smartparens-global-mode t)
+  :hook (after-init . smartparens-global-mode)
+  :config
   ;; smartparens-mode is incredibly difficult to diminish.
   (add-hook 'smartparens-mode-hook (lambda () (diminish 'smartparens-mode)))
   ;; Need to set up smartparens bindings in modes that combobulate doesn't
@@ -1007,7 +1018,7 @@ Falls back to cloning from URL if local sources are not available."
   (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy))
 
 (use-package dirvish
-  :demand t
+  :hook (after-init . dirvish-override-dired-mode)
   :init
   (add-to-list 'load-path
                (expand-file-name "extensions" (file-name-directory (locate-library "dirvish"))))
@@ -1034,8 +1045,6 @@ Falls back to cloning from URL if local sources are not available."
    ("M-t" . dirvish-layout-toggle)
    ("M-e" . dirvish-emerge-menu)
    ("M-j" . dirvish-fd-jump))
-  :init
-  (dirvish-override-dired-mode)
   :custom
   (dirvish-quick-access-entries ; It's a custom option, `setq' won't work
    '(("h" "~/"                     "Home")
@@ -1253,8 +1262,6 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
          ("r" . wrapper/consult-ripgrep)
          )
   :init
-  (with-eval-after-load 'esh-mode
-    (bind-key* "C-c C-l" 'consult-history eshell-mode-map))
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
   :config
@@ -1522,10 +1529,11 @@ any directory proferred by `consult-dir'."
                        (completing-read "cd: " eshell-dirs))))))))
 
 (use-package consult-eglot
-  :after (consult))
+  :after (eglot)
+  :commands consult-eglot-symbols)
 (use-package consult-eglot-embark
   :after (consult-eglot)
-  :init
+  :config
   (consult-eglot-embark-mode))
 
 (use-package disproject
@@ -1617,7 +1625,7 @@ When `switch-to-buffer-obey-display-actions' is non-nil,
               my/window-prefix-map))
 
 (use-package f
- )
+  :defer t)
 
 ;; Version of ora-company-number for corfu
 (defun ora-corfu-number ()
@@ -2124,6 +2132,8 @@ in the workspace."
     (advice-add 'compilation-find-file :around 'my/bazel-fix-compilation-find-file)))
 
 (use-package eshell
+  :bind (:map eshell-mode-map
+              ("C-c C-l" . consult-history))
   :hook ((eshell-mode . (lambda () (setq-local corfu-auto nil
                                                corfu-quit-at-boundary t
                                                corfu-quit-no-match t))))
@@ -2151,7 +2161,6 @@ in the workspace."
 ;; https://www.masteringemacs.org/article/text-expansion-hippie-expand
 (global-set-key [remap dabbrev-expand] 'hippie-expand)
 
-(require 'nadvice)
 (defun do-nothing (&rest _) t)
 
 ;; It may be possible to use avy to set marks for multiple cursors.
@@ -2483,9 +2492,7 @@ delimiters instead of word delimiters."
 ;; A replacement for which-func-mode.
 (use-package breadcrumb
 	:load-path "lisp/breadcrumb"
-	:demand t
-	:config
-	(breadcrumb-mode))
+	:hook (prog-mode . breadcrumb-mode))
 
 (defun switch-previous-buffer ()
 	(interactive)
@@ -2649,10 +2656,10 @@ Try the repeated popping up to 10 times."
 (setq set-mark-command-repeat-pop t)
 
 (use-package beginend
+	:hook (after-init . beginend-global-mode)
 	:config
 	(dolist (mode (cons 'beginend-global-mode (mapcar #'cdr beginend-modes)))
-		(diminish mode))
-	(beginend-global-mode))
+		(diminish mode)))
 
 ;; Make .sh files executable upon save.
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
@@ -2739,9 +2746,7 @@ Try the repeated popping up to 10 times."
 											:background "#222323"))
 
 (use-package apheleia
-	:demand t
-	:init
-	(apheleia-global-mode +1))
+	:hook (after-init . apheleia-global-mode))
 
 (defvar url-request-method)
 (defvar url-request-extra-headers)
@@ -2764,14 +2769,11 @@ Try the repeated popping up to 10 times."
 (declare-function minuet-dismiss-suggestion "minuet")
 (declare-function minuet-auto-suggestion-mode "minuet")
 (use-package minuet
-  :bind
-  (("M-/" . #'minuet-show-suggestion)
-   :map minuet-active-mode-map
-   ("TAB" . #'minuet-accept-suggestion)
-   ("C-e" . #'minuet-accept-suggestion-line)
-   ("C-g" . #'minuet-dismiss-suggestion))
-
+  :bind ("M-/" . minuet-show-suggestion)
   :config
+  (bind-key "TAB" #'minuet-accept-suggestion minuet-active-mode-map)
+  (bind-key "C-e" #'minuet-accept-suggestion-line minuet-active-mode-map)
+  (bind-key "C-g" #'minuet-dismiss-suggestion minuet-active-mode-map)
   (setq minuet-n-completions 1)
   (setq minuet-provider 'openai-fim-compatible)
   (setq minuet-context-window 4096)
@@ -2825,8 +2827,8 @@ Try the repeated popping up to 10 times."
 
 (use-package gptel
   :load-path "lisp/gptel"
+  :commands (gptel gptel-send gptel-menu)
   :config
-  (require 'gptel-request)
   (require 'gptel-openai)
   (gptel-make-openai "llama-cpp"
     :stream t
@@ -2840,8 +2842,10 @@ Try the repeated popping up to 10 times."
   :custom
   (cpp-func-impl-comment-string "// TODO: `%m` `%d` `%t` `%c`"))
 
-(require 'server)
-(unless (server-running-p) (server-start))
+(add-hook 'after-init-hook
+          (lambda ()
+            (require 'server)
+            (unless (server-running-p) (server-start))))
 (setenv "EDITOR" "emacsclient")
 
 (custom-set-faces

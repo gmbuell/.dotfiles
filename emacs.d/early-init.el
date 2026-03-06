@@ -1,5 +1,11 @@
 (setq package-quickstart t)
 
+;; In batch mode, Emacs skips the normal startup sequence that calls
+;; package-activate-all between early-init and init. Do it ourselves.
+(when noninteractive
+  (require 'package)
+  (package-activate-all))
+
 ;; Maximize GC threshold during init, restore after startup
 (setq gc-cons-threshold most-positive-fixnum)
 
