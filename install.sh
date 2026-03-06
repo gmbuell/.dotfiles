@@ -22,7 +22,7 @@ RCRC="$SCRIPT_DIR/rcrc" rcup -v
 # --- Regenerate package-quickstart.el (contains machine-specific paths) ---
 echo ""
 echo "Regenerating package-quickstart.el..."
-emacs --batch --eval '(progn (package-activate-all) (package-quickstart-refresh))' 2>&1
+emacs --batch --eval '(progn (require (quote package)) (package-activate-all) (package-quickstart-refresh))' 2>&1
 
 # --- Optionally build Emacs with tree-sitter ---
 echo ""
