@@ -20,6 +20,22 @@ num_cpus() {
   fi
 }
 
+# --- Helper: prompt to install missing packages (default: yes) ---
+prompt_install() {
+  local cmd="$1"
+  echo ""
+  echo "Missing build dependencies. Run the following?"
+  echo "  $cmd"
+  read -r -p "Install now? [Y/n] " answer
+  answer="${answer:-y}"
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    eval "$cmd"
+  else
+    echo "Aborting."
+    exit 1
+  fi
+}
+
 # --- Dependency check ---
 if [ "$PLATFORM" = "linux" ] && command -v dpkg &>/dev/null; then
   # Debian/Ubuntu
@@ -50,9 +66,7 @@ if [ "$PLATFORM" = "linux" ] && command -v dpkg &>/dev/null; then
   done
 
   if [ ${#MISSING[@]} -gt 0 ]; then
-    echo "Missing build dependencies:"
-    echo "  sudo apt install ${MISSING[*]}"
-    exit 1
+    prompt_install "sudo apt install ${MISSING[*]}"
   fi
 elif [ "$PLATFORM" = "linux" ] && command -v dnf &>/dev/null; then
   # Fedora/RHEL/CentOS
@@ -70,9 +84,7 @@ elif [ "$PLATFORM" = "linux" ] && command -v dnf &>/dev/null; then
   done
 
   if [ ${#MISSING[@]} -gt 0 ]; then
-    echo "Missing build dependencies:"
-    echo "  sudo dnf install ${MISSING[*]}"
-    exit 1
+    prompt_install "sudo dnf install ${MISSING[*]}"
   fi
 elif [ "$PLATFORM" = "linux" ]; then
   echo "WARNING: Unrecognized Linux package manager. Skipping dependency check."
@@ -89,9 +101,7 @@ else
   done
 
   if [ ${#MISSING[@]} -gt 0 ]; then
-    echo "Missing build dependencies:"
-    echo "  brew install ${MISSING[*]}"
-    exit 1
+    prompt_install "brew install ${MISSING[*]}"
   fi
 fi
 
@@ -105,7 +115,7 @@ fi
 
 if [ ! -d ~/github/emacs ]; then
   echo "Cloning emacs..."
-  git clone --depth 1 https://git.savannah.gnu.org/git/emacs.git ~/github/emacs
+  git -c transfer.bundleURI=false clone --depth 1 https://git.savannah.gnu.org/git/emacs.git ~/github/emacs
 fi
 
 # --- Clean stale compiled artifacts ---
@@ -153,7 +163,7 @@ echo "tree-sitter $(grep TREE_SITTER_LANGUAGE_VERSION /usr/local/include/tree_si
 echo ""
 echo "=== Step 2: Build Emacs 30.2 ==="
 cd ~/github/emacs
-git fetch --depth 1 origin tag emacs-30.2
+git -c transfer.bundleURI=false fetch --depth 1 origin tag emacs-30.2
 git checkout emacs-30.2
 
 make clean 2>/dev/null || true
