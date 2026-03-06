@@ -25,7 +25,19 @@
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
 
 (eval-when-compile
-  (require 'use-package))
+  (require 'use-package)
+  ;; Add elpa and lisp dirs to load-path so macros (e.g. defhydra) are
+  ;; available during byte-compilation.
+  (dolist (dir (directory-files
+                (expand-file-name "elpa" user-emacs-directory)
+                t "\\`[^.]"))
+    (when (file-directory-p dir)
+      (add-to-list 'load-path dir)))
+  (let ((lisp-dir (expand-file-name "lisp" user-emacs-directory)))
+    (add-to-list 'load-path lisp-dir)
+    (dolist (dir (directory-files lisp-dir t "\\`[^.]"))
+      (when (file-directory-p dir)
+        (add-to-list 'load-path dir)))))
 (setq use-package-always-ensure nil)
 (setq use-package-verbose t)
 
@@ -82,7 +94,7 @@ Clones URL into ~/.emacs.d/lisp/NAME, then opens init.el for setup."
                 disproject docker doom-themes eat expand-region fold-this
                 git-gutter git-link go-mode iflipb link-hint magit-todos
                 marginalia markdown-mode mini-echo minuet modern-cpp-font-lock
-                mosey multifiles nov ob-async pcmpl-args phi-search pretty-hydra
+                mosey multifiles nov ob-async pcmpl-args phi-search posframe pretty-hydra
                 projection-multi projection-multi-embark protobuf-mode
                 rainbow-delimiters region-bindings-mode smartparens
                 symbol-overlay-mc ultra-scroll vertico-prescient vundo walkman
@@ -559,9 +571,12 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ("ZZ" my/save-and-bury
      "Save and bury buffer" :color blue)
     ("q" nil "cancel" :color blue))
-  :hook (magit-diff-visit-file . (lambda ()
-                                   (when smerge-mode
-                                     (unpackaged/smerge-hydra/body)))))
+  :hook ((magit-diff-visit-file . (lambda ()
+                                    (when smerge-mode
+                                      (unpackaged/smerge-hydra/body))))
+         (smerge-mode . (lambda ()
+                          (when smerge-mode
+                            (unpackaged/smerge-hydra/body))))))
 
 ;; Hg/Fig setup
 ;; Use chg instead of hg since it's faster.
@@ -2213,13 +2228,6 @@ in the workspace."
 	:bind* (:map protobuf-mode-map
 							 ("TAB" . indent-for-tab-command)))
 
-(if (file-exists-p "/usr/share/emacs/site-lisp/emacs-google-config")
-		(progn
-			(use-package google-borg-helpers :load-path "/usr/share/emacs/site-lisp/emacs-google-config/third_party/elisp/google_borg_helpers/")
-			;; Needed by borg-mode
-			(use-package aio)
-			(use-package borg-mode :load-path "/usr/share/emacs/site-lisp/emacs-google-config/devtools/editors/emacs/")))
-
 
 (defhydra hydra-next-error
 	(global-map "C-x")
@@ -2652,8 +2660,6 @@ Try the repeated popping up to 10 times."
 ;; Make .sh files executable upon save.
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
-(use-package help-fns+
-	:bind ("C-h M-k" . describe-keymap)) ; For autoloading.
 
 (use-package discover-my-major
 	:bind ("C-h C-m" . discover-my-major))
