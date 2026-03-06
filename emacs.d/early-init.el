@@ -29,12 +29,12 @@
         (native-compile-async init-el))))
   (let* ((qs (locate-user-emacs-file "package-quickstart.el"))
          (qsc (locate-user-emacs-file "package-quickstart.elc")))
-    (when (or (not (file-exists-p qs))
-              (cl-some (lambda (dir)
-                         (file-newer-than-file-p dir qs))
-                       (directory-files
-                        (expand-file-name "elpa" user-emacs-directory)
-                        t "\\`[^.]")))
+    (when (and (file-exists-p qs)  ;; install.sh handles initial generation
+               (cl-some (lambda (dir)
+                          (file-newer-than-file-p dir qs))
+                        (directory-files
+                         (expand-file-name "elpa" user-emacs-directory)
+                         t "\\`[^.]")))
       (require 'mosey) ;; mosey autoloads call defmosey macro at top-level
       (package-quickstart-refresh))
     ;; Ensure .elc is up to date (symlink can cause .el and .elc to diverge)

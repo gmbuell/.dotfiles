@@ -1,3 +1,5 @@
+emacs.d/package-quickstart.el
+emacs.d/package-quickstart.elc
 emacs.d/elpa/gnupg/
 emacs.d/elpa/*.signed
 emacs.d/elpa/archives/
