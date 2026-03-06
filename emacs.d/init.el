@@ -796,7 +796,12 @@ Falls back to cloning from URL if local sources are not available."
               (unless (zerop exit-code)
                 (message "Warning: failed to clone %s, will try default treesit method" lang))))
           (let ((source (if (file-directory-p local-dir)
-                            (cons lang (cons local-dir (cddr grammar)))
+                            ;; Local dir: no revision (already at correct
+                            ;; tag), only pass srcdir if present.
+                            (let ((srcdir (nth 3 grammar)))
+                              (if srcdir
+                                  (list lang local-dir nil srcdir)
+                                (list lang local-dir)))
                           grammar)))
             (add-to-list 'treesit-language-source-alist source)
             (unless (treesit-language-available-p lang)
