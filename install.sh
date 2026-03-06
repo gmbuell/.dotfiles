@@ -25,8 +25,7 @@ echo "Regenerating package-quickstart.el..."
 emacs -Q --batch --eval '
 (progn
   (setq user-emacs-directory "~/.emacs.d/")
-  (require (quote package))
-  (package-activate-all)
+  (package-initialize)
   (package-quickstart-refresh)
   (byte-compile-file (locate-user-emacs-file "package-quickstart.el")))' 2>&1
 
