@@ -1,7 +1,5 @@
 ;;; -*- lexical-binding: t -*-
 
-(setq use-package-compute-statistics t)
-
 ;; Don't load site default
 (setq inhibit-default-init t)
 ;; Also need to start emacs with --no-site-file because that happens before this
@@ -826,16 +824,16 @@ Falls back to cloning from URL if local sources are not available."
 ;; Look at https://github.com/Fuco1/smartparens/issues/209 for ideas for other ways to use smartparns for movement.
 ;; Also consider using goal column?
 (use-package mosey
-  :init
+  :bind (:map prog-mode-map
+              ("C-a" . mosey-backward-bounce)
+              ("C-e" . mosey-forward-bounce))
+  :config
   (defmosey '(beginning-of-line
               back-to-indentation
               mosey-goto-end-of-code
               mosey-goto-beginning-of-comment-text
               end-of-line)
-            :prefix "c")
-  :bind (:map prog-mode-map
-              ("C-a" . mosey-backward-bounce)
-              ("C-e" . mosey-forward-bounce)))
+            :prefix "c"))
 
 ;; Nice fonts:
 ;; Hack https://github.com/chrissimpkins/Hack
@@ -910,7 +908,7 @@ Falls back to cloning from URL if local sources are not available."
 
 (use-package yasnippet
   :diminish yas-minor-mode
-  :hook (after-init . yas-global-mode))
+  :hook ((prog-mode text-mode conf-mode) . yas-minor-mode))
 
 (with-eval-after-load 'yasnippet
   (defun my/yas-docker-compose-bp ()
@@ -2132,9 +2130,9 @@ in the workspace."
     (advice-add 'compilation-find-file :around 'my/bazel-fix-compilation-find-file)))
 
 (use-package eshell
-  :bind (:map eshell-mode-map
-              ("C-c C-l" . consult-history))
-  :hook ((eshell-mode . (lambda () (setq-local corfu-auto nil
+  :hook ((eshell-mode . (lambda ()
+                          (bind-key "C-c C-l" #'consult-history eshell-mode-map)))
+         (eshell-mode . (lambda () (setq-local corfu-auto nil
                                                corfu-quit-at-boundary t
                                                corfu-quit-no-match t))))
   :custom
@@ -2820,9 +2818,16 @@ Try the repeated popping up to 10 times."
   (minuet-set-optional-options minuet-openai-fim-compatible-options :temperature 0))
 
 (defun my-minuet-maybe-enable ()
-  "Enable minuet auto-suggestion in prog-mode if endpoint is reachable."
-  (when (and my-minuet-enabled (my-minuet-endpoint-reachable-p))
-    (add-hook 'prog-mode-hook #'minuet-auto-suggestion-mode)))
+  "Enable minuet auto-suggestion in prog-mode if endpoint is reachable.
+Checks asynchronously to avoid blocking startup."
+  (when my-minuet-enabled
+    (url-retrieve
+     my-minuet-endpoint
+     (lambda (status)
+       (unless (plist-get status :error)
+         (add-hook 'prog-mode-hook #'minuet-auto-suggestion-mode))
+       (kill-buffer))
+     nil t)))
 (add-hook 'after-init-hook #'my-minuet-maybe-enable)
 
 (use-package gptel
