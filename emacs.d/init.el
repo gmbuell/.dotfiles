@@ -19,7 +19,6 @@
       '(("gnu"    . 10)
         ("nongnu" . 5)
         ("melpa"  . 0)))
-(package-initialize)
 
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
@@ -369,10 +368,10 @@ that uses `font-lock-warning-face'."
 ;;       save-place-file (concat user-emacs-directory "places"))
 
 ;; Enable virtual buffers
-(recentf-mode 1)
 (setq recentf-exclude '("COMMIT_MSG" "COMMIT_EDITMSG" "github.*txt$"
                         "[0-9a-f]\\{32\\}-[0-9a-f]\\{32\\}\\.org"
                         ".*png$" ".*cache$"))
+(add-hook 'after-init-hook #'recentf-mode)
 
 ;; Consider also occur mode
 ;; https://github.com/sawan/emacs-config/blob/013af97a03e5dd7493d50f35c9c4724fa7de88f5/emacs24.el#L477-L483
@@ -387,8 +386,7 @@ that uses `font-lock-warning-face'."
   :diminish git-gutter-mode
   :custom
   (git-gutter:handled-backends '(git hg bzr svn))
-  :config
-  (global-git-gutter-mode t))
+  :hook (after-init . global-git-gutter-mode))
 
 (defhydra hydra-git-gutter (:body-pre (git-gutter-mode 1)
                                       :hint nil)
@@ -461,8 +459,7 @@ command was called, go to its unstaged changes section."
 (advice-add 'magit-inside-worktree-p :around #'my/google3-early-exit)
 
 (use-package hl-todo
-  :init
-  (global-hl-todo-mode))
+  :hook (after-init . global-hl-todo-mode))
 
 (use-package magit-todos
   :after magit
@@ -603,8 +600,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package anzu
   :diminish anzu-mode
-  :init
-  (global-anzu-mode +1))
+  :hook (after-init . global-anzu-mode))
 
 ;; Help should search more than just commands
 (define-key 'help-command "a" 'apropos)
@@ -676,8 +672,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package which-key
   :diminish which-key-mode
-  :init
-  (which-key-mode))
+  :hook (after-init . which-key-mode))
 
 ;; Smartparens
 (defun gmbuell-smart-kill-line (arg)
@@ -878,7 +873,8 @@ Falls back to cloning from URL if local sources are not available."
 
   ;; Enable flashing mode-line on errors
   (doom-themes-visual-bell-config)
-  (doom-themes-org-config))
+  (with-eval-after-load 'org
+    (doom-themes-org-config)))
 
 ;; (use-package solaire-mode
 ;;  
@@ -903,8 +899,7 @@ Falls back to cloning from URL if local sources are not available."
 
 (use-package yasnippet
   :diminish yas-minor-mode
-  :config
-  (yas-global-mode 1))
+  :hook (after-init . yas-global-mode))
 
 (with-eval-after-load 'yasnippet
   (defun my/yas-docker-compose-bp ()
@@ -1134,8 +1129,6 @@ Falls back to cloning from URL if local sources are not available."
 
   :init
   (setq prefix-help-command #'embark-prefix-help-command)
-  (define-key vertico-map (kbd "TAB") 'embark-act-with-completing-read)
-  (define-key vertico-map (kbd "M-.") 'embark-export)
 
   :config
   (defvar embark-completing-read-prompter-map
@@ -1151,7 +1144,9 @@ Falls back to cloning from URL if local sources are not available."
     (let* ((embark-prompter 'embark-completing-read-prompter)
            (embark-indicators '(embark-minimal-indicator)))
       (embark-act arg)))
-  :config
+
+  (define-key vertico-map (kbd "TAB") 'embark-act-with-completing-read)
+  (define-key vertico-map (kbd "M-.") 'embark-export)
   ;; Hide the mode line of the Embark live/completions buffers
   (add-to-list 'display-buffer-alist
                '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
@@ -1258,8 +1253,8 @@ DIR and GIVEN-INITIAL match the method signature of `consult-wrapper'."
          ("r" . wrapper/consult-ripgrep)
          )
   :init
-  (require 'esh-mode)
-  (bind-key* "C-c C-l" 'consult-history eshell-mode-map)
+  (with-eval-after-load 'esh-mode
+    (bind-key* "C-c C-l" 'consult-history eshell-mode-map))
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
   :config
@@ -1477,15 +1472,16 @@ Used to preselect nearest headings and imenu items.")
                        (length vertico--candidates))))))
   (setq consult--previous-point nil))
 
-(require 'keymap) ;; keymap-substitute requires emacs version 29.1?
-(require 'cl-seq)
+(with-eval-after-load 'consult
+  (require 'keymap) ;; keymap-substitute requires emacs version 29.1?
+  (require 'cl-seq)
 
-(keymap-substitute project-prefix-map #'project-find-regexp #'consult-ripgrep)
-(setq project-switch-commands
-      (cl-nsubstitute-if
-       '(consult-ripgrep "Find regexp")
-       (pcase-lambda (`(,cmd _)) (eq cmd #'project-find-regexp))
-       project-switch-commands))
+  (keymap-substitute project-prefix-map #'project-find-regexp #'consult-ripgrep)
+  (setq project-switch-commands
+        (cl-nsubstitute-if
+         '(consult-ripgrep "Find regexp")
+         (pcase-lambda (`(,cmd _)) (eq cmd #'project-find-regexp))
+         project-switch-commands)))
 
 (defvar eshell-prompt-regexp)
 (add-hook 'eshell-mode-hook (lambda () (setq outline-regexp eshell-prompt-regexp)))
@@ -2250,8 +2246,8 @@ _k_: previous error    _l_: last error
 (setq next-error-message-highlight t)
 
 ;; Hacked together BUILD mode
-(require 'python)
-;; All rules are at http://go/be.
+;; python-mode is required as the parent of google3-build-mode but deferred
+;; until the mode is actually activated.
 (defvar google3-build-mode-rules
 	'(
 		;; Rules to Compile Code or Run Tests
@@ -2360,6 +2356,7 @@ delimiters instead of word delimiters."
 (define-derived-mode google3-build-mode python-mode
 	"build"
 	"Major mode for editing BUILD files"
+	(require 'python)
 	;; The default C-c C-c, `python-send-buffer', is pointless in BUILD files.
 	(define-key google3-build-mode-map "\C-c\C-c" 'comment-region)
 	;; Set indentation offset to 4 for BUILD files.  This is mandated by
@@ -2761,18 +2758,18 @@ Try the repeated popping up to 10 times."
       (error nil))))
 
 (declare-function minuet-set-optional-options "minuet")
+(declare-function minuet-show-suggestion "minuet")
+(declare-function minuet-accept-suggestion "minuet")
+(declare-function minuet-accept-suggestion-line "minuet")
+(declare-function minuet-dismiss-suggestion "minuet")
+(declare-function minuet-auto-suggestion-mode "minuet")
 (use-package minuet
-	:if (and my-minuet-enabled (my-minuet-endpoint-reachable-p))
   :bind
   (("M-/" . #'minuet-show-suggestion)
    :map minuet-active-mode-map
-	 ;; These keymaps activate only when a minuet suggestion is displayed in the current buffer
    ("TAB" . #'minuet-accept-suggestion)
    ("C-e" . #'minuet-accept-suggestion-line)
    ("C-g" . #'minuet-dismiss-suggestion))
-
-  :init
-  (add-hook 'prog-mode-hook #'minuet-auto-suggestion-mode)
 
   :config
   (setq minuet-n-completions 1)
@@ -2819,6 +2816,12 @@ Try the repeated popping up to 10 times."
   (minuet-set-optional-options minuet-openai-fim-compatible-options :stop ["\n\n" "}" "<|endoftext|>"])
   (minuet-set-optional-options minuet-openai-fim-compatible-options :max_tokens 64)
   (minuet-set-optional-options minuet-openai-fim-compatible-options :temperature 0))
+
+(defun my-minuet-maybe-enable ()
+  "Enable minuet auto-suggestion in prog-mode if endpoint is reachable."
+  (when (and my-minuet-enabled (my-minuet-endpoint-reachable-p))
+    (add-hook 'prog-mode-hook #'minuet-auto-suggestion-mode)))
+(add-hook 'after-init-hook #'my-minuet-maybe-enable)
 
 (use-package gptel
   :load-path "lisp/gptel"

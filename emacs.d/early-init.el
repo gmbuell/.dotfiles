@@ -1,4 +1,4 @@
-(setq package-enable-at-startup nil)
+(setq package-quickstart t)
 
 ;; Maximize GC threshold during init, restore after startup
 (setq gc-cons-threshold most-positive-fixnum)
