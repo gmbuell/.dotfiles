@@ -3,37 +3,96 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# --- Detect OS ---
+OS="$(uname -s)"
+case "$OS" in
+  Linux)  PLATFORM=linux ;;
+  Darwin) PLATFORM=macos ;;
+  *)      echo "ERROR: Unsupported OS: $OS"; exit 1 ;;
+esac
+
+# --- Helper: portable nproc ---
+num_cpus() {
+  if [ "$PLATFORM" = "macos" ]; then
+    sysctl -n hw.ncpu
+  else
+    nproc
+  fi
+}
+
 # --- Dependency check ---
-REQUIRED_PKGS=(
-  build-essential autoconf automake texinfo pkg-config git
-  libxml2-dev libjansson-dev libgnutls28-dev libncurses-dev libmailutils-dev
-)
+if [ "$PLATFORM" = "linux" ] && command -v dpkg &>/dev/null; then
+  # Debian/Ubuntu
+  REQUIRED_PKGS=(
+    build-essential autoconf automake texinfo pkg-config git
+    libxml2-dev libjansson-dev libgnutls28-dev libncurses-dev libmailutils-dev
+  )
 
-# Detect available libgccjit version
-GCCJIT_PKG=""
-for v in 14 13 12 11; do
-  if apt-cache show "libgccjit-${v}-dev" &>/dev/null; then
-    GCCJIT_PKG="libgccjit-${v}-dev"
-    break
+  # Detect available libgccjit version
+  GCCJIT_PKG=""
+  for v in 14 13 12 11; do
+    if apt-cache show "libgccjit-${v}-dev" &>/dev/null; then
+      GCCJIT_PKG="libgccjit-${v}-dev"
+      break
+    fi
+  done
+  if [ -z "$GCCJIT_PKG" ]; then
+    echo "ERROR: No libgccjit-*-dev package found in apt cache."
+    exit 1
   fi
-done
-if [ -z "$GCCJIT_PKG" ]; then
-  echo "ERROR: No libgccjit-*-dev package found in apt cache."
-  exit 1
-fi
-REQUIRED_PKGS+=("$GCCJIT_PKG")
+  REQUIRED_PKGS+=("$GCCJIT_PKG")
 
-MISSING=()
-for pkg in "${REQUIRED_PKGS[@]}"; do
-  if ! dpkg -s "$pkg" &>/dev/null; then
-    MISSING+=("$pkg")
+  MISSING=()
+  for pkg in "${REQUIRED_PKGS[@]}"; do
+    if ! dpkg -s "$pkg" &>/dev/null; then
+      MISSING+=("$pkg")
+    fi
+  done
+
+  if [ ${#MISSING[@]} -gt 0 ]; then
+    echo "Missing build dependencies:"
+    echo "  sudo apt install ${MISSING[*]}"
+    exit 1
   fi
-done
+elif [ "$PLATFORM" = "linux" ] && command -v dnf &>/dev/null; then
+  # Fedora/RHEL/CentOS
+  REQUIRED_PKGS=(
+    gcc gcc-c++ make autoconf automake texinfo pkgconf git
+    libxml2-devel jansson-devel gnutls-devel ncurses-devel mailutils
+    libgccjit-devel
+  )
 
-if [ ${#MISSING[@]} -gt 0 ]; then
-  echo "Missing build dependencies:"
-  echo "  sudo apt install ${MISSING[*]}"
-  exit 1
+  MISSING=()
+  for pkg in "${REQUIRED_PKGS[@]}"; do
+    if ! rpm -q "$pkg" &>/dev/null; then
+      MISSING+=("$pkg")
+    fi
+  done
+
+  if [ ${#MISSING[@]} -gt 0 ]; then
+    echo "Missing build dependencies:"
+    echo "  sudo dnf install ${MISSING[*]}"
+    exit 1
+  fi
+elif [ "$PLATFORM" = "linux" ]; then
+  echo "WARNING: Unrecognized Linux package manager. Skipping dependency check."
+  echo "Ensure you have: gcc, make, autoconf, automake, texinfo, pkg-config, git,"
+  echo "  libxml2-dev, jansson-dev, gnutls-dev, ncurses-dev, libgccjit-dev, mailutils"
+else
+  # macOS: check for Homebrew dependencies
+  REQUIRED_BREWS=(autoconf automake texinfo pkg-config gnutls libgccjit jansson libxml2 mailutils)
+  MISSING=()
+  for pkg in "${REQUIRED_BREWS[@]}"; do
+    if ! brew list "$pkg" &>/dev/null; then
+      MISSING+=("$pkg")
+    fi
+  done
+
+  if [ ${#MISSING[@]} -gt 0 ]; then
+    echo "Missing build dependencies:"
+    echo "  brew install ${MISSING[*]}"
+    exit 1
+  fi
 fi
 
 # --- Clone repos if missing ---
@@ -52,7 +111,11 @@ fi
 # --- Clean stale compiled artifacts ---
 if [ -d ~/.emacs.d/tree-sitter ]; then
   echo "Removing stale tree-sitter grammars..."
-  rm -f ~/.emacs.d/tree-sitter/*.so
+  if [ "$PLATFORM" = "macos" ]; then
+    rm -f ~/.emacs.d/tree-sitter/*.dylib
+  else
+    rm -f ~/.emacs.d/tree-sitter/*.so
+  fi
 fi
 if [ -d ~/.emacs.d/eln-cache ]; then
   echo "Removing stale eln-cache..."
@@ -64,18 +127,26 @@ cd ~/github/tree-sitter
 git fetch --depth 1 origin tag v0.25.10
 git checkout v0.25.10
 make clean 2>/dev/null || true
-make -j$(nproc)
+make -j"$(num_cpus)"
 
 echo ""
 echo "Installing tree-sitter to /usr/local (requires sudo)..."
 sudo mkdir -p /usr/local/lib/pkgconfig /usr/local/include/tree_sitter
 sudo cp libtree-sitter.a /usr/local/lib/
-sudo cp libtree-sitter.so /usr/local/lib/libtree-sitter.so.0.25
-sudo ln -sf libtree-sitter.so.0.25 /usr/local/lib/libtree-sitter.so.0
-sudo ln -sf libtree-sitter.so.0.25 /usr/local/lib/libtree-sitter.so
+if [ "$PLATFORM" = "macos" ]; then
+  sudo cp libtree-sitter.dylib /usr/local/lib/libtree-sitter.0.25.dylib
+  sudo ln -sf libtree-sitter.0.25.dylib /usr/local/lib/libtree-sitter.0.dylib
+  sudo ln -sf libtree-sitter.0.25.dylib /usr/local/lib/libtree-sitter.dylib
+else
+  sudo cp libtree-sitter.so /usr/local/lib/libtree-sitter.so.0.25
+  sudo ln -sf libtree-sitter.so.0.25 /usr/local/lib/libtree-sitter.so.0
+  sudo ln -sf libtree-sitter.so.0.25 /usr/local/lib/libtree-sitter.so
+fi
 sudo cp lib/include/tree_sitter/api.h /usr/local/include/tree_sitter/api.h
 sudo cp tree-sitter.pc /usr/local/lib/pkgconfig/
-sudo ldconfig
+if [ "$PLATFORM" = "linux" ]; then
+  sudo ldconfig
+fi
 
 echo "tree-sitter $(grep TREE_SITTER_LANGUAGE_VERSION /usr/local/include/tree_sitter/api.h | head -1)"
 
@@ -91,24 +162,43 @@ if [ ! -f configure ]; then
   ./autogen.sh
 fi
 
-./configure \
-  --with-x-toolkit=no \
-  --with-xpm=no \
-  --with-jpeg=no \
-  --with-png=no \
-  --with-gif=no \
-  --with-tiff=no \
-  --with-native-compilation=aot \
-  --with-json \
-  --without-x \
-  --without-compress-install \
-  --with-xml2 \
-  --with-tree-sitter \
-  --with-mailutils \
-  --with-modules \
-  'CFLAGS=-O3 -march=native -mtune=native -fomit-frame-pointer'
+CONFIGURE_ARGS=(
+  --with-native-compilation=aot
+  --with-json
+  --without-compress-install
+  --with-xml2
+  --with-tree-sitter
+  --with-mailutils
+  --with-modules
+)
 
-make -j$(nproc)
+if [ "$PLATFORM" = "macos" ]; then
+  CONFIGURE_ARGS+=(
+    --with-ns
+    --disable-ns-self-contained
+  )
+  # Ensure Homebrew paths are visible to configure
+  export PKG_CONFIG_PATH="$(brew --prefix libgccjit)/lib/pkgconfig:$(brew --prefix gnutls)/lib/pkgconfig:$(brew --prefix jansson)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+  export LDFLAGS="-L$(brew --prefix libgccjit)/lib -L$(brew --prefix gnutls)/lib ${LDFLAGS:-}"
+  export CPPFLAGS="-I$(brew --prefix libgccjit)/include -I$(brew --prefix gnutls)/include ${CPPFLAGS:-}"
+  export LIBRARY_PATH="$(brew --prefix libgccjit)/lib:${LIBRARY_PATH:-}"
+  CONFIGURE_ARGS+=('CFLAGS=-O3 -fomit-frame-pointer')
+else
+  CONFIGURE_ARGS+=(
+    --with-x-toolkit=no
+    --with-xpm=no
+    --with-jpeg=no
+    --with-png=no
+    --with-gif=no
+    --with-tiff=no
+    --without-x
+  )
+  CONFIGURE_ARGS+=('CFLAGS=-O3 -march=native -mtune=native -fomit-frame-pointer')
+fi
+
+./configure "${CONFIGURE_ARGS[@]}"
+
+make -j"$(num_cpus)"
 
 echo ""
 echo "Installing Emacs (requires sudo)..."
