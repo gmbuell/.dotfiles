@@ -27,7 +27,6 @@ find ~/.emacs.d/elpa -name '*.elc' -delete 2>/dev/null || true
 rm -rf ~/.emacs.d/eln-cache 2>/dev/null || true
 emacs -Q --batch --eval '
 (progn
-  (setq user-emacs-directory "~/.emacs.d/")
   (package-initialize)
   (package-quickstart-refresh)
   (byte-compile-file (locate-user-emacs-file "package-quickstart.el")))' 2>&1
