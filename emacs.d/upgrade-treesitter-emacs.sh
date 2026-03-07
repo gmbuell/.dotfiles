@@ -210,6 +210,16 @@ echo "Installing Emacs (requires sudo)..."
 sudo make install
 
 echo ""
+echo "=== Step 2b: Regenerate package-quickstart.el ==="
+find ~/.emacs.d/elpa -name '*.elc' -delete 2>/dev/null || true
+rm -rf ~/.emacs.d/eln-cache 2>/dev/null || true
+emacs -Q --batch --eval '
+(progn
+  (package-initialize)
+  (package-quickstart-refresh)
+  (byte-compile-file (locate-user-emacs-file "package-quickstart.el")))' 2>&1
+
+echo ""
 echo "=== Step 3: Install tree-sitter grammars ==="
 emacs --batch -l "$SCRIPT_DIR/init.el" --eval '(mp-setup-install-grammars)' 2>&1
 
