@@ -180,13 +180,17 @@ CONFIGURE_ARGS=(
   --with-tree-sitter
   --with-mailutils
   --with-modules
+  --with-x-toolkit=no
+  --with-xpm=no
+  --with-jpeg=no
+  --with-png=no
+  --with-gif=no
+  --with-tiff=no
+  --without-x
+  --without-ns
 )
 
 if [ "$PLATFORM" = "macos" ]; then
-  CONFIGURE_ARGS+=(
-    --without-ns
-    --without-x
-  )
   # Ensure Homebrew paths are visible to configure
   export PKG_CONFIG_PATH="$(brew --prefix libgccjit)/lib/pkgconfig:$(brew --prefix gnutls)/lib/pkgconfig:$(brew --prefix jansson)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
   export LDFLAGS="-L$(brew --prefix libgccjit)/lib -L$(brew --prefix gnutls)/lib ${LDFLAGS:-}"
@@ -194,15 +198,6 @@ if [ "$PLATFORM" = "macos" ]; then
   export LIBRARY_PATH="$(brew --prefix libgccjit)/lib:${LIBRARY_PATH:-}"
   CONFIGURE_ARGS+=('CFLAGS=-O3 -fomit-frame-pointer')
 else
-  CONFIGURE_ARGS+=(
-    --with-x-toolkit=no
-    --with-xpm=no
-    --with-jpeg=no
-    --with-png=no
-    --with-gif=no
-    --with-tiff=no
-    --without-x
-  )
   CONFIGURE_ARGS+=('CFLAGS=-O3 -march=native -mtune=native -fomit-frame-pointer')
 fi
 
