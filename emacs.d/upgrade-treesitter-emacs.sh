@@ -184,8 +184,8 @@ CONFIGURE_ARGS=(
 
 if [ "$PLATFORM" = "macos" ]; then
   CONFIGURE_ARGS+=(
-    --with-ns
-    --disable-ns-self-contained
+    --without-ns
+    --without-x
   )
   # Ensure Homebrew paths are visible to configure
   export PKG_CONFIG_PATH="$(brew --prefix libgccjit)/lib/pkgconfig:$(brew --prefix gnutls)/lib/pkgconfig:$(brew --prefix jansson)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
