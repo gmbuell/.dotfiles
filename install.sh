@@ -22,8 +22,9 @@ RCRC="$SCRIPT_DIR/rcrc" rcup -v
 # --- Regenerate package-quickstart.el (contains machine-specific paths) ---
 echo ""
 echo "Regenerating package-quickstart.el..."
-# Delete stale .elc files (may be from a different Emacs version)
+# Delete stale compiled files (may be from a different Emacs version)
 find ~/.emacs.d/elpa -name '*.elc' -delete 2>/dev/null || true
+rm -rf ~/.emacs.d/eln-cache 2>/dev/null || true
 emacs -Q --batch --eval '
 (progn
   (setq user-emacs-directory "~/.emacs.d/")
