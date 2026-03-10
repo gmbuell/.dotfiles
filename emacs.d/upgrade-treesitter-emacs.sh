@@ -41,7 +41,7 @@ if [ "$PLATFORM" = "linux" ] && command -v dpkg &>/dev/null; then
   # Debian/Ubuntu
   REQUIRED_PKGS=(
     build-essential autoconf automake texinfo pkg-config git
-    libxml2-dev libjansson-dev libgnutls28-dev libncurses-dev libmailutils-dev
+    libxml2-dev libgnutls28-dev libncurses-dev
   )
 
   # Detect available libgccjit version
@@ -72,7 +72,7 @@ elif [ "$PLATFORM" = "linux" ] && command -v dnf &>/dev/null; then
   # Fedora/RHEL/CentOS
   REQUIRED_PKGS=(
     gcc gcc-c++ make autoconf automake texinfo pkgconf git
-    libxml2-devel jansson-devel gnutls-devel ncurses-devel mailutils
+    libxml2-devel gnutls-devel ncurses-devel
     libgccjit-devel
   )
 
@@ -89,10 +89,10 @@ elif [ "$PLATFORM" = "linux" ] && command -v dnf &>/dev/null; then
 elif [ "$PLATFORM" = "linux" ]; then
   echo "WARNING: Unrecognized Linux package manager. Skipping dependency check."
   echo "Ensure you have: gcc, make, autoconf, automake, texinfo, pkg-config, git,"
-  echo "  libxml2-dev, jansson-dev, gnutls-dev, ncurses-dev, libgccjit-dev, mailutils"
+  echo "  libxml2-dev, gnutls-dev, ncurses-dev, libgccjit-dev"
 else
   # macOS: check for Homebrew dependencies
-  REQUIRED_BREWS=(autoconf automake texinfo pkg-config gnutls libgccjit jansson libxml2 mailutils)
+  REQUIRED_BREWS=(autoconf automake texinfo pkg-config gnutls gcc libgccjit libxml2)
   MISSING=()
   for pkg in "${REQUIRED_BREWS[@]}"; do
     if ! brew list "$pkg" &>/dev/null; then
@@ -168,17 +168,13 @@ git checkout emacs-30.2
 
 make clean 2>/dev/null || true
 
-if [ ! -f configure ]; then
-  ./autogen.sh
-fi
+./autogen.sh
 
 CONFIGURE_ARGS=(
   --with-native-compilation=aot
-  --with-json
   --without-compress-install
   --with-xml2
   --with-tree-sitter
-  --with-mailutils
   --with-modules
   --with-x-toolkit=no
   --with-xpm=no
@@ -192,10 +188,12 @@ CONFIGURE_ARGS=(
 
 if [ "$PLATFORM" = "macos" ]; then
   # Ensure Homebrew paths are visible to configure
-  export PKG_CONFIG_PATH="$(brew --prefix libgccjit)/lib/pkgconfig:$(brew --prefix gnutls)/lib/pkgconfig:$(brew --prefix jansson)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-  export LDFLAGS="-L$(brew --prefix libgccjit)/lib -L$(brew --prefix gnutls)/lib ${LDFLAGS:-}"
+  export PKG_CONFIG_PATH="$(brew --prefix libgccjit)/lib/pkgconfig:$(brew --prefix gnutls)/lib/pkgconfig:$(brew --prefix libxml2)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+  export LDFLAGS="-L$(brew --prefix libgccjit)/lib/gcc/current -L$(brew --prefix gnutls)/lib ${LDFLAGS:-}"
   export CPPFLAGS="-I$(brew --prefix libgccjit)/include -I$(brew --prefix gnutls)/include ${CPPFLAGS:-}"
-  export LIBRARY_PATH="$(brew --prefix libgccjit)/lib:${LIBRARY_PATH:-}"
+  # libgccjit needs its own lib plus gcc's internal lib (for libemutls_w.a)
+  GCC_INTERNAL_LIB="$(dirname "$(find "$(brew --prefix gcc)/lib" -name libemutls_w.a 2>/dev/null | head -1)")"
+  export LIBRARY_PATH="$(brew --prefix libgccjit)/lib/gcc/current:${GCC_INTERNAL_LIB}:${LIBRARY_PATH:-}"
   CONFIGURE_ARGS+=('CFLAGS=-O3 -fomit-frame-pointer')
 else
   CONFIGURE_ARGS+=('CFLAGS=-O3 -march=native -mtune=native -fomit-frame-pointer')
