@@ -2,16 +2,41 @@
 	name = Garret Buell
 	email = gmbuell@gmail.com
 [push]
-	default = simple
+	default = current
+[rebase]
+	autoStash = true
+[pull]
+	rebase = true
+[fetch]
+	pruneTags = true
+	prune = true
+	fsckObjects = true
+[alias]
+	pushf = push --force-with-lease
+	undo = reset HEAD~
+	count = rev-list --count main..HEAD
+[merge]
+	conflictStyle = zdiff3
+[diff]
+	algorithm = histogram
+	colorMoved = plain
+[transfer]
+	fsckObjects = true
+[receive]
+	fsckObjects = true
+[branch]
+	sort = -committerdate
+[tag]
+	sort = -version:refname
 [clangformat]
 	style = Google
 [rerere]
 	enabled = true
 [credential "https://github.com"]
-	helper = 
+	helper =
 	helper = !/usr/bin/gh auth git-credential
 [credential "https://gist.github.com"]
-	helper = 
+	helper =
 	helper = !/usr/bin/gh auth git-credential
 [init]
 	defaultBranch = main
@@ -20,3 +45,5 @@
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
+[include]
+	path = ~/.gitconfig.local
