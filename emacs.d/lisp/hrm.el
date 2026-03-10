@@ -42,7 +42,9 @@
   :type 'string)
 
 (defcustom hrm-notes-sources
-  '(("Projects"   ?p "~/notes/projects/"))
+  '(("Notes"      ?n "~/notes/")
+    ("Projects"   ?p "~/notes/projects/")
+    ("Todo"       ?t "~/notes/todo/"))
   "List of note sources.
 Each source is a list of (NAME CHAR DIR) where:
 NAME is the source name,

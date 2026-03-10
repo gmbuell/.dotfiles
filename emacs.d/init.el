@@ -1512,7 +1512,10 @@ Used to preselect nearest headings and imenu items.")
 (add-hook 'eshell-mode-hook (lambda () (setq outline-regexp eshell-prompt-regexp)))
 
 (use-package hrm
-	:bind (("C-c C-h" . hrm-notes)))
+	:bind (("C-c C-h" . hrm-notes)
+				 :map region-bindings-mode-map
+				 ("C-c C-h" . hrm-capture-dwim))
+	:hook (emacs-startup . hrm-notes))
 
 (use-package consult-dir
   :after (consult)
